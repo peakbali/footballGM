@@ -1,3 +1,4 @@
+import { SwipePages } from '../swipe';
 import { useState } from 'preact/hooks';
 import { userClub, type GameState } from '../../core/state';
 import { projection, ticketRange, totals, userWageBill, staffWageBill, upkeep } from '../../core/systems/finance';
@@ -170,12 +171,14 @@ function ClubTab() {
   const extra = clubSections();
   return (
     <div>
-      <div class="seg">
+      <div class="seg" data-seg-bar>
         {[['money', 'Money'], ['staff', 'Staff'], ...extra.map((e) => [e.key, e.label])].map(([k, l]) => <button key={k} class={seg === k ? 'on' : ''} onClick={() => setSeg(k)}>{l}</button>)}
       </div>
+      <SwipePages keys={['money', 'staff', ...extra.map((e) => e.key)]} value={seg} onChange={setSeg}>
       {seg === 'money' && <><Finances s={s} /><Sponsors s={s} /></>}
       {seg === 'staff' && <StaffCard s={s} />}
       {extra.filter((e) => e.key === seg).map((e) => <div key={e.key}>{e.render(s)}</div>)}
+      </SwipePages>
     </div>
   );
 }

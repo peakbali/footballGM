@@ -702,6 +702,10 @@ The browser and phone back button must never leave the game (that showed a blank
 
 Logic lives in `src/ui/backNav.ts` with a test (`tests/back.test.ts`) that models Chrome's skipping and opens every kind of screen; `scripts/e2e-back.cjs` repeats the check in a real browser, including the installed-app mode.
 
+### 13.2d Swipe between sub-pages **[Agreed]**
+
+Every screen with sub-pages (Transfers: Scouted, List, Free agents, Offers, Scouts, News; Club: Money, Staff, Facilities, Academy, Board, History; League: Table, Fixtures, Stats, History) can be swiped left and right to move to the next or previous sub-page, as well as tapped. The page slides in from the side (about 0.2 s, off with reduced motion) and follows the finger a little while dragging. The active chip scrolls into view in its bar. A swipe is only taken when it is clearly horizontal (vertical scrolling is untouched), it is ignored when it starts inside a horizontally scrollable row such as the chip bar, or within 24 px of the screen edge (the phone's own back gesture), and it stops at the first and last sub-page. Component: `src/ui/swipe.tsx`; browser check: `scripts/e2e-swipe.cjs`.
+
 ### 13.3 Evolving stadium hub **[Agreed]**
 
 The hub scene is built from layered pixel sprites that reflect facility upgrades: a lone rail and a portacabin in division 9, stands and floodlights later, a full bowl in division 1. Crowd density reflects last home attendance. Day/night tint follows match day.

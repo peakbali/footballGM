@@ -1,3 +1,4 @@
+import { SwipePages } from '../swipe';
 import { useState } from 'preact/hooks';
 import { POSITIONS } from '../../core/data/positions';
 import { isWindowOpen, CAL, type GameState } from '../../core/state';
@@ -126,9 +127,10 @@ function Market({ s }: { s: GameState }) {
   );
 }
 
+const SEGS = ['scouted', 'shortlist', 'free', 'offers', 'scouts', 'news'] as const;
 function TransfersTab() {
   const s = useStore().state!;
-  const [seg, setSeg] = useState<'scouted' | 'shortlist' | 'free' | 'offers' | 'scouts' | 'news'>('scouted');
+  const [seg, setSeg] = useState<(typeof SEGS)[number]>('scouted');
   const w = isWindowOpen(s.week);
   const incoming = s.inbox.filter((m) => m.action?.kind === 'offer_in' && !m.resolved).length;
   return (
@@ -136,11 +138,12 @@ function TransfersTab() {
       <div class={`card small ${w ? 'green' : 'dim'}`} style={{ padding: 8 }}>
         {w ? `${w === 'summer' ? 'Summer' : 'January'} window open${w === 'summer' && s.week <= CAL.summerWindowEnd ? ` · closes week ${CAL.summerWindowEnd}` : w === 'winter' ? ` · closes week ${CAL.winterWindow[1]}` : ''}` : 'Window closed: free agents and loans only'}
       </div>
-      <div class="chips">
+      <div class="chips" data-seg-bar>
         {([['scouted', 'Scouted'], ['shortlist', '★ List'], ['free', 'Free agents'], ['offers', `Offers${incoming ? ` (${incoming})` : ''}`], ['scouts', 'Scouts'], ['news', 'News']] as const).map(([k, l]) => (
           <button key={k} class={`chip ${seg === k ? 'on' : ''}`} onClick={() => setSeg(k)}>{l}</button>
         ))}
       </div>
+      <SwipePages keys={SEGS} value={seg} onChange={setSeg}>
       {seg === 'scouted' && (
         <Card title="Scout recommendations">
           {s.scouting.shortlist.filter((id) => s.players.has(id) && s.players.get(id)!.clubId !== s.userClubId && isInterested(s, s.players.get(id)!)).map((id) => <KnownRow key={id} s={s} p={s.players.get(id)!} />)}
@@ -157,6 +160,7 @@ function TransfersTab() {
       {seg === 'offers' && <Offers s={s} />}
       {seg === 'scouts' && <Scouts s={s} />}
       {seg === 'news' && <Market s={s} />}
+      </SwipePages>
     </div>
   );
 }

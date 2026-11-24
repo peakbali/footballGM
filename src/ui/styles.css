@@ -245,3 +245,11 @@ table.tbl.compact { font-size: 12px; }
 .pt-ATT .pt-streak { animation: pt-streak 0.45s steps(2) infinite; }
 @media (prefers-reduced-motion: reduce) { .portrait * { animation: none !important; } }
 .item .portrait { box-shadow: 0 2px 0 #070b18; }
+
+/* swipe between sub-pages (see swipe.tsx) */
+.swipe { touch-action: pan-y; min-height: 55vh; overflow-x: clip; }
+.swipe-pane.from-right { animation: swipe-from-right .22s ease-out; }
+.swipe-pane.from-left { animation: swipe-from-left .22s ease-out; }
+@keyframes swipe-from-right { from { transform: translateX(36px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes swipe-from-left { from { transform: translateX(-36px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .swipe-pane.from-right, .swipe-pane.from-left { animation: none; } }
