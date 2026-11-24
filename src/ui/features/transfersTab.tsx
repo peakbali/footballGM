@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { POSITIONS } from '../../core/data/positions';
 import { isWindowOpen, CAL, type GameState } from '../../core/state';
-import { coverage, scoutAccuracy } from '../../core/systems/scouting';
+import { coverage, isInterested, scoutAccuracy } from '../../core/systems/scouting';
 import { staffCap } from '../../core/systems/staff';
 import { askingWage } from '../../core/systems/contracts';
 import type { Player } from '../../core/types';
@@ -67,7 +67,7 @@ function Scouts({ s }: { s: GameState }) {
         const acc = scoutAccuracy(lvl);
         return (
           <Card key={st.id} title={<span><RoleTag role="scout" />{`${st.first} ${st.last} · level ${lvl}${st.level > cap ? ` (capped from ${st.level})` : ''}`}</span>}>
-            <div class="tiny dim" style={{ marginBottom: 8 }}>Covers your division ±{coverage(lvl)} · reads the potential of about {Math.round(acc.potChance * 100)}% of players · a shortlist every 2 weeks</div>
+            <div class="tiny dim" style={{ marginBottom: 8 }}>Covers your division ±{coverage(lvl)} · reads the potential of about {Math.round(acc.potChance * 100)}% of players · a shortlist every 2 weeks, only of players open to joining you</div>
             <div class="small dim">Position</div>
             <div class="chips">{['ANY', ...POSITIONS].map((pos) => <button key={pos} class={`chip ${a.pos === pos ? 'on' : ''}`} onClick={() => { a.pos = pos; store.bump(); }}>{pos}</button>)}</div>
             <div class="between" style={{ marginBottom: 6 }}><span class="small">Min age</span><Stepper value={a.minAge} onChange={(v) => { a.minAge = v; store.bump(); }} step={1} min={15} max={a.maxAge} fmt={(v) => `${v}`} /></div>
@@ -141,7 +141,7 @@ function TransfersTab() {
       </div>
       {seg === 'scouted' && (
         <Card title="Scout recommendations">
-          {s.scouting.shortlist.filter((id) => s.players.has(id) && s.players.get(id)!.clubId !== s.userClubId).map((id) => <KnownRow key={id} s={s} p={s.players.get(id)!} />)}
+          {s.scouting.shortlist.filter((id) => s.players.has(id) && s.players.get(id)!.clubId !== s.userClubId && isInterested(s, s.players.get(id)!)).map((id) => <KnownRow key={id} s={s} p={s.players.get(id)!} />)}
           {s.scouting.shortlist.length === 0 && <div class="empty">Your scouts deliver a shortlist every two weeks. Set their targets under Scouts.</div>}
         </Card>
       )}

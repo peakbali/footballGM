@@ -9,8 +9,10 @@ import './features';
 import { installAudio } from './audio';
 installAudio();
 import { App } from './App';
+import { installBackHandler } from './store';
 
 render(<App />, document.getElementById('app')!);
+installBackHandler();
 
 // dev-only handle for automated UI checks
 if (import.meta.env.DEV) (window as unknown as { __fgm: unknown }).__fgm = { store: (await import('./store')).store };

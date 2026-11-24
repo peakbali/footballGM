@@ -6,7 +6,7 @@ import { squadOf } from '../src/core/state';
 import { askingPrice, completeDeal, submitBid } from '../src/core/systems/transfers';
 import { askingWage, negotiate, seniorCount } from '../src/core/systems/contracts';
 import { acceptSponsor } from '../src/core/systems/sponsors';
-import { knowledgeOf, makeReport } from '../src/core/systems/scouting';
+import { isInterested, knowledgeOf, makeReport } from '../src/core/systems/scouting';
 import '../src/core/systems/all';
 
 const club = clubsInLeague(startingLeagues()[3].key)[2];
@@ -41,6 +41,18 @@ describe('management', () => {
     expect(good).toBeGreaterThan(bad * 1.8);
     s.scouting.reports = {};
     expect(knowledgeOf(s, others[0])).toEqual({ ovr: null, pot: null });
+  });
+
+  it('scouts only recommend players open to joining', () => {
+    const s = newGame(14, club);
+    s.scouting.assignments[s.staff.find((x) => x.role === 'scout')!.id].maxFee = 1e9;
+    for (let i = 0; i < 8; i++) advanceWeek(s);
+    const list = s.scouting.shortlist.map((id) => s.players.get(id)!).filter(Boolean);
+    expect(list.length).toBeGreaterThan(0);
+    for (const p of list) expect(isInterested(s, p)).toBe(true);
+    // and some players in range are not interested, so the filter does something
+    const all = [...s.players.values()].filter((p) => p.clubId != null && p.clubId !== s.userClubId).slice(0, 500);
+    expect(all.some((p) => !isInterested(s, p))).toBe(true);
   });
 
   it('pays wages and income weekly and keeps a ledger', () => {

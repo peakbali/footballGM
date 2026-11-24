@@ -421,6 +421,7 @@ A scout report always shows the player's **true OVR**. POT is either the **true 
 | 61 to 80 | about 70 to 80% | ±5 |
 | 81 to 100 | about 80 to 95%, traits visible | All (and foreign pools later) |
 
+- Scouts only recommend players who are **open to joining your club**. Interest (0 to 100, needs 50) rises when the move is up the pyramid, when he would start, with better training and stadium facilities, a calm personality, low morale or no playing time at his club, being a free agent, or being 30+; it falls for a step down or a bench role. The player screen shows "Open to a move" or "Not interested" for scouted players, and the existing willingness rules for offers still apply.
 - Each scout delivers **one shortlist (3 to 6 players) every 2 weeks**. More scouts = more lists.
 - Once a player is scouted, the report is stored and stays current for this season and the next. Your own squad's OVR is always known; whether you see a player's POT uses your best coach's level the same way. Players in your own league show their OVR (you watch them every week) and `?` for POT until scouted.
 

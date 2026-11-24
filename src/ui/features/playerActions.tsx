@@ -7,7 +7,7 @@ import type { Player } from '../../core/types';
 import { Card, Overlay } from '../components';
 import { money, nav, store, useStore } from '../store';
 import { registerPlayerAction, setKnowledgeFn } from '../playerExtras';
-import { knowledgeOf } from '../../core/systems/scouting';
+import { isInterested, knowledgeOf } from '../../core/systems/scouting';
 import { registerOverlay } from '../overlays';
 import { ContractTerms } from './contractTerms';
 
@@ -55,6 +55,7 @@ function OtherActions({ s, p }: { s: GameState; p: Player }) {
           {!inRange ? 'Out of scout range' : r && r.season === s.season ? 'Scouted' : 'Scout him'}
         </button>
       </div>
+      {r && <div class="small" style={{ marginTop: 8 }}>Interest in joining: {isInterested(s, p) ? <b class="green">Open to a move</b> : <b class="red">Not interested</b>}</div>}
       {r && <div class="tiny dim" style={{ marginTop: 6 }}>Scout report: level {r.level}, {r.season}/{String(r.season + 1).slice(2)} wk {r.week}</div>}
     </Card>
   );
