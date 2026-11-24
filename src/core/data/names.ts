@@ -12,7 +12,7 @@ export const NAMES: Record<string, { first: string[]; last: string[] }> = {
   FRA: { first: 'Lucas Hugo Theo Nathan Mathis Enzo Louis Antoine Maxime Yanis'.split(' '), last: 'Martin Bernard Dubois Moreau Laurent Girard Lefevre Fontaine Diallo Traore'.split(' ') },
   ESP: { first: 'Pablo Alvaro Diego Sergio Javier Adrian Hugo Marcos Iker Raul'.split(' '), last: 'Garcia Fernandez Lopez Martinez Sanchez Romero Navarro Ruiz Moreno Ortega'.split(' ') },
   POR: { first: 'Joao Tiago Rafael Diogo Goncalo Rui Andre Bruno'.split(' '), last: 'Silva Santos Ferreira Pereira Costa Oliveira Carvalho Gomes'.split(' ') },
-  NED: { first: 'Daan Sem Luuk Milan Jesse Thijs Bram Lars'.split(' '), last: 'de Jong Jansen de Vries van Dijk Bakker Visser Smit Mulder'.split(' ') },
+  NED: { first: 'Daan Sem Luuk Milan Jesse Thijs Bram Lars'.split(' '), last: 'de Jong|Jansen|de Vries|van Dijk|Bakker|Visser|Smit|Mulder'.split('|') },
   BRA: { first: 'Gabriel Lucas Mateus Rafael Vinicius Thiago Bruno Felipe'.split(' '), last: 'Souza Lima Alves Ribeiro Rocha Barbosa Teixeira Moura'.split(' ') },
   ITA: { first: 'Lorenzo Matteo Alessandro Andrea Federico Davide Simone Riccardo Giorgio Nicolo'.split(' '), last: 'Rossi Russo Ferrari Esposito Bianchi Romano Colombo Ricci Marino Greco Bruno Gallo'.split(' ') },
   GER: { first: 'Lukas Leon Felix Jonas Niklas Tim Jan Paul'.split(' '), last: 'Muller Schmidt Schneider Fischer Weber Wagner Becker Hoffmann'.split(' ') },

@@ -12,6 +12,14 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'node:path';
 import { A, ATTRS, POSITIONS, type Position } from '../src/core/data/positions';
 import { posOvr } from '../src/core/ratings';
+
+/** Surname from a name's words: the last word plus any lower-case particles before it ("van Dijk", "de la Cruz"). */
+const PARTICLES = new Set(['de', 'van', 'von', 'der', 'den', 'da', 'das', 'dos', 'di', 'del', 'della', 'la', 'le', 'el', 'al', 'bin', 'ter', 'ten', 'du', 'dos', 'e']);
+function surname(words: string[]): string {
+  let i = words.length - 1;
+  while (i > 0 && PARTICLES.has(words[i - 1].toLowerCase()) && words[i - 1] === words[i - 1].toLowerCase()) i--;
+  return words.slice(i).join(' ');
+}
 import type { RealData, RealPlayer } from '../src/core/realData';
 
 const DIR = 'data/private';
@@ -136,7 +144,7 @@ function main() {
     const long = col.long >= 0 ? r[col.long] : '';
     const short = col.short >= 0 ? r[col.short] : long;
     const full = (long || short).trim().split(/\s+/);
-    const last = (short || long).trim().split(/\s+/).slice(-1)[0] ?? full.slice(-1)[0];
+    const last = surname((short || long).trim().split(/\s+/)) || full.slice(-1)[0];
     const first = full.length > 1 ? full[0] : '';
     const dob = col.dob >= 0 ? r[col.dob] : '';
     const birthYear = dob && /^\d{4}/.test(dob) ? parseInt(dob.slice(0, 4), 10) : SEASON - (parseInt(r[col.age], 10) || 25);
