@@ -39,7 +39,7 @@ function Finances({ s }: { s: GameState }) {
   const pr = projection(s);
   const t = totals(s.fin.season);
   const last = totals(s.fin.last);
-  const [lo, hi] = ticketRange(c);
+  const [lo, hi] = ticketRange(c, s);
   return (
     <>
       <Card title="Finances">
