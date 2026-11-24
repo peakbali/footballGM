@@ -1,6 +1,7 @@
 import type { Rng } from './rng';
 import type { GameState } from './state';
-import type { Player } from './types';
+import type { Club, Player } from './types';
+import type { DevContext } from './progression';
 import type { WeekResult } from './season';
 
 /**
@@ -33,3 +34,11 @@ export function runRolloverSystems(s: GameState, rng: Rng) {
 export function runInitSystems(s: GameState, rng: Rng) {
   for (const sys of SYSTEMS) sys.init?.(s, rng);
 }
+
+/** Pluggable formulas (functions are never stored in the save). */
+export const hooks: {
+  attendance?: (s: GameState, home: Club, away: Club, rng: Rng) => number;
+  devContext?: (s: GameState, p: Player) => DevContext;
+  injuryMult?: (s: GameState) => number;
+  recoveryBonus?: (s: GameState) => number;
+} = {};

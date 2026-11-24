@@ -5,12 +5,12 @@ import { makeSide, shootout, simulateMatch } from './match';
 import { DEFAULT_DEV, developPlayer, retireChance } from './progression';
 import { Rng, clamp, hashSeed } from './rng';
 import { refreshClubRatings } from './selection';
-import { buildSquadIndex, CAL, emptyStats, type GameState } from './state';
+import { buildSquadIndex, CAL, emptyStats, invalidateSquads, type GameState } from './state';
 import type { Club, ClubSeasonRecord, Fixture, InboxMessage, Player } from './types';
 import { dist, nearest } from './world';
 import { POSITIONS, type Position } from './data/positions';
 import { playerValue } from './data/economy';
-import { runWeeklySystems, runSeasonEndSystems, runRolloverSystems } from './systems';
+import { runWeeklySystems, runSeasonEndSystems, runRolloverSystems, hooks } from './systems';
 
 export interface WeekResult {
   week: number;
@@ -55,7 +55,7 @@ export function advanceWeek(s: GameState): WeekResult {
   const user = s.clubs[s.userClubId];
 
   // Weekly recovery (before matches)
-  const physioBoost = (s.ext.physioRecovery as number | undefined) ?? 0;
+  const physioBoost = hooks.recoveryBonus?.(s) ?? 0;
   for (const p of s.players.values()) {
     if (p.clubId == null) continue;
     const isUser = p.clubId === s.userClubId;
@@ -87,7 +87,7 @@ export function advanceWeek(s: GameState): WeekResult {
       const so = shootout(rng);
       f.pens = so.score;
     }
-    const docMult = (s.ext.injuryMult as number | undefined) ?? 1;
+    const docMult = hooks.injuryMult?.(s) ?? 1;
     for (const p of r.injuries) injurePlayer(rng, p, p.clubId === s.userClubId ? docMult : 1);
     if (r.report) {
       s.reports.set(f.id, r.report);
@@ -126,8 +126,7 @@ export function advanceWeek(s: GameState): WeekResult {
 }
 
 function attendanceFor(s: GameState, home: Club, away: Club, rng: Rng): number {
-  const fn = s.ext.attendanceFn as ((s: GameState, h: Club, a: Club, r: Rng) => number) | undefined;
-  if (fn) return fn(s, home, away, rng);
+  if (hooks.attendance) return hooks.attendance(s, home, away, rng);
   const base = home.capacity * clamp(0.35 + home.rep / 150 + rng.normal(0, 0.05), 0.15, 1);
   return Math.round(Math.min(home.capacity, base + away.rep * 3));
 }
@@ -215,7 +214,7 @@ export function rollover(s: GameState) {
 
   // 2. Players: career log, development, retirement, contracts
   const idx = buildSquadIndex(s);
-  const devCtxFn = s.ext.devContextFn as ((s: GameState, p: Player) => typeof DEFAULT_DEV) | undefined;
+  const devCtxFn = hooks.devContext;
   for (const p of [...s.players.values()]) {
     if (p.retired) continue;
     if (p.stats.apps > 0 || p.clubId != null) p.career.push({ s: prev, c: p.clubId ?? -1, apps: p.stats.apps, goals: p.stats.goals, ovr: p.ovr });
@@ -231,6 +230,7 @@ export function rollover(s: GameState) {
     if (rng.chance(retireChance(ageNow, p.pos === 'GK', p.ovr))) {
       if (p.clubId === s.userClubId) addMessage(s, { cat: 'Squad', title: `${p.first} ${p.last} retires`, body: `${p.first} ${p.last} (${ageNow}) has hung up his boots.` });
       p.retired = true;
+      invalidateSquads();
       p.clubId = null;
       p.contract = null;
       s.players.delete(p.id);
@@ -246,6 +246,7 @@ export function rollover(s: GameState) {
       } else {
         p.clubId = null;
         p.contract = null;
+        invalidateSquads();
       }
     }
     p.value = playerValue(p.ovr, p.pot, ageNow, p.contract ? p.contract.endSeason - s.season + 1 : 0);
@@ -277,6 +278,7 @@ function estimateShare(p: Player, idx: Map<number, Player[]>): number {
 }
 
 function movePyramid(s: GameState, season: number, rng: Rng) {
+  invalidateSquads();
   const recs = s.history.filter((h) => h.season === season);
   const up: number[][] = [];
   const down: number[][] = [];
@@ -284,6 +286,13 @@ function movePyramid(s: GameState, season: number, rng: Rng) {
     const r = recs.filter((h) => h.div === lg.div).sort((a, b) => a.pos - b.pos);
     up[lg.div] = lg.div > 1 ? r.filter((h) => h.outcome === 'champion' || h.outcome === 'promoted' || h.outcome === 'playoff_winner').map((h) => h.clubId) : [];
     down[lg.div] = r.filter((h) => h.outcome === 'relegated').map((h) => h.clubId);
+    // the user's club never drops out of the simulated pyramid: at the bottom tier it survives
+    if (lg.div === 10 && down[10].includes(s.userClubId)) {
+      const spare = r.filter((h) => h.outcome !== 'relegated' && !up[10].includes(h.clubId)).pop();
+      down[10] = down[10].filter((id) => id !== s.userClubId);
+      if (spare) down[10].push(spare.clubId);
+      addMessage(s, { cat: 'League', title: 'Reprieve', body: 'There is no lower simulated league, so the club keeps its place in the bottom division.' });
+    }
   }
   const newMembers: number[][] = [];
   for (const lg of s.leagues) {

@@ -5,6 +5,7 @@ import '@fontsource/inter/latin-600.css';
 import '@fontsource/inter/latin-800.css';
 import './styles.css';
 import '../core/systems/all';
+import './features';
 import { App } from './App';
 
 render(<App />, document.getElementById('app')!);

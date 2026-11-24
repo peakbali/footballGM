@@ -1,0 +1,8 @@
+// UI features (each registers itself with the screen registries).
+import './playerActions';
+import './deal';
+import './squadFormation';
+import './transfersTab';
+import './clubTab';
+import './inboxHandlers';
+export {};
