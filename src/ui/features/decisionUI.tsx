@@ -3,7 +3,7 @@ import type { GameState } from '../../core/state';
 import type { InboxMessage } from '../../core/types';
 import { decisionChoices, pendingDecisions, resolveDecision, type Choice } from '../../core/systems/decisions';
 import { CardArt } from '../cardArt';
-import { Avatar, KINDS, senderKind } from '../senderArt';
+import { Avatar, KINDS, messagePlayer, senderKind } from '../senderArt';
 import { nav, store, useStore } from '../store';
 import { sfx } from '../audio';
 
@@ -73,7 +73,7 @@ export function DecisionPopup() {
   const [result, setResult] = useState<{ title: string; pick: string; outcome: string; id: number } | null>(null);
   const pend = pendingDecisions(s).filter((m) => m.id > st.hiddenUpTo);
   const m = pend[0];
-  if (top?.kind === 'match' || st.busy) return null;
+  if (top || st.busy) return null; // any overlay (a player page opened from the offer, a match) hides it; it returns when that closes
   if (result && (!m || m.id !== result.id)) {
     const k = KINDS.player;
     return (
@@ -102,6 +102,7 @@ export function DecisionPopup() {
         <div class="dpop-body">
           <h2>{m.title}</h2>
           <div class="dpop-text">{m.body}</div>
+          {messagePlayer(s, m) && <div class="tiny dim dpop-hint">Tap {messagePlayer(s, m)!.last}'s picture to open his page</div>}
           <ChoiceList s={s} m={m} onDone={(out) => { if (out) setResult({ title: m.title, pick: m.pick ?? '', outcome: out, id: m.id }); }} />
           <button class="linkbtn later" onClick={() => { st.hiddenUpTo = m.id; store.bump(); }}>Decide later</button>
         </div>
