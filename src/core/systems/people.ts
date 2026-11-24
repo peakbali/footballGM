@@ -253,12 +253,9 @@ registerSystem({
   },
 });
 
-// Injuries and recovery: doctor, physio and training facilities (DESIGN 6.3)
+// Injuries: doctor, physio and training facilities shorten them (DESIGN 6.3)
 hooks.injuryMult = (s) => {
   const doc = staffLevel(s, 'doctor');
-  return clamp(1.15 - doc / 200 + effects(s).injury, 0.4, 1.3);
-};
-hooks.recoveryBonus = (s) => {
   const physio = staffLevel(s, 'physio');
-  return Math.round(physio / 10 + effects(s).recovery);
+  return clamp(1.15 - doc / 200 - physio / 400 + effects(s).injury, 0.4, 1.3);
 };

@@ -83,7 +83,7 @@ function Lineup({ s }: { s: GameState }) {
           );
         })}
       </svg>
-      <div class="tiny dim" style={{ marginTop: 6 }}>The XI is picked automatically by effective rating, fitness and morale. The tag under each player is the slot he fills (amber outline: out of his main position). Lock a player from his screen to force him in (gold frame).</div>
+      <div class="tiny dim" style={{ marginTop: 6 }}>The XI is picked automatically by effective rating and morale. The tag under each player is the slot he fills (amber outline: out of his main position). Lock a player from his screen to force him in (gold frame).</div>
       <div class="tiny dim">Bench: {lu.bench.map((p) => p.last).join(', ') || 'none'}</div>
       {n < SQUAD_MIN && <div class="amber small" style={{ marginTop: 6 }}>Squad below {SQUAD_MIN}: sign players or promote academy players.</div>}
     </Card>

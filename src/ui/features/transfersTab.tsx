@@ -1,8 +1,8 @@
 import { SwipePages } from '../swipe';
 import { useState } from 'preact/hooks';
-import { POSITIONS } from '../../core/data/positions';
+import { POSITIONS, type Position } from '../../core/data/positions';
 import { isWindowOpen, CAL, type GameState } from '../../core/state';
-import { coverage, isInterested, scoutAccuracy } from '../../core/systems/scouting';
+import { coverage, formationPositions, isInterested, scoutAccuracy } from '../../core/systems/scouting';
 import { staffCap } from '../../core/systems/staff';
 import { askingWage } from '../../core/systems/contracts';
 import type { Player } from '../../core/types';
@@ -61,6 +61,7 @@ function Offers({ s }: { s: GameState }) {
 
 function Scouts({ s }: { s: GameState }) {
   const scouts = s.staff.filter((x) => x.role === 'scout');
+  const fp = formationPositions(s);
   const cap = staffCap(s, 'scout');
   return (
     <>
@@ -71,8 +72,8 @@ function Scouts({ s }: { s: GameState }) {
         return (
           <Card key={st.id} title={<span><RoleTag role="scout" />{`${st.first} ${st.last} · level ${lvl}${st.level > cap ? ` (capped from ${st.level})` : ''}`}</span>}>
             <div class="tiny dim" style={{ marginBottom: 8 }}>Covers your division ±{coverage(lvl)} · reads the potential of about {Math.round(acc.potChance * 100)}% of players · a shortlist every 2 weeks, only of players open to joining you</div>
-            <div class="small dim">Position</div>
-            <div class="chips">{['ANY', ...POSITIONS].map((pos) => <button key={pos} class={`chip ${a.pos === pos ? 'on' : ''}`} onClick={() => { a.pos = pos; store.bump(); }}>{pos}</button>)}</div>
+            <div class="small dim">Position <span class="tiny">(only positions in your {s.clubs[s.userClubId].formation})</span></div>
+            <div class="chips">{['ANY', ...formationPositions(s)].map((pos) => <button key={pos} class={`chip ${(fp.includes(a.pos as Position) ? a.pos : 'ANY') === pos ? 'on' : ''}`} onClick={() => { a.pos = pos; store.bump(); }}>{pos}</button>)}</div>
             <div class="between" style={{ marginBottom: 6 }}><span class="small">Min age</span><Stepper value={a.minAge} onChange={(v) => { a.minAge = v; store.bump(); }} step={1} min={15} max={a.maxAge} fmt={(v) => `${v}`} /></div>
             <div class="between" style={{ marginBottom: 6 }}><span class="small">Max age</span><Stepper value={a.maxAge} onChange={(v) => { a.maxAge = v; store.bump(); }} step={1} min={a.minAge} max={40} fmt={(v) => `${v}`} /></div>
             <div class="between" style={{ marginBottom: 6 }}><span class="small">Max fee</span><Stepper value={a.maxFee} onChange={(v) => { a.maxFee = v; store.bump(); }} step={niceStep(a.maxFee || 1000)} /></div>
@@ -130,6 +131,7 @@ function Market({ s }: { s: GameState }) {
 const SEGS = ['scouted', 'shortlist', 'free', 'offers', 'scouts', 'news'] as const;
 function TransfersTab() {
   const s = useStore().state!;
+  const fp = formationPositions(s);
   const [seg, setSeg] = useState<(typeof SEGS)[number]>('scouted');
   const w = isWindowOpen(s.week);
   const incoming = s.inbox.filter((m) => m.action?.kind === 'offer_in' && !m.resolved).length;
@@ -146,7 +148,7 @@ function TransfersTab() {
       <SwipePages keys={SEGS} value={seg} onChange={setSeg}>
       {seg === 'scouted' && (
         <Card title="Scout recommendations">
-          {s.scouting.shortlist.filter((id) => s.players.has(id) && s.players.get(id)!.clubId !== s.userClubId && isInterested(s, s.players.get(id)!)).map((id) => <KnownRow key={id} s={s} p={s.players.get(id)!} />)}
+          {s.scouting.shortlist.filter((id) => s.players.has(id) && s.players.get(id)!.clubId !== s.userClubId && isInterested(s, s.players.get(id)!) && fp.includes(s.players.get(id)!.pos)).map((id) => <KnownRow key={id} s={s} p={s.players.get(id)!} />)}
           {s.scouting.shortlist.length === 0 && <div class="empty">Your scouts deliver a shortlist every two weeks. Set their targets under Scouts.</div>}
         </Card>
       )}

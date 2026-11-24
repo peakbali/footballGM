@@ -40,5 +40,4 @@ export const hooks: {
   attendance?: (s: GameState, home: Club, away: Club, rng: Rng) => number;
   devContext?: (s: GameState, p: Player) => DevContext;
   injuryMult?: (s: GameState) => number;
-  recoveryBonus?: (s: GameState) => number;
 } = {};

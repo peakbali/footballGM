@@ -54,12 +54,9 @@ export function advanceWeek(s: GameState): WeekResult {
   const userLeague = s.leagues.find((l) => l.clubIds.includes(s.userClubId))!;
   const user = s.clubs[s.userClubId];
 
-  // Weekly recovery (before matches)
-  const physioBoost = hooks.recoveryBonus?.(s) ?? 0;
+  // Weekly injury countdown (before matches)
   for (const p of s.players.values()) {
     if (p.clubId == null) continue;
-    const isUser = p.clubId === s.userClubId;
-    p.fitness = clamp(p.fitness + 20 + (isUser ? physioBoost : 0), 0, 100);
     if (p.injury > 0) {
       p.injury--;
       if (p.injury === 0) p.injuryName = undefined;

@@ -54,7 +54,7 @@ describe('attribute traits in the match sim', () => {
     const saved = [...squadOf(c.id), ...squadOf(d.id)].map((p) => [p, p.attrs.slice()] as const);
     let g0 = 0, g1 = 0, kinds: Record<string, number> = {};
     for (let i = 0; i < n; i++) {
-      for (const p of [...squadOf(c.id), ...squadOf(d.id)]) { p.fitness = 100; p.injury = 0; p.ban = 0; }
+      for (const p of [...squadOf(c.id), ...squadOf(d.id)]) { p.injury = 0; p.ban = 0; }
       const a = makeSide(c, squadOf(c.id));
       const b = makeSide(d, squadOf(d.id));
       mod(a);

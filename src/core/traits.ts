@@ -1,4 +1,3 @@
-import { fitnessMult } from './ratings';
 import { UNIT_W, type Lineup } from './selection';
 import type { Player } from './types';
 
@@ -44,23 +43,22 @@ export function computeTraits(l: Lineup): Traits {
   l.slots.forEach((slot, i) => {
     const p = l.xi[i];
     if (!p || slot.pos === 'GK') return;
-    const f = fitnessMult(p.fitness);
     const a = p.attrs;
     const [wa, wm, wd] = UNIT_W[slot.pos];
-    pA += wa * f * (0.55 * a[PACE] + 0.45 * a[ACC]); pAw += wa;
-    pD += wd * f * (0.35 * a[PACE] + 0.2 * a[ACC] + 0.25 * a[POSN] + 0.2 * a[ANT]); pDw += wd;
+    pA += wa * (0.55 * a[PACE] + 0.45 * a[ACC]); pAw += wa;
+    pD += wd * (0.35 * a[PACE] + 0.2 * a[ACC] + 0.25 * a[POSN] + 0.2 * a[ANT]); pDw += wd;
     const cw = wa + wm;
-    c += cw * f * (0.3 * a[PASS] + 0.25 * a[VIS] + 0.2 * a[TOUCH] + 0.15 * a[DRIB] + 0.1 * a[OTB]); cW += cw;
+    c += cw * (0.3 * a[PASS] + 0.25 * a[VIS] + 0.2 * a[TOUCH] + 0.15 * a[DRIB] + 0.1 * a[OTB]); cW += cw;
     const sw = wd + wm * 0.5;
-    st += sw * f * (0.3 * a[TACK] + 0.25 * a[MARK] + 0.2 * a[ANT] + 0.15 * a[POSN] + 0.1 * a[WORK]); sW += sw;
+    st += sw * (0.3 * a[TACK] + 0.25 * a[MARK] + 0.2 * a[ANT] + 0.15 * a[POSN] + 0.1 * a[WORK]); sW += sw;
     const aw = wa + (slot.pos === 'CB' ? 0.7 : 0);
-    aa += aw * f * (0.45 * a[HEAD] + 0.3 * a[JUMP] + 0.25 * a[STR]); aaW += aw;
+    aa += aw * (0.45 * a[HEAD] + 0.3 * a[JUMP] + 0.25 * a[STR]); aaW += aw;
     const dw = wd + (slot.pos === 'CB' ? 0.3 : 0);
-    ad += dw * f * (0.3 * a[HEAD] + 0.25 * a[JUMP] + 0.25 * a[MARK] + 0.2 * a[STR]); adW += dw;
+    ad += dw * (0.3 * a[HEAD] + 0.25 * a[JUMP] + 0.25 * a[MARK] + 0.2 * a[STR]); adW += dw;
     ms += 0.6 * a[STAM] + 0.4 * a[WORK]; mW++;
   });
   const gk = l.xi.find((p, i) => p && l.slots[i].pos === 'GK');
-  const gkAir = gk ? keeperQ(gk, true) * fitnessMult(gk.fitness) : 20;
+  const gkAir = gk ? keeperQ(gk, true) : 20;
   return {
     paceA: pA / (pAw || 1),
     paceD: pD / (pDw || 1),

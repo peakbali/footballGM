@@ -33,7 +33,6 @@ export function PlayerScreen({ id }: { id: number }) {
         </div>
         {own && (
           <div style={{ marginTop: 10 }} class="kv">
-            <span>Fitness</span><div><Bar value={p.fitness} /></div>
             <span>Morale</span><div><Bar value={p.morale} color="var(--blue)" /></div>
             <span>Personality</span><span>{personalityLabel(p.personality)}</span>
             {p.injury > 0 && <><span>Injury</span><span class="red">{p.injuryName}, {p.injury} wk</span></>}

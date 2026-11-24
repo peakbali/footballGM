@@ -1,4 +1,5 @@
 import { POSITIONS, type Position } from '../data/positions';
+import { FORMATIONS } from '../data/formations';
 import { clamp, hashSeed, Rng } from '../rng';
 import { squadOf, type GameState } from '../state';
 import { registerSystem } from '../systems';
@@ -94,6 +95,12 @@ export function isInterested(s: GameState, p: Player): boolean {
   return willingToJoin(s, p, p.clubId == null ? 'free' : 'permanent') == null && interestIn(s, p) >= 50;
 }
 
+/** Positions the user's current formation uses (a 4-3-3 has LB, CB, RB, CM, DM, LW, ST, RW, GK but no LWB). Scouts only look for these. */
+export function formationPositions(s: GameState): Position[] {
+  const slots = FORMATIONS[s.clubs[s.userClubId].formation] ?? FORMATIONS['4-4-2'];
+  return POSITIONS.filter((pos) => slots.some((x) => x.pos === pos));
+}
+
 /** Build a shortlist for one scout's assignment. */
 export function scoutShortlist(s: GameState, rng: Rng, st: Staff): Player[] {
   const a = s.scouting.assignments[st.id] ?? { pos: 'ANY', minAge: 16, maxAge: 34, maxFee: Infinity, maxWage: Infinity };
@@ -105,12 +112,14 @@ export function scoutShortlist(s: GameState, rng: Rng, st: Staff): Player[] {
     const v = squad.filter((p) => p.pos === pos).map((p) => p.ovr).sort((x, y) => y - x);
     return v.length ? v[0] : 0;
   };
+  const wanted = new Set(formationPositions(s));
   const cands: Player[] = [];
   for (const p of s.players.values()) {
     if (p.clubId === s.userClubId || p.retired) continue;
+    if (!wanted.has(p.pos)) continue; // only positions the current formation uses
     const div = p.clubId == null ? userDiv : s.clubs[p.clubId].div;
     if (Math.abs(div - userDiv) > range) continue;
-    if (a.pos !== 'ANY' && p.pos !== a.pos) continue;
+    if (a.pos !== 'ANY' && wanted.has(a.pos as Position) && p.pos !== a.pos) continue;
     const age = s.season - p.birthYear;
     if (age < a.minAge || age > a.maxAge) continue;
     if (p.ovr < posAvg(p.pos) - 4 && p.pot < posAvg(p.pos) + 4) continue;
