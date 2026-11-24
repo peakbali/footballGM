@@ -23,6 +23,9 @@ for (let i = 0; i < seasons; i++) {
   t0 = performance.now();
   let maxWeek = 0;
   const champPts: number[] = [];
+  const corrs: number[] = [];
+  const strengthAt = new Map<number, number>();
+  if (true) for (const l of s.leagues) for (const id of l.clubIds) strengthAt.set(id, s.clubs[id].strength);
   const tables = new Map<number, ReturnType<typeof computeTable>>();
   while (s.season === season) {
     const wt = performance.now();
@@ -40,6 +43,7 @@ for (let i = 0; i < seasons; i++) {
   const secs = performance.now() - t0;
   for (const [, t] of tables) {
     champPts.push(t[0].pts);
+    corrs.push(pearson(t.map((r) => strengthAt.get(r.clubId) ?? 0), t.map((r) => r.pts)));
     for (const row of t) { goals += row.gf; games += row.p; }
   }
   const hist = s.history.filter((h) => h.season === season);
@@ -53,8 +57,15 @@ for (let i = 0; i < seasons; i++) {
   const u = s.clubs[s.userClubId];
   const L = s.fin.last;
   console.log(`  user ${u.name} div ${u.div} cash ${u.cash} | last season ${JSON.stringify(L)} | transfers ${s.transfers.filter((t) => t.season === season || t.season === season + 1).length}`);
-  console.log(`Season ${season}: ${(secs / 1000).toFixed(2)} s (max week ${maxWeek.toFixed(0)} ms) | goals/game ${(goals / (games / 2)).toFixed(2)} | H/D/A ${pct(hw, hw + dr + aw)}/${pct(dr, hw + dr + aw)}/${pct(aw, hw + dr + aw)} | champion pts ${champPts.join(',')} | XI OVR vs band: ${drift.join(' ')} | players ${s.players.size}`);
+  console.log(`Season ${season}: ${(secs / 1000).toFixed(2)} s (max week ${maxWeek.toFixed(0)} ms) | goals/game ${(goals / (games / 2)).toFixed(2)} | H/D/A ${pct(hw, hw + dr + aw)}/${pct(dr, hw + dr + aw)}/${pct(aw, hw + dr + aw)} | strength~points r ${(corrs.reduce((a, b) => a + b, 0) / corrs.length).toFixed(2)} | champion pts ${champPts.join(',')} | XI OVR vs band: ${drift.join(' ')} | players ${s.players.size}`);
   void hw; void dr; void aw;
 }
 
 function pct(a: number, b: number) { return Math.round((a / b) * 100) + '%'; }
+
+function pearson(x: number[], y: number[]) {
+  const n = x.length, mx = x.reduce((a, b) => a + b, 0) / n, my = y.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) { sxy += (x[i] - mx) * (y[i] - my); sxx += (x[i] - mx) ** 2; syy += (y[i] - my) ** 2; }
+  return sxy / Math.sqrt(sxx * syy || 1);
+}

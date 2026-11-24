@@ -323,6 +323,23 @@ Unit strengths are computed from the XI's effective position OVRs:
 
 The engine emits an **event stream** (`{minute, type, team, playerIds, x, y}`), which feeds the event list and the stats panel. Result-only mode skips rendering but runs the same engine.
 
+### 6.2a Attributes in the match **[Agreed, built 2026-11-24]**
+
+Khen: results must depend on individual attributes, not only on position ratings. The built engine (`src/core/match.ts`, `src/core/traits.ts`) keeps the position-rating strength difference and blends in **attribute traits** (40% of the strength difference). Traits are team aggregates over the XI, weighted by role and scaled by fitness:
+
+| Trait | Attributes | Used against |
+|---|---|---|
+| Pace (attack) | pace, acceleration of the attackers | back line: pace, acceleration, positioning, anticipation |
+| Creativity | passing, vision, first touch, dribbling, off the ball (midfield and attack) | defensive work: tackling, marking, anticipation, positioning, work rate (defence and midfield) |
+| Aerial attack | heading, jumping, strength (attackers and centre-backs) | aerial defence: heading, jumping, marking, strength, plus the keeper's aerial command |
+| Stamina | stamina, work rate | the other side's stamina: the more tired side loses up to 20% of chance quality late in the game |
+
+Each shot is one of four kinds, with probabilities moved by the traits: a **run in behind** (more likely with a pace edge), a **header** from a cross or corner (aerial edge), a **long shot**, or **open play**. The kind decides who takes it (headers go to strong, tall players, long shots to midfielders with long-shot ability, runs to quick forwards) and which finishing attributes count: finishing, composure, heading, jumping, long shots, pace. The keeper's quality (reflexes, handling, one-on-ones, positioning; aerial command and handling for headers) is set against the shooter's finishing quality. Aggression still drives fouls and cards, stamina drives fatigue after the game, and proneness drives injuries.
+
+Trait differences are centred (`TUNE.off*`, `TUNE.finC`) so two equal teams stay equal, and `k` was lowered from 0.085 to 0.07 because the traits add their own strength signal. Checked by `scripts/simulate.ts` (3 seasons, two seeds): 2.6 to 2.7 goals per game, home/draw/away about 44/23/33, strength-to-points correlation 0.70 to 0.75 (0.67 before), champions 67 to 91 points. A controlled test (`tests/matchTraits.test.ts`, +20 on one attribute group, same team, 3,000 matches): forward pace +0.3 goals per game, passing and vision +0.25, heading and jumping +0.25, finishing and composure +0.34, a better keeper cuts goals conceded by a third, a better back line (pace, positioning, anticipation) cuts them by 0.2.
+
+The match report shows a **Key matchups** card (up to three of the biggest edges, for example "Pace · HAM quick forwards against a slower back line (71 v 58)") and tags goals as header, run in behind or long shot.
+
 ### 6.3 Fitness, injuries, suspensions **[Proposal]**
 
 - Fitness drops 15 to 30% after a match, recovers ~20% per week (more with a better physio/facilities).

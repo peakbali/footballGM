@@ -62,7 +62,7 @@ export interface UnitRatings {
   gk: number;
 }
 
-const UNIT_W: Record<Position, [number, number, number]> = {
+export const UNIT_W: Record<Position, [number, number, number]> = {
   // [attack, midfield, defence]
   GK: [0, 0, 0.4],
   CB: [0, 0, 1], LB: [0, 0.2, 1], RB: [0, 0.2, 1],
