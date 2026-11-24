@@ -12,5 +12,6 @@ import './cup';
 import './board';
 import './chronicle';
 import './stats';
+import './lab';
 import './decisions';
 export {};

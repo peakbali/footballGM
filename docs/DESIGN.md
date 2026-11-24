@@ -466,7 +466,9 @@ A scout report always shows the player's **true OVR**. POT is either the **true 
 - Staff are hired from a generated pool that refreshes every month.
 - The Staff screen has filter chips by type (All, Coaches, Medical, then each role) and every role carries a small pixel tag: `S` scout, `AC`/`MC`/`DC`/`GC` attacking/midfield/defensive/goalkeeping coach, `P` physio, `+` doctor, `Y` youth coach, `£` commercial manager.
 
-### 9.2 Facilities **[Agreed]**
+### 9.2 Facilities **[Agreed, reworked in 13.2i]**
+
+> Superseded by 13.2i: each branch is now five sub-facilities with five levels each, priced by division. The table below is the original idea.
 
 Four branches, each with tiers and **choices** (some upgrades are either/or). Every upgrade has a **cost**, **build time** (weeks), **upkeep** (per week) and **effects**.
 
@@ -621,7 +623,7 @@ Ticket price is set by the user within a range allowed by stadium tier.
 - Offer shapes: **Safe** (fixed amount), **Performance** (lower base + bonus per win / for promotion), **Long-term** (2 to 3 seasons fixed, slightly lower per year).
 - Commercial manager level raises the amounts and the number of offers.
 
-### 11.5 Facility costs **[Proposal]**
+### 11.5 Facility costs **[Superseded by 13.2i]**
 
 Cost scales with level, not with division, so early levels are affordable in division 9:
 
@@ -1222,3 +1224,27 @@ Each stage ends with a playable build on device (Capacitor) and a balance pass u
 - **Achievements:** exactly 100, in 8 categories (career, league, matches, FA Cup, transfers, finance, club, squad) and 4 tiers (26 bronze, 30 silver, 28 gold, 16 platinum for the very hard ones), 4 of them hidden until earned. They never depend on which club you pick: they are milestones such as seasons played, promotions and titles, win streaks, transfers, cash, facilities, academy graduates and squad quality. Every achievement is a counter that reaches a goal, which gives the progress bars.
 - **Global, not per slot:** unlocked achievements are one record (`achievements.v1`) shared by all slots, so a second career does not start from zero and nothing is lost when a slot is deleted. Progress bars show the career you are currently playing. A career-wide counter set (streaks, buys and sells, academy graduates) is kept in `s.ext.stats` by the `stats` system.
 - **Popup:** checked after every save. A banner slides in from the top for about 4 seconds (queued one after another, "+N" when several are waiting, tap to open the page). It never covers or delays a match report: it waits while a match is open or the game is advancing. Achievements are opened from Settings.
+
+### 13.2i Facility sub-upgrades, Skills lab and contract reminders **[Agreed]**
+
+**Facilities are the main long-term progression.** Each of the four main branches is made of five sub-facilities, each with five levels (20 tracks, 100 levels in all). Any number of tracks can be under construction at once (one level per track at a time). The main branch level (1 to 10) is derived from its tracks (`1 + floor(levels built × 9 / 25)`) and still sets staff caps, academy size and the stadium art.
+
+| Branch | Sub-facilities (reward per level) |
+|---|---|
+| Stadium | Seats & stands (+15% seats, louder home end) · Lighting (+5% attendance) · Pitch (−4% injury weeks, +0.8% development, home edge) · Scoreboard & screens (+6% sponsor money, +2% attendance) · Hospitality & lounges (+6% ticket ceiling, matchday spend 4% of the ticket) |
+| Training ground | Training pitches (+2.5% development) · Gym & conditioning (+1.2% development, −3% injury weeks) · Medical centre (−7% injury weeks) · Analysis suite (+8% development ages 21 to 26) · **Skills lab** (training items, below) |
+| Academy | Youth pitches (+0.5 intake) · Youth scouting (+1.2 prospect quality) · Youth coaching (+6% academy development, +0.6 quality) · Dorms & school (+0.4 intake, +0.5 quality) · First-team pathway (graduates join +1 OVR and POT per level) |
+| Commercial | Club shop (+30% merchandise) · Matchday catering (fans spend 8% of the ticket price on top) · Sponsorship office (+7% sponsor money) · Conference & events (rentals worth 12% of a division sponsor deal a year) · Media & brand (+10% merchandise, +2% attendance, +2% sponsors) |
+
+**Prices follow the division.** A level costs a share of what a typical club of the current division earns in a season (gate, TV, sponsor, merchandise from the economy table): 8%, 16%, 30%, 50% and 80% for levels 1 to 5, times a track factor of 0.5 to 1.0. Build times are 3, 5, 8, 12 and 18 weeks (stands take 1.5×). Upkeep is 0.15% of the build cost per week. In division 9 a first level costs about £1k to £2k and a level 5 about £8k to £17k; in division 1 the same levels cost millions. Every row shows its cost, build time, upkeep and reward.
+
+**Balance check** (`npx tsx scripts/facility-sim.ts 6 777`, same career twice): building whenever affordable spent about £57k in the first two seasons and gave roughly a third more income per season, a stronger academy and a best XI about 10 OVR higher after six seasons (59 vs 49), with two titles. Rewarding but not runaway: upkeep stays small and wages, not facilities, are what drain the cash.
+
+**Old saves:** each old branch level becomes the same share of track levels (round robin across the five tracks), building work in progress is refunded, and an inbox message explains the change.
+
+**Skills lab (training items).** The lab makes one item of each kind every 16 weeks at level 1 down to every 6 weeks at level 5, and holds 1 to 3 of each. Used from a player's page (own players only, one session per player every 13 weeks):
+- **Position coaching:** a new natural position. Levels 1 and 2 teach positions next to one he already plays (or one he is accomplished at); level 3 and up teach any outfield position. Keepers cannot retrain.
+- **Skill boost:** +2 to +5 to one attribute (by lab level). OVR is recalculated and POT rises if OVR passes it.
+- **Mind coaching:** +6 to +15 personality and a small morale lift.
+
+**Contract reminders.** For the 18 best players in the first team, a decision popup arrives when 1 year, 6 months, 3 months and 1 month are left on a permanent contract. Choices: a 3-year deal at his asking wage (personality sets the ask, low morale adds 15%, high morale takes 5% off; an unhappy, difficult player refuses), 2 years at 15% less (accepted with a chance shown on the chip), wait for the next reminder, and transfer-list him (or, at 1 month, let him go). A newer reminder replaces an unanswered older one, at most two new reminders a week, and they do not hold back the other decision events. A contract first seen (new game, old save, new signing) counts from that moment, so nobody gets a pile of reminders at once.
