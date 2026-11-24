@@ -10,7 +10,7 @@ import { txn } from './finance';
 export type Branch = 'stadium' | 'training' | 'academy' | 'commercial';
 export const BRANCHES: { key: Branch; label: string; desc: string }[] = [
   { key: 'stadium', label: 'Stadium', desc: 'Capacity, comfort, ticket prices and the look of your ground.' },
-  { key: 'training', label: 'Training', desc: 'Coach caps, development speed, injuries and recovery.' },
+  { key: 'training', label: 'Training', desc: 'Coach caps, development speed and injuries.' },
   { key: 'academy', label: 'Academy', desc: 'Youth coach and scout caps, intake size and quality.' },
   { key: 'commercial', label: 'Commercial', desc: 'Merchandise, matchday spend and commercial manager cap.' },
 ];
@@ -24,7 +24,6 @@ export interface FacEffect {
   matchday?: number; // matchday spend per fan, as a share of the ticket price
   rentals?: number; // weekly rentals, as a share of the division's sponsor money per season / 52
   injury?: number; // injury chance/duration factor (negative is better)
-  recovery?: number; // + weekly fitness recovery
   dev?: number; // + development factor for all
   devPrime?: number; // + development factor for ages 21-26
   youthCount?: number;
@@ -64,14 +63,14 @@ const DEFS: Record<Branch, Record<number, Def[]>> = {
   },
   training: {
     2: [['Proper pitches', 'Flat, drained grass to train on.', { dev: 0.02 }]],
-    3: [['Gym', 'Strength and conditioning.', { recovery: 3 }]],
-    4: [['Medical room', 'Treatment on site.', { injury: -0.1, recovery: 3 }]],
+    3: [['Gym', 'Strength and conditioning.', { dev: 0.02 }]],
+    4: [['Medical room', 'Treatment on site.', { injury: -0.1 }]],
     5: [['Video room', 'Players learn from their games.', { dev: 0.02 }]],
     6: [
-      ['Sports science lab', 'Fewer injuries and quicker recovery.', { injury: -0.2, recovery: 5 }],
+      ['Sports science lab', 'Fewer and shorter injuries.', { injury: -0.2 }],
       ['Analysis suite', 'Players aged 21 to 26 develop faster.', { devPrime: 0.15 }],
     ],
-    7: [['Hydrotherapy pool', 'Faster recovery between games.', { recovery: 5 }]],
+    7: [['Hydrotherapy pool', 'Shorter injuries.', { injury: -0.1 }]],
     8: [['Goalkeeping area', 'Specialist kit for keepers.', { dev: 0.03 }]],
     9: [['Indoor dome', 'Train in any weather.', { dev: 0.03 }]],
     10: [['Performance centre', 'Elite training complex.', { dev: 0.04, injury: -0.1 }]],
@@ -162,7 +161,7 @@ export function building(s: GameState, b: Branch) {
 
 /** Sum of all built effects. */
 export function effects(s: GameState): Required<FacEffect> {
-  const tot: Required<FacEffect> = { capacity: 0, comfort: 0, ticketMax: 0, homeMorale: 0, merch: 0, matchday: 0, rentals: 0, injury: 0, recovery: 0, dev: 0, devPrime: 0, youthCount: 0, youthQuality: 0 };
+  const tot: Required<FacEffect> = { capacity: 0, comfort: 0, ticketMax: 0, homeMorale: 0, merch: 0, matchday: 0, rentals: 0, injury: 0, dev: 0, devPrime: 0, youthCount: 0, youthQuality: 0 };
   for (const id of facState(s).built) {
     const u = upgradeById(id);
     if (!u) continue;

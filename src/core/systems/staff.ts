@@ -11,7 +11,7 @@ export const STAFF_ROLES: { role: StaffRole; label: string; facility: 'training'
   { role: 'coach_mid', label: 'Midfield coach', facility: 'training', desc: 'Develops midfielders.' },
   { role: 'coach_def', label: 'Defensive coach', facility: 'training', desc: 'Develops defenders.' },
   { role: 'coach_gk', label: 'Goalkeeping coach', facility: 'training', desc: 'Develops goalkeepers.' },
-  { role: 'physio', label: 'Physio', facility: 'training', desc: 'Faster fitness recovery, shorter minor injuries.' },
+  { role: 'physio', label: 'Physio', facility: 'training', desc: 'Shorter injuries (with the doctor).' },
   { role: 'doctor', label: 'Doctor', facility: 'training', desc: 'Shorter major injuries, fewer injuries.' },
   { role: 'youth_coach', label: 'Youth coach', facility: 'academy', desc: 'Better academy intakes and youth development.' },
   { role: 'commercial', label: 'Commercial manager', facility: 'commercial', desc: 'Better sponsor offers and merchandise income.' },

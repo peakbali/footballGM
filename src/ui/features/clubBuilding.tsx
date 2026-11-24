@@ -26,7 +26,6 @@ function effText(e: FacEffect): string {
   if (e.matchday) parts.push('matchday spending');
   if (e.rentals) parts.push('weekly rentals');
   if (e.injury) parts.push(`${Math.round(-e.injury * 100)}% shorter injuries`);
-  if (e.recovery) parts.push(`+${e.recovery} fitness recovery`);
   if (e.dev) parts.push(`+${Math.round(e.dev * 100)}% development`);
   if (e.devPrime) parts.push(`+${Math.round(e.devPrime * 100)}% development (ages 21-26)`);
   if (e.youthCount) parts.push(`+${e.youthCount} academy intake`);

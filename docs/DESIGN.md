@@ -286,7 +286,7 @@ No quick-season mode. Fast, but the player still makes the decisions.
 ### 6.1 Player inputs **[Agreed]**
 
 - Choose a **formation** (4-4-2, 4-3-3, 4-2-3-1, 3-5-2, 5-3-2, 4-1-4-1, 3-4-3 to start).
-- **Auto-pick XI**: best effective OVR per slot, adjusted for fitness and morale. A "lock" toggle per player is an open question.
+- **Auto-pick XI**: best effective OVR per slot, adjusted for morale. A "lock" toggle per player is an open question.
 - Match = one tap for the result, then a **match report** (score, scorers, player ratings, events, stats). The 2D watch mode was dropped on 2026-11-24 (Khen: not needed).
 
 ### 6.2 Event-stream engine (own league) **[Proposal]**
@@ -316,7 +316,6 @@ Unit strengths are computed from the XI's effective position OVRs:
 |---|---|
 | Home advantage | +3% (mild) |
 | Morale | -5% (very low) to +4% (very high) |
-| Fatigue | Player effective OVR scales down linearly below 70% fitness, to 0.85 at 40% |
 | Consistency (hidden) | Per-match random swing per player, ±0 to ±4 OVR |
 
 **Calibration targets** (checked by headless sim runs): about 2.6 to 2.9 goals per game, home win ~44%, draw ~26%, away win ~30%, champions usually 80 to 95 points.
@@ -325,7 +324,7 @@ The engine emits an **event stream** (`{minute, type, team, playerIds, x, y}`), 
 
 ### 6.2a Attributes in the match **[Agreed, built 2026-11-24]**
 
-Khen: results must depend on individual attributes, not only on position ratings. The built engine (`src/core/match.ts`, `src/core/traits.ts`) keeps the position-rating strength difference and blends in **attribute traits** (40% of the strength difference). Traits are team aggregates over the XI, weighted by role and scaled by fitness:
+Khen: results must depend on individual attributes, not only on position ratings. The built engine (`src/core/match.ts`, `src/core/traits.ts`) keeps the position-rating strength difference and blends in **attribute traits** (40% of the strength difference). Traits are team aggregates over the XI, weighted by role:
 
 | Trait | Attributes | Used against |
 |---|---|---|
@@ -340,10 +339,10 @@ Trait differences are centred (`TUNE.off*`, `TUNE.finC`) so two equal teams stay
 
 The match report shows a **Key matchups** card (up to three of the biggest edges, for example "Pace · HAM quick forwards against a slower back line (71 v 58)") and tags goals as header, run in behind or long shot.
 
-### 6.3 Fitness, injuries, suspensions **[Proposal]**
+### 6.3 Injuries, suspensions **[Agreed]**
 
-- Fitness drops 15 to 30% after a match, recovers ~20% per week (more with a better physio/facilities).
-- Injury chance per match per player ≈ 0.5% × proneness factor. Doctor and physio levels reduce duration.
+- **There is no fitness stat.** Khen (2026-11-24): the game is casual, so players are never tired between matches and nobody has to be rotated. Stamina and work rate still matter inside a match (6.2a). Saves from before this change simply ignore the old value.
+- Injury chance per match per player ≈ 0.5% × proneness factor. Doctor and physio levels (and some training facilities) shorten injuries.
 - 5 yellow cards = 1-match ban; red = 1 to 3 matches.
 
 ### 6.4 Bulk sim for other leagues **[Proposal]**
@@ -420,6 +419,8 @@ Minimal: notable transfers in your division and the top division, record fees, y
 
 ## 8. Scouting
 
+**Scouts only look at positions the current formation uses** (Khen, 2026-11-24): with 4-3-3 there is no point scouting a left wing-back. The shortlist is limited to those positions whatever the scout's own position setting says, the position chips on the Scouts page show only the formation's positions, and the Scouted list hides older recommendations that no longer fit after a formation change.
+
 **[Agreed]**
 
 - Scouts produce a **shortlist of recommended players** that fit your needs (position, age, max fee, max wage), not a raw database search.
@@ -455,7 +456,7 @@ A scout report always shows the player's **true OVR**. POT is either the **true 
 | Midfield coach | 1 | Development of midfield attributes |
 | Defensive coach | 1 | Development of defensive attributes |
 | Goalkeeping coach | 1 | Development of GK attributes |
-| Physio | 1 | Fitness recovery, minor injury duration |
+| Physio | 1 | Injury duration (together with the doctor) |
 | Doctor | 1 | Major injury duration, injury prevention |
 | Youth coach | 1 | Academy intake quality and youth development |
 | Commercial manager | 1 | Sponsor offers, merch income |
@@ -692,7 +693,7 @@ Bottom tabs: **Hub · Squad · Transfers · Club · League**.
 | Tab | Contents |
 |---|---|
 | Hub | One screen, no scrolling: starting XI OVR (focal point) and next match over the pixel stadium, league table, money, inbox, Continue button. See 13.2a |
-| Squad | Squad list (OVR hex, position, age, morale, fitness, contract), formation picker, player detail, academy |
+| Squad | Squad list (OVR hex, position, age, morale, contract), formation picker, player detail, academy |
 | Transfers | Scout shortlists, offers in/out, loan market, free agents, news feed |
 | Club | Finances & projections, facilities builder, staff, sponsors, board goals |
 | League | Table, fixtures/results, stats leaders, other divisions, club history |
@@ -721,11 +722,11 @@ Logic lives in `src/ui/backNav.ts` with a test (`tests/back.test.ts`) that model
 
 ### 13.2e Squad list sub-pages **[Agreed]**
 
-The squad box on the Squad tab has no sort buttons any more. It has three swipeable sub-pages with chips (Contract, Form, Attributes), in the same swipe-anywhere style as the other pages. The left of every row is the same on all three: portrait, name, position tag, age (plus injury, ban, loan and low-fitness notes). The players are listed by position (keepers, defenders, midfielders, forwards), best OVR first within a position. The OVR badge stays fixed on the right of every row. A small header row names the columns. Tapping a row opens the player screen, which has the full attribute detail.
+The squad box on the Squad tab has no sort buttons any more. It has three swipeable sub-pages with chips (Contract, Form, Attributes), in the same swipe-anywhere style as the other pages. The left of every row is the same on all three: portrait, name, position tag, age (plus injury, ban and loan notes). The players are listed by position (keepers, defenders, midfielders, forwards), best OVR first within a position. The OVR badge stays fixed on the right of every row. A small header row names the columns. Tapping a row opens the player screen, which has the full attribute detail.
 
 | Sub-page | Columns |
 |---|---|
-| Contract | weekly wage, expiry (June of the contract's end year), value |
+| Contract | weekly wage, expiry (June of the contract's end year), value, with a vertical line between the three columns (the other two sub-pages have none) |
 | Form | appearances, goals, assists, average rating, clean sheets (defenders and keepers) |
 | Attributes | technical, mental, physical and goalkeeping averages, coloured like OVR (goalkeeping is dimmed for outfield players) |
 
@@ -857,7 +858,6 @@ CREATE TABLE player (
   injury_proneness INTEGER NOT NULL,
   consistency INTEGER NOT NULL,
   morale INTEGER NOT NULL DEFAULT 60,
-  fitness INTEGER NOT NULL DEFAULT 100,
   value INTEGER NOT NULL,
   retired INTEGER NOT NULL DEFAULT 0
 );

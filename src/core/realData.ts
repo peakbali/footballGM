@@ -98,7 +98,7 @@ export function applyRealPlayers(s: GameState, data: RealData, rng: Rng): { club
         personality: clamp(Math.round(rng.normal(55, 20)), 1, 100),
         dev: 'standard', devShift: 0,
         proneness: clamp(Math.round(rng.normal(35, 18)), 1, 100), consistency: clamp(Math.round(rng.normal(55, 18)), 1, 100),
-        morale: 65, fitness: 100, injury: 0, ban: 0, yellowAcc: 0, value: 0, contract: null, stats: emptyStats(), career: [],
+        morale: 65, injury: 0, ban: 0, yellowAcc: 0, value: 0, contract: null, stats: emptyStats(), career: [],
       };
       recomputeOvr(p);
       p.pot = Math.max(p.ovr, r.pot);

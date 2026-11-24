@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { LINE } from '../../core/data/positions';
 import { squadOf } from '../../core/state';
-import { Card, PlayerRow, Bar, ovrColor } from '../components';
+import { Card, PlayerRow, ovrColor } from '../components';
 import { SwipePages } from '../swipe';
 import { ATTR_GROUPS, A, type AttrName } from '../../core/data/positions';
 import { money, useStore } from '../store';
@@ -15,7 +15,7 @@ const VIEWS = ['contract', 'form', 'attributes'] as const;
 type View = (typeof VIEWS)[number];
 const VIEW_LABEL: Record<View, string> = { contract: 'Contract', form: 'Form', attributes: 'Attributes' };
 const COLS: Record<View, [string, number][]> = {
-  contract: [['Wage', 50], ['Exp', 34], ['Value', 46]],
+  contract: [['Wage', 48], ['Exp', 44], ['Value', 50]],
   form: [['App', 26], ['G', 22], ['A', 22], ['Avg', 30], ['CS', 24]],
   attributes: [['TEC', 30], ['MEN', 30], ['PHY', 30], ['GK', 30]],
 };
@@ -36,7 +36,7 @@ export function SquadScreen() {
         <SwipePages keys={VIEWS} value={view} onChange={setView}>
           <div class="sq-head">
             <span class="grow" />
-            <div class="sq-cols">{COLS[view].map(([l, w]) => <span key={l} style={{ width: w }}>{l}</span>)}</div>
+            <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{COLS[view].map(([l, w]) => <span key={l} style={{ width: w }}>{l}</span>)}</div>
             <span style={{ width: 31 }}>OVR</span>
           </div>
           {sorted.map((p) => <SquadRow key={p.id} p={p} season={s.season} view={view} />)}
@@ -86,9 +86,8 @@ export function SquadRow({ p, season, view }: { p: Player; season: number; view?
         {p.ban > 0 && <span class="red"> ■ban</span>}
         {p.listed && <span class="amber"> listed</span>}
         {p.contract?.type?.startsWith('loan') && <span class="amber"> loan</span>}
-        {view && p.fitness < 70 && <span class="amber"> fit {Math.round(p.fitness)}%</span>}
       </>}
-      right={view ? <div class="sq-cols">{viewCells(p, view, season)}</div> : <div style={{ width: 54 }}><div class="tiny dim" style={{ textAlign: 'right' }}>{p.stats.apps}g {p.stats.goals}⚽</div><Bar value={p.fitness} /></div>}
+      right={view ? <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{viewCells(p, view, season)}</div> : <div class="tiny dim" style={{ textAlign: 'right', width: 54 }}>{p.stats.apps}g {p.stats.goals}⚽</div>}
     />
   );
 }

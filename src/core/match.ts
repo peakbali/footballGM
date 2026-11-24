@@ -1,5 +1,5 @@
 import type { Position } from './data/positions';
-import { effectiveOvr, fitnessMult } from './ratings';
+import { effectiveOvr } from './ratings';
 import { clamp, type Rng } from './rng';
 import { autoPick, unitRatings, type Lineup, type UnitRatings } from './selection';
 import { computeTraits, finishQ, keeperQ, takerQ, type Traits } from './traits';
@@ -7,7 +7,7 @@ import type { Club, MatchEvent, MatchReport, MatchStats, Player } from './types'
 
 /** Tunables (calibrated with scripts/simulate.ts). */
 export const TUNE = {
-  baseGoals: 1.3,
+  baseGoals: 1.35,
   k: 0.07,
   homeAdv: 1.13,
   awayAdv: 0.91,
@@ -138,8 +138,8 @@ export function simulateMatch(rng: Rng, home: Side, away: Side, fixtureId: numbe
       const stamEdge = clamp((trO.stam - trS.stam) / 20, -1, 1); // positive: we are the more tired side late on
       const xg = (isPen ? 0.76 : clamp(Math.exp(rng.normal(XG_MU[kind], kind === 'brk' ? 0.7 : 0.85)), 0.01, 0.75)) * (1 - TUNE.lateK * late * stamEdge);
       const oppGk = active(o, m).find((x) => x.pos === 'GK');
-      const finish = isPen ? 70 : finishQ[kind](shooter.p) * fitnessMult(shooter.p.fitness);
-      const gkQ = oppGk ? keeperQ(oppGk.p, kind === 'head') * fitnessMult(oppGk.p.fitness) : 10;
+      const finish = isPen ? 70 : finishQ[kind](shooter.p);
+      const gkQ = oppGk ? keeperQ(oppGk.p, kind === 'head') : 10;
       const pGoal = clamp(xg * Math.exp((finish - gkQ - TUNE.finC) * TUNE.finK), 0.005, 0.95);
       stats.shots[s]++;
       stats.xg[s] += xg;
@@ -188,7 +188,7 @@ export function simulateMatch(rng: Rng, home: Side, away: Side, fixtureId: numbe
       // replace the most tired / weakest outfield player
       const cands = on.filter((x) => x.pos !== 'GK' && x.from === 0);
       if (!cands.length || !bench[s].length) continue;
-      const tired = cands.reduce((a, b) => (a.p.fitness + a.p.ovr < b.p.fitness + b.p.ovr ? a : b));
+      const tired = cands.reduce((a, b) => (a.p.ovr + a.p.attrs[21] / 10 < b.p.ovr + b.p.attrs[21] / 10 ? a : b)); // weakest, low stamina first
       substitute(rng, pitch[s], bench[s], tired, m, events, club, keepEvents);
     }
   }
@@ -222,8 +222,6 @@ export function simulateMatch(rng: Rng, home: Side, away: Side, fixtureId: numbe
         o.p.yellowAcc++;
         if (o.p.yellowAcc % 5 === 0) o.p.ban += 1;
       }
-      // fatigue
-      o.p.fitness = clamp(o.p.fitness - Math.round((mins / 90) * rng.range(15, 30) * (1.3 - o.p.attrs[21] / 200)), 20, 100);
     }
   }
 

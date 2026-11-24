@@ -261,3 +261,6 @@ table.tbl.compact { font-size: 12px; }
 .sq-c, .sq-cols > span { display: inline-block; }
 .sq-c { font-size: 11px; text-align: right; white-space: nowrap; }
 .sq-c.dim, .sq-c .dim { color: var(--dim); }
+/* contract sub-page: a line between wage, expiry and value */
+.sq-cols.lined { align-self: stretch; align-items: center; }
+.sq-cols.lined > span { box-sizing: border-box; border-left: 1px solid var(--line); padding: 0 5px; align-self: stretch; display: inline-flex; align-items: center; justify-content: flex-end; }

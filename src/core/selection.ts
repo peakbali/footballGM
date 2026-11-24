@@ -16,7 +16,7 @@ export function available(p: Player): boolean {
 /** Order slots so scarce positions are filled first. */
 const SLOT_ORDER: Position[] = ['GK', 'CB', 'ST', 'LB', 'RB', 'LWB', 'RWB', 'DM', 'AM', 'LW', 'RW', 'LM', 'RM', 'CM'];
 
-/** Auto-pick: best effective OVR per slot (fitness and morale aware), honouring locked players. */
+/** Auto-pick: best effective OVR per slot (morale aware), honouring locked players. */
 export function autoPick(squad: Player[], formation: string, benchSize = 7): Lineup {
   const slots = FORMATIONS[formation] ?? FORMATIONS['4-4-2'];
   const pool = squad.filter((p) => available(p) && !p.academy);
@@ -44,7 +44,7 @@ export function autoPick(squad: Player[], formation: string, benchSize = 7): Lin
     }
   }
   // Bench: best remaining, ensure a GK if possible
-  const rest = pool.filter((p) => !used.has(p.id)).sort((a, b) => b.ovr * (b.fitness / 100) - a.ovr * (a.fitness / 100));
+  const rest = pool.filter((p) => !used.has(p.id)).sort((a, b) => b.ovr - a.ovr);
   const bench: Player[] = [];
   const gk = rest.find((p) => p.pos === 'GK');
   if (gk) bench.push(gk);

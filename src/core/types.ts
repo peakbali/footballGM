@@ -65,7 +65,6 @@ export interface Player {
   proneness: number; // 1..100
   consistency: number; // 1..100
   morale: number;
-  fitness: number;
   injury: number; // weeks out
   injuryName?: string;
   ban: number; // matches suspended

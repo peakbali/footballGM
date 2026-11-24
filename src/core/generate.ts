@@ -128,7 +128,7 @@ export function generatePlayer(rng: Rng, id: number, o: GenOpts): Player {
     dev: dev.dev, devShift: dev.shift,
     proneness: clamp(Math.round(rng.normal(35, 18)), 1, 100),
     consistency: clamp(Math.round(rng.normal(55, 18)), 1, 100),
-    morale: 65, fitness: 100, injury: 0, ban: 0, yellowAcc: 0,
+    morale: 65, injury: 0, ban: 0, yellowAcc: 0,
     value: 0, contract: null, stats: emptyStats(), career: [],
   };
   recomputeOvr(p);

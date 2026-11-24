@@ -19,16 +19,9 @@ export function familiarityMult(p: Player, pos: Position): number {
   return 0.7;
 }
 
-/** Effective OVR when playing `pos` (familiarity + fitness), before match-day morale. */
+/** Effective OVR when playing `pos` (familiarity), before match-day morale. */
 export function effectiveOvr(p: Player, pos: Position): number {
-  const base = posOvr(p.attrs, pos) * familiarityMult(p, pos);
-  return base * fitnessMult(p.fitness);
-}
-
-export function fitnessMult(fitness: number): number {
-  if (fitness >= 70) return 1;
-  if (fitness <= 40) return 0.85;
-  return 0.85 + ((fitness - 40) / 30) * 0.15;
+  return posOvr(p.attrs, pos) * familiarityMult(p, pos);
 }
 
 /** Recompute cached OVR (best natural position). */
