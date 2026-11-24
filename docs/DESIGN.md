@@ -1,6 +1,6 @@
 # footballGM: Game Design Document
 
-> Status: **Draft v0.2** (2026-11-24). Captures the concept agreed in project chat, plus proposals needed to make it buildable.
+> Status: **Draft v0.3** (2026-11-24). Captures the concept agreed in project chat, plus proposals needed to make it buildable.
 > Sections marked **[Agreed]** reflect decisions already made. Sections marked **[Proposal]** are starting points for tuning and review. Anything unresolved lives in [Open questions](#15-open-questions).
 
 ## Contents
@@ -73,24 +73,44 @@ The English pyramid, Steps 1 to 6 of the National League System, gives 10 divisi
 
 Only **one league per tier is simulated**: the single leagues at divisions 1 to 5, plus the player's **regional chain** at divisions 6 to 10 (the one regional league per tier that the club's region feeds into). **[Agreed]**
 
-| Div | Real level | Real leagues at this tier | Simulated leagues | Approx clubs (all) | Sim depth |
-|---|---|---|---|---|---|
-| 1 | Premier League | 1 | 1 | 20 | Bulk |
-| 2 | Championship | 1 | 1 | 24 | Bulk |
-| 3 | League One | 1 | 1 | 24 | Bulk |
-| 4 | League Two | 1 | 1 | 24 | Bulk |
-| 5 | National League | 1 | 1 | 24 | Bulk |
-| 6 | National League North / South | 2 | 1 (chain) | 48 | Bulk |
-| 7 | Step 3 (NPL Premier, Isthmian Premier, Southern Premier Central/South) | 4 | 1 (chain) | ~88 | Bulk |
-| 8 | Step 4 (8 regional leagues) | 8 | 1 (chain) | ~170 | Bulk |
-| 9 | Step 5 (~16 regional leagues) | ~16 | 1 (chain) | ~320 | **Own league: full sim** |
-| 10 | Step 6 (~17 regional leagues) | ~17 | 1 (chain) | ~340 | Bulk |
+**Every simulated league has exactly 20 teams** (38 rounds, home and away). **[Agreed]**
 
-That is **10 simulated leagues, about 220 clubs with fixtures**, out of roughly **1,100 clubs** in the world.
+| Div | Real level | Real leagues at this tier | Real clubs (all) | Simulated league | Unsimulated pool at start | Sim depth |
+|---|---|---|---|---|---|---|
+| 1 | Premier League | 1 | 20 | 20 | 0 | Bulk |
+| 2 | Championship | 1 | 24 | 20 | 4 | Bulk |
+| 3 | League One | 1 | 24 | 20 | 4 | Bulk |
+| 4 | League Two | 1 | 24 | 20 | 4 | Bulk |
+| 5 | National League | 1 | 24 | 20 | 4 | Bulk |
+| 6 | National League North / South | 2 | 48 | 20 (chain) | ~28 | Bulk |
+| 7 | Step 3 (NPL Premier, Isthmian Premier, Southern Premier Central/South) | 4 | ~88 | 20 (chain) | ~68 | Bulk |
+| 8 | Step 4 (8 regional leagues) | 8 | ~170 | 20 (chain) | ~150 | Bulk |
+| 9 | Step 5 (~16 regional leagues) | ~16 | ~320 | 20 (chain) | ~300 | **Own league: full sim** |
+| 10 | Step 6 (~17 regional leagues) | ~17 | ~340 | 20 (chain) | ~320 | Bulk |
+
+That is **10 simulated leagues and exactly 200 clubs with fixtures**, out of roughly **1,100 clubs** in the world.
+
+**Which real clubs make up each 20-team league [Proposal]**
+
+- **Division 1:** the 20 real 2025/26 Premier League clubs.
+- **Divisions 2 to 5** (real leagues have 24): the 20 clubs with the **highest squad strength** at the start form the league. The 4 weakest go into that tier's unsimulated pool. They are not relegated, they just sit out of the fixture list until the yearly reshuffle pulls them back in (see below).
+- **Divisions 6 to 10 (chain):** start from the real chain league's clubs (real sizes vary from 18 to 24). If it has more than 20, keep the 20 strongest and send the rest to the pool. If it has fewer, top up with the strongest pool clubs nearest the league's region.
+- **The user's club is always included** in its starting league, whatever its strength.
+- Unsimulated pool clubs at divisions 2 to 5 behave exactly like off-chain clubs (below): names + strength only, players fully in the database.
+
+**Promotion and relegation (same rule in every league) [Proposal]**
+
+| Places | Outcome |
+|---|---|
+| 1st and 2nd | Promoted automatically |
+| 3rd to 6th | Playoffs (single-match semis, 3v6 and 4v5, then a final) for the 3rd promotion place |
+| 18th to 20th | Relegated |
+
+So 3 up and 3 down between every pair of tiers. Division 1 has no promotion; division 10's relegated clubs drop into the feeder pool below.
 
 - **Full sim** = event-stream match engine for every match in the player's current league.
 - **Bulk sim** = fast strength-based score generation for the other 9 simulated leagues (see [6.4](#64-bulk-sim-for-other-leagues)).
-- **Off-chain clubs** (the other regional leagues at divisions 6 to 10) exist as **name, region, division and a strength rating only**. They have no fixtures, tables or match stats. **Their players are fully real in the database**: they can be scouted, bought, loaned, and they develop yearly like everyone else. The goal is an immersive transfer market while keeping the simulation small and fast.
+- **Off-chain clubs** (the other regional leagues at divisions 6 to 10, plus the unsimulated pool at divisions 2 to 5) exist as **name, region, division and a strength rating only**. They have no fixtures, tables or match stats. **Their players are fully real in the database**: they can be scouted, bought, loaned, and they develop yearly like everyone else. The goal is an immersive transfer market while keeping the simulation small and fast.
 - **Off-chain strength** is a single number recalculated yearly from the club's best 14 players, plus small random drift. It drives AI transfer behaviour and who moves between tiers.
 
 **The regional chain [Proposal]**
@@ -101,7 +121,9 @@ That is **10 simulated leagues, about 220 clubs with fixtures**, out of roughly 
   - Clubs relegated out of a chain league drop into the off-chain pool of the tier below (assigned to their nearest regional league).
   - Their replacements come up from that tier's pool: the off-chain clubs with the highest strength rating, weighted toward clubs nearest the chain league's region.
   - Clubs promoted out of division 6 into division 5 come from the chain league as normal; division 5 relegations into division 6 go to the chain league if the club is in its region, otherwise to the off-chain pool and a pool club is pulled into the chain to keep the size.
+  - Every league ends the rollover at exactly 20 clubs: 3 out, 3 in, at each boundary.
 - Off-chain clubs reshuffle between tiers once a year by strength (a light "virtual" promotion/relegation), so the world doesn't stagnate.
+- **Pool swap at divisions 2 to 5:** once a year, if a tier's strongest pool club is stronger than the weakest of the 3 clubs just relegated into that tier, the two swap (the relegated club waits in the pool). Promoted clubs and the user's club are never swapped out.
 - Below division 10 is a virtual "feeder" pool: relegated div 10 clubs drop out of play and are replaced by generated or real Step 7 clubs.
 
 ### 3.2 Clubs **[Agreed]**
@@ -231,10 +253,10 @@ The game advances in **weeks**. A season runs from **1 July to 30 June**.
 | Period | Weeks (approx) | What happens |
 |---|---|---|
 | Pre-season | July (4) | Summer window open, sponsor choice, season goals set, friendlies skipped (auto) |
-| League season | August to early May (~38) | One league match per week. Some midweek rounds in divisions with 46 games (doubled weeks) |
+| League season | August to early May (38) | 38 rounds, one league match per week in every division. No midweek rounds. |
 | Summer window | 1 June to 31 August | Transfers and loans |
 | Winter window | January (4) | Transfers and loans; half-season sponsor review |
-| End of season | Mid May | Promotion/relegation, awards, **season reel**, contracts expire 30 June |
+| End of season | Mid May | Playoffs (2 weeks), then promotion/relegation, awards, **season reel**, contracts expire 30 June |
 | Off-season | Late May to June | Yearly progression for non-squad players, retirements, academy intake, new fixtures |
 
 Free agents and loans are allowed **any time**.
@@ -550,7 +572,9 @@ All money in GBP. These are starting points tuned to feel right, not real accoun
 
 **Starting the game in division 9:** cash £40,000 (enough for a few wages and a first small facility). Facilities all level 1, staff level 5 to 15, squad of ~22 players OVR 34 to 46.
 
-**Prize money by finish:** `prize = base(div) × (1.5 − (position − 1) / (teams − 1))`, so 1st gets 1.5× base, last gets 0.5×. Promotion bonus = 25% of the next division's central payment.
+**Season shape for money:** every club plays **19 home matches** a season (plus a home playoff tie if drawn), so season gate ≈ 19 × attendance × ticket.
+
+**Prize money by finish:** `prize = base(div) × (1.5 − (position − 1) / 19)`, so 1st gets 1.5× base, last gets 0.5×. Promotion bonus = 25% of the next division's central payment.
 
 **Attendance model:**
 
@@ -701,10 +725,10 @@ CREATE TABLE league (
   division INTEGER NOT NULL,          -- 1..10
   name TEXT NOT NULL,
   short_name TEXT,
-  num_teams INTEGER NOT NULL,
-  promo_spots INTEGER NOT NULL,
-  playoff_spots INTEGER NOT NULL,
-  releg_spots INTEGER NOT NULL,
+  num_teams INTEGER NOT NULL DEFAULT 20 CHECK (num_teams = 20 OR is_simulated = 0),
+  promo_spots INTEGER NOT NULL DEFAULT 2,     -- automatic
+  playoff_spots INTEGER NOT NULL DEFAULT 4,   -- 3rd-6th, one extra promotion place
+  releg_spots INTEGER NOT NULL DEFAULT 3,
   is_simulated INTEGER NOT NULL DEFAULT 0, -- 1 = divisions 1-5 + the user's regional chain
   center_lat REAL, center_lon REAL         -- for regional assignment
 );
@@ -1063,7 +1087,7 @@ CREATE TABLE club_record (
 | 2 | How to **estimate ratings for real players** without copying another game's ratings? | Estimate from league level, minutes, age and market-value tier (see [3.4](#34-data-pipeline)). |
 | 3 | ~~Parallel league reallocation~~ **Decided:** simulate only the player's regional chain; off-chain clubs are names + strength, players still in the database (see [3.1](#31-the-pyramid-agreed--proposal)). Remaining question: should the chain ever change (e.g. if the user wants to start somewhere else in a new save)? | Chain fixed per save. |
 | 4 | Does the user **pick any club** in division 9, or from a curated list? | Any club in any div 9 league. |
-| 5 | **Playoffs** for promotion (real pyramid uses them at several levels)? | Yes, single-match semi + final, simulated with the same engine. |
+| 5 | ~~Playoffs~~ **Decided with the 20-team rule:** 2 automatic + 1 via playoffs (3rd to 6th), 3 relegated, in every league. Remaining question: neutral-venue final or higher seed at home? | Higher seed at home. |
 | 6 | Can the user **lock players** into the XI, or is auto-pick final? | Auto-pick plus a "lock" toggle per player. |
 | 7 | Should **ground grading** block promotion, fine the club, or be cosmetic? | Fine + one season grace (sandbox friendly). |
 | 8 | **Board rewards**: cash only, or also unlocks? | Cash or facility discount. |
@@ -1073,6 +1097,7 @@ CREATE TABLE club_record (
 | 12 | Do **AI clubs** in divisions 9 to 10 develop facilities over time? | Light: reputation and capacity drift with success. |
 | 13 | Is there any **difficulty** setting (e.g. starting cash, AI aggressiveness)? | No difficulty in v1. |
 | 14 | **Watch mode** length: full 90 minutes at speed, or highlights only? | Highlights (chances and goals) with a skip button. |
+| 15 | **Pool swap at divisions 2 to 5**: is swapping a relegated club for a stronger pool club fair, or should pool clubs just drift down a tier each year? | One swap per tier per year (see [3.1](#31-the-pyramid-agreed--proposal)). |
 
 ---
 
