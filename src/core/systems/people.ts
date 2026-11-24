@@ -41,7 +41,7 @@ export function userDevContext(s: GameState, p: Player, share: number): DevConte
   const age = s.season - p.birthYear;
   const coach = p.academy ? staffLevel(s, 'youth_coach') : staffLevel(s, COACH_FOR[LINE[p.pos]]);
   let bonus = e.dev;
-  if (age >= 21 && age <= 26) bonus += e.devPrime;
+  if (age >= 21 && age <= 26) bonus += e.devPrime; // Analysis suite: 21 to 26, the stretch where most development happens
   // young players also benefit from the youth coach
   if (!p.academy && age <= 20) bonus += staffLevel(s, 'youth_coach') / 1000;
   return { playtime: p.academy ? 0.55 : share, coach: Math.max(1, coach), facility: fac.levels.training, bonus };

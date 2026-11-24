@@ -517,12 +517,15 @@ Monthly change toward POT for the own squad (yearly change for others is the sum
 
 | Age | Expected OVR change per season (standard type) |
 |---|---|
-| 16 to 19 | +4 to +8 |
-| 20 to 23 | +2 to +5 |
-| 24 to 27 | 0 to +2 |
-| 28 to 30 | −1 to +1 |
-| 31 to 33 | −2 to −4 |
-| 34+ | −4 to −8 (physical attributes drop fastest) |
+| 19 and under | +4.5 |
+| 20 to 24 | +2.4 (strong growth up to 24) |
+| 25 to 28 | +0.3 (slight growth) |
+| 29 to 30 | 0 (flat) |
+| 31 to 32 | −3.5 (decline starts at 31) |
+| 33 to 34 | −5 |
+| 35+ | −6 (physical attributes drop fastest) |
+
+Growth is multiplied by the POT gap factor (it stops at POT) and the factors below. Decline is not. The values were tuned with `npm run sim` so the division XI averages stay within about 1 to 4 OVR of their bands over eight seasons, as before the change. Off-curve types shift the age by 2 to 4 years (early bloomers peak and decline sooner, late bloomers later, decliners start falling from 24). Player value follows the same shape: young premium to 24, peak 25 to 28, falling from 29 (0.9, 0.8, 0.65, 0.5, 0.4 at 29 to 33, 0.3 from 34). The Analysis suite bonus still covers ages 21 to 26.
 
 ```
 monthlyGain = curve(age) × gapFactor(POT − OVR) × playtime(minutesShare) × coachFactor × facilityFactor × noise
