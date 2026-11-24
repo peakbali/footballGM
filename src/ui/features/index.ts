@@ -8,4 +8,5 @@ import './inboxHandlers';
 import './clubBuilding';
 import './history';
 import './cupView';
+import './achievementsUI';
 export {};

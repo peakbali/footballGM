@@ -4,7 +4,8 @@ import { addMessage, addNews } from '../season';
 import { clamp, type Rng } from '../rng';
 import { buildSquadIndex, CAL, invalidateSquads, isWindowOpen, squadOf, type GameState } from '../state';
 import { registerSystem } from '../systems';
-import type { Contract, OfferType, Player, TransferOffer } from '../types';
+import type { Contract, OfferType, Player, TransferOffer, TransferRecord } from '../types';
+import { noteTransfer } from './stats';
 import { txn } from './finance';
 import { applyContract, counts, seniorCount, SQUAD_MAX, type ContractOffer } from './contracts';
 import { dirtyPlayers } from './dirty';
@@ -175,7 +176,9 @@ export function completeDeal(s: GameState, offer: TransferOffer, terms: Contract
   invalidateSquads();
   offer.status = 'completed';
   dirtyPlayers.add(p.id);
-  s.transfers.push({ season: s.season, week: s.week, pid: p.id, name: `${p.first} ${p.last}`, from: sellerId, to: offer.buyer, fee: offer.fee, type: offer.type });
+  const rec: TransferRecord = { season: s.season, week: s.week, pid: p.id, name: `${p.first} ${p.last}`, from: sellerId, to: offer.buyer, fee: offer.fee, type: offer.type };
+  s.transfers.push(rec);
+  noteTransfer(s, rec);
   const sellerName = sellerId != null ? s.clubs[sellerId].short : 'free agency';
   if (toUser || sellerId === s.userClubId) {
     addNews(s, `${buyer.short} sign ${p.first} ${p.last} from ${sellerName}${offer.type.startsWith('loan') ? ' on loan' : offer.fee ? ` for ${fmt(offer.fee)}` : ''}.`);
@@ -313,7 +316,9 @@ function processLoans(s: GameState) {
       const fee = c.optionFee ?? 0;
       payFee(s, p, borrower, c.parentClubId ?? null, fee);
       p.contract = { ...(c.orig ?? c), type: 'permanent', parentClubId: undefined, orig: undefined, loanEndWeek: undefined, loanEndSeason: undefined, wageSharePct: undefined, endSeason: Math.max(c.orig?.endSeason ?? s.season, s.season + 2) };
-      s.transfers.push({ season: s.season, week: s.week, pid: p.id, name, from: c.parentClubId ?? null, to: borrower, fee, type: 'permanent' });
+      const rec: TransferRecord = { season: s.season, week: s.week, pid: p.id, name, from: c.parentClubId ?? null, to: borrower, fee, type: 'permanent' };
+      s.transfers.push(rec);
+      noteTransfer(s, rec);
       if (userBorrower || userParent) addMessage(s, { cat: 'Transfers', title: `${name}'s move is now permanent`, body: `The loan obligation triggered: ${fmt(fee)} paid.` });
       continue;
     }
@@ -345,7 +350,9 @@ export function exerciseOption(s: GameState, pid: number, buy: boolean, msgId: n
     if (s.clubs[s.userClubId].cash < (c.optionFee ?? 0)) return 'Not enough cash.';
     payFee(s, p, s.userClubId, c.parentClubId ?? null, c.optionFee ?? 0);
     applyContract(s, p, s.userClubId, { wage: c.wage, years: 3, clauses: {}, role: c.role });
-    s.transfers.push({ season: s.season, week: s.week, pid, name: `${p.first} ${p.last}`, from: c.parentClubId ?? null, to: s.userClubId, fee: c.optionFee ?? 0, type: 'permanent' });
+    const rec: TransferRecord = { season: s.season, week: s.week, pid, name: `${p.first} ${p.last}`, from: c.parentClubId ?? null, to: s.userClubId, fee: c.optionFee ?? 0, type: 'permanent' };
+    s.transfers.push(rec);
+    noteTransfer(s, rec);
   } else endLoan(s, p);
   if (m) m.resolved = m.read = true;
   return null;

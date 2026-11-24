@@ -16,6 +16,7 @@ import { customOverlay } from './overlays';
 import { userClub } from '../core/state';
 import { music } from './audio';
 import { DecisionPopup } from './features/decisionUI';
+import { AchievementToast } from './features/achievementsUI';
 
 const TABS = [
   ['hub', 'Hub'],
@@ -77,6 +78,7 @@ export function App() {
       {top?.kind === 'settings' && <SettingsScreen />}
       {top?.kind === 'custom' && customOverlay(top.key, top.data)}
       <DecisionPopup />
+      <AchievementToast />
     </div>
   );
 }

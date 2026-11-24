@@ -1,10 +1,14 @@
 import { Card, Overlay } from '../components';
-import { store, useStore } from '../store';
+import { useState } from 'preact/hooks';
+import { nav, store, useStore } from '../store';
+import { ACHIEVEMENTS } from '../../core/achievements';
 import { InstallApp } from '../installCard';
 
 export function SettingsScreen() {
   const st = useStore();
   const s = st.state!;
+  const [sure, setSure] = useState(false);
+  const got = ACHIEVEMENTS.filter((x) => st.unlocked[x.id]).length;
   return (
     <Overlay title="Settings">
       <Card title="Sound">
@@ -24,11 +28,14 @@ export function SettingsScreen() {
       <Card title="Install">
         <InstallApp />
       </Card>
-      <Card title="Save">
-        <div class="small dim" style={{ marginBottom: 10 }}>The game autosaves every week to this device (one save slot).</div>
-        <button class="btn block" onClick={() => store.quit()}>Back to title screen</button>
+      <Card title="Achievements" art="trophy">
+        <button class="btn block" onClick={() => nav.push({ kind: 'custom', key: 'achievements' })}>Achievements · {got}/{ACHIEVEMENTS.length} ›</button>
+      </Card>
+      <Card title={`Save · slot ${st.save?.slot ?? 1}`}>
+        <div class="small dim" style={{ marginBottom: 10 }}>The game autosaves every week into this slot. The title screen lists all of your slots, so you can run several careers side by side.</div>
+        <button class="btn block" onClick={() => store.quit()}>Switch slot / title screen</button>
         <div style={{ height: 10 }} />
-        <button class="btn danger block" onClick={() => { if (confirm('Delete your career? This cannot be undone.')) void store.deleteSave(); }}>Delete career</button>
+        <button class="btn danger block" onClick={() => { if (sure) void store.deleteSave(); else setSure(true); }}>{sure ? 'Tap again to delete this career' : 'Delete this career'}</button>
       </Card>
       <Card title="Credits">
         <div class="small dim">Club names and league membership: Wikipedia (CC BY-SA 4.0). {s.ext.realData ? `Real players imported locally from ${(s.ext.realData as { source: string; players: number }).source} (${(s.ext.realData as { players: number }).players} players); everyone else is generated.` : 'All players are generated unless you import your own data locally.'} Fonts: Silkscreen and Inter (OFL).</div>

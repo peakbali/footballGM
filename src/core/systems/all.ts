@@ -11,5 +11,6 @@ import './aiTransfers';
 import './cup';
 import './board';
 import './chronicle';
+import './stats';
 import './decisions';
 export {};
