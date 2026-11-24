@@ -1,3 +1,4 @@
+import { SLOTS, migrateSponsors, sponsorSlots } from '../../core/systems/sponsors';
 import { SwipePages } from '../swipe';
 import { useState } from 'preact/hooks';
 import { userClub, type GameState } from '../../core/state';
@@ -7,10 +8,11 @@ import { ECONOMY } from '../../core/data/economy';
 import type { FinCat, Staff, StaffRole } from '../../core/types';
 import { INCOME_CATS, COST_CATS } from '../../core/types';
 import { Card } from '../components';
-import { money, store, useStore } from '../store';
+import { money, nav, store, useStore } from '../store';
 import { setClubScreen } from '../tabs';
 import { Stepper } from './widgets';
 import { clubSections } from './clubSections';
+import { setStaffPage } from '../squadExtras';
 
 const LABEL: Record<FinCat, string> = {
   gate: 'Gate receipts', tv: 'TV & central', prize: 'Prize money', sponsor: 'Sponsors', merch: 'Merchandise', sales: 'Player sales', other_in: 'Other income',
@@ -68,18 +70,27 @@ function Finances({ s }: { s: GameState }) {
 }
 
 function Sponsors({ s }: { s: GameState }) {
-  const active = s.sponsors.filter((d) => d.status === 'active');
+  migrateSponsors(s);
+  const n = sponsorSlots(s);
+  const pending = s.inbox.find((m) => m.action?.kind === 'sponsor_choice' && !m.resolved);
+  const total = s.sponsors.filter((d) => d.status === 'active').reduce((a, d) => a + d.base, 0);
   return (
-    <Card title="Sponsors" art="sponsors">
-      {active.length === 0 && <div class="empty">No active sponsor. Offers arrive at the start of each season.</div>}
-      {active.map((d) => (
-        <div class="item" key={d.id}>
-          <div class="grow">
-            <div class="name">{d.name}{d.half ? ' (sleeve)' : ''}</div>
-            <div class="tiny dim">{d.shape.replace('_', '-')} · {money(d.base)}/season{d.perWin ? ` + ${money(d.perWin)}/win` : ''}{d.promoBonus ? ` + ${money(d.promoBonus)} if promoted` : ''} · until {d.endSeason + 1}</div>
+    <Card title={`Sponsors · ${n} slots`} art="sponsors" action={<span class="tiny dim">{money(total)}/season</span>}>
+      {SLOTS.map((slot, i) => {
+        const d = s.sponsors.find((x) => x.status === 'active' && x.slot === slot.key && x.endSeason >= s.season);
+        const locked = i >= n;
+        return (
+          <div class={`item ${locked ? 'dim' : ''}`} key={slot.key} style={{ cursor: 'default' }}>
+            <div class="grow">
+              <div class="tiny dim">{slot.label}</div>
+              {locked ? <div class="tiny">🔒 Opens with the Sponsorship office (level {i === 3 ? 2 : i === 4 ? 4 : 5})</div>
+                : d ? <><div class="name small">{d.name}</div><div class="tiny dim">{d.shape.replace('_', '-')} · {money(d.base)}/season{d.perWin ? ` + ${money(d.perWin)}/win` : ''}{d.promoBonus ? ` + ${money(d.promoBonus)} if promoted` : ''} · until {d.endSeason + 1}</div></>
+                : <div class="tiny amber">Empty{pending ? ': offers are waiting in the inbox' : '. New offers come in July and January'}</div>}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
+      {pending && <button class="btn small block" style={{ marginTop: 8 }} onClick={() => nav.push({ kind: 'inbox' })}>See sponsor offers</button>}
     </Card>
   );
 }
@@ -172,11 +183,10 @@ function ClubTab() {
   return (
     <div>
       <div class="seg" data-seg-bar>
-        {[['money', 'Money'], ['staff', 'Staff'], ...extra.map((e) => [e.key, e.label])].map(([k, l]) => <button key={k} class={seg === k ? 'on' : ''} onClick={() => setSeg(k)}>{l}</button>)}
+        {[['money', 'Money'], ...extra.map((e) => [e.key, e.label])].map(([k, l]) => <button key={k} class={seg === k ? 'on' : ''} onClick={() => setSeg(k)}>{l}</button>)}
       </div>
-      <SwipePages keys={['money', 'staff', ...extra.map((e) => e.key)]} value={seg} onChange={setSeg}>
+      <SwipePages keys={['money', ...extra.map((e) => e.key)]} value={seg} onChange={setSeg}>
       {seg === 'money' && <><Finances s={s} /><Sponsors s={s} /></>}
-      {seg === 'staff' && <StaffCard s={s} />}
       {extra.filter((e) => e.key === seg).map((e) => <div key={e.key}>{e.render(s)}</div>)}
       </SwipePages>
     </div>
@@ -184,3 +194,4 @@ function ClubTab() {
 }
 
 setClubScreen(() => <ClubTab />);
+setStaffPage((s) => <StaffCard s={s} />);

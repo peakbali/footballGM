@@ -15,15 +15,22 @@ const shots = process.argv[3];
   await p.waitForSelector('button.continue', { timeout: 30000 });
   await p.tap('.tabs button:has-text("Club")'); await p.waitForTimeout(300);
   await p.tap('.seg button:has-text("Facilities")'); await p.waitForTimeout(400);
-  expect('20 sub-facilities in 4 branches', await p.locator('.fac-track').count(), 20);
+  expect('4 branch boxes', await p.locator('.fac-box').count(), 4);
   if (shots) await p.screenshot({ path: `${shots}/fac.png` });
+  await p.tap('.fac-box:has-text("Training")'); await p.waitForTimeout(400);
+  expect('branch page lists its 5 sub-facilities', await p.locator('.overlay .fac-track').count(), 5);
+  if (shots) await p.screenshot({ path: `${shots}/fac-training.png` });
   const c0 = await cash();
   const lab = p.locator('.fac-track', { hasText: 'Skills lab' });
   await lab.locator('.fac-next .btn').tap(); await p.waitForTimeout(300);
   expect('building the Skills lab spends cash and shows progress', [(await cash()) !== c0, (await lab.textContent()).includes('weeks left')], [true, true]);
+  await p.tap('.overlay .back'); await p.waitForTimeout(300);
+  expect('back returns to the grid', await p.locator('.fac-box').count(), 4);
+  await p.tap('.fac-box:has-text("Commercial")'); await p.waitForTimeout(400);
   const shop = p.locator('.fac-track', { hasText: 'Club shop' });
   await shop.locator('.fac-next .btn').tap(); await p.waitForTimeout(300);
   expect('a second sub-facility builds at the same time', (await shop.textContent()).includes('weeks left'), true);
+  await p.tap('.overlay .back'); await p.waitForTimeout(300);
   // play on until the lab is ready
   await p.tap('.tabs button:has-text("Hub")'); await p.waitForTimeout(300);
   for (let k = 0; k < 30; k++) {
@@ -38,6 +45,7 @@ const shots = process.argv[3];
   }
   if (await p.locator('.dpop .later').count()) await p.tap('.dpop .later');
   await p.tap('.tabs button:has-text("Squad")'); await p.waitForTimeout(400);
+  await p.tap('.seg button:has-text("Squad")'); await p.waitForTimeout(400);
   await p.locator('.content .item', { hasText: 'y' }).nth(3).tap();
   await p.waitForTimeout(500);
   const card = p.locator('.card', { hasText: 'Skills lab' });

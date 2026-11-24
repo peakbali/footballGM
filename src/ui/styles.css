@@ -505,3 +505,14 @@ table.tbl.compact { font-size: 12px; }
 .lab-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
 .lab-stat { display: flex; justify-content: space-between; padding: 5px 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 3px; color: var(--text); font-size: 12px; cursor: pointer; }
 .lab-stat b { color: var(--gold); }
+.fac-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.fac-box { display: flex; flex-direction: column; padding: 0; overflow: hidden; text-align: left; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; color: var(--text); cursor: pointer; box-shadow: 3px 3px 0 #000; }
+.fac-box:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+.fac-box-art { position: relative; height: 78px; background: #0b1024; border-bottom: 2px solid var(--line); overflow: hidden; }
+.fac-box-art .card-art { opacity: 0.9; -webkit-mask-image: none; mask-image: none; }
+.fac-box-lv { position: absolute; right: 6px; bottom: 6px; font-family: var(--px); font-size: 11px; color: var(--gold); background: rgba(0,0,0,.7); padding: 2px 5px; border: 1px solid var(--gold); border-radius: 3px; }
+.fac-box-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 3px; }
+.fac-box-name { font-family: var(--px); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.fac-box-bar { height: 6px; background: var(--bg); border: 1px solid #000; }
+.fac-box-bar i { display: block; height: 100%; background: var(--gold); }
+.spon-slot { margin-bottom: 6px; }
