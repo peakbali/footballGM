@@ -7,6 +7,7 @@ import { refreshClubRatings } from './selection';
 import { buildSquadIndex, SAVE_VERSION, START_SEASON, type GameState, type SimLeague } from './state';
 import type { AiType, Club, Player } from './types';
 import { POSITIONS } from './data/positions';
+import { runInitSystems } from './systems';
 
 export interface ClubDef {
   name: string;
@@ -138,6 +139,9 @@ export function newGame(seed: number, userClubName: string): GameState {
     clubs: [], players: new Map(), nextPlayerId: 1, leagues: [], fixtures: [], nextFixtureId: 1,
     reports: new Map(), history: [], inbox: [], nextMsgId: 1, news: [],
     settings: { muted: false, music: 0.6, sfx: 0.8 }, ext: {},
+    fin: { season: {}, last: {}, cashHistory: [] }, sponsors: [], offers: [], nextOfferId: 1,
+    scouting: { assignments: {}, reports: {}, shortlist: [], starred: [], lastList: {} },
+    staff: [], staffPool: [], nextStaffId: 1, transfers: [],
   };
   const nextId = () => s.nextPlayerId++;
 
@@ -187,6 +191,7 @@ export function newGame(seed: number, userClubName: string): GameState {
     s.leagues.push(lg);
   }
   makeFixtures(s, rng);
+  runInitSystems(s, rng);
   return s;
 }
 

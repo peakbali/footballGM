@@ -1,4 +1,4 @@
-import type { Club, ClubSeasonRecord, Fixture, InboxMessage, MatchReport, NewsItem, Player } from './types';
+import type { Club, ClubSeasonRecord, Fixture, InboxMessage, MatchReport, NewsItem, Player, FinanceState, SponsorDeal, TransferOffer, ScoutingState, Staff, TransferRecord } from './types';
 
 export const SAVE_VERSION = 1;
 export const START_SEASON = 2025;
@@ -43,6 +43,16 @@ export interface GameState {
   nextMsgId: number;
   news: NewsItem[];
   settings: { muted: boolean; music: number; sfx: number };
+  // ---- management (stage 2+)
+  fin: FinanceState;
+  sponsors: SponsorDeal[];
+  offers: TransferOffer[];
+  nextOfferId: number;
+  scouting: ScoutingState;
+  staff: Staff[]; // user club staff
+  staffPool: Staff[]; // available to hire
+  nextStaffId: number;
+  transfers: TransferRecord[];
   /** Extension data for later systems, keyed by system name. */
   ext: Record<string, unknown>;
 }
@@ -51,10 +61,23 @@ export function userClub(s: GameState): Club {
   return s.clubs[s.userClubId];
 }
 
+let idxCache: { s: GameState; key: string; idx: Map<number, Player[]> } | null = null;
+let idxVersion = 0;
+/** Call after moving players between clubs outside the normal transfer log. */
+export function invalidateSquads() {
+  idxVersion++;
+}
+function cachedIndex(s: GameState): Map<number, Player[]> {
+  const key = `${s.season}:${s.week}:${s.transfers?.length ?? 0}:${s.players.size}:${idxVersion}`;
+  if (idxCache && idxCache.s === s && idxCache.key === key) return idxCache.idx;
+  const idx = buildSquadIndex(s);
+  idxCache = { s, key, idx };
+  return idx;
+}
+
+/** Players of a club (returns a fresh array; uses a cached index). */
 export function squadOf(s: GameState, clubId: number): Player[] {
-  const out: Player[] = [];
-  for (const p of s.players.values()) if (p.clubId === clubId && !p.retired) out.push(p);
-  return out;
+  return [...(cachedIndex(s).get(clubId) ?? [])].filter((p) => p.clubId === clubId && !p.retired);
 }
 
 /** Fast club -> players index. Rebuild when squads change. */

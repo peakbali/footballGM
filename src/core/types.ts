@@ -29,6 +29,8 @@ export interface Contract {
   obligationApps?: number; // obligation triggers if apps >= this
   clauses: Clauses;
   signedSeason: number;
+  /** While on loan: the player's contract with the parent club, restored on return. */
+  orig?: Contract;
 }
 
 export interface SeasonStats {
@@ -197,4 +199,99 @@ export interface NewsItem {
   season: number;
   week: number;
   text: string;
+}
+
+// ---------------- Management (stage 2+)
+
+export type FinCat = 'gate' | 'tv' | 'prize' | 'sponsor' | 'merch' | 'sales' | 'other_in' | 'wages' | 'staff' | 'upkeep' | 'build' | 'purchases' | 'other_out';
+export const INCOME_CATS: FinCat[] = ['gate', 'tv', 'prize', 'sponsor', 'merch', 'sales', 'other_in'];
+export const COST_CATS: FinCat[] = ['wages', 'staff', 'upkeep', 'build', 'purchases', 'other_out'];
+
+export interface FinanceState {
+  season: Partial<Record<FinCat, number>>;
+  last: Partial<Record<FinCat, number>>;
+  cashHistory: { s: number; w: number; cash: number }[]; // weekly, current + last season
+}
+
+export interface SponsorDeal {
+  id: number;
+  name: string;
+  shape: 'safe' | 'performance' | 'long_term';
+  base: number; // per season
+  perWin?: number;
+  promoBonus?: number;
+  startSeason: number;
+  endSeason: number; // inclusive
+  status: 'offered' | 'active' | 'expired' | 'declined';
+  half?: boolean; // half-season deal (winter)
+}
+
+export type OfferType = 'permanent' | 'loan' | 'loan_option' | 'loan_obligation' | 'free';
+
+export interface TransferOffer {
+  id: number;
+  pid: number;
+  seller: number | null; // null = free agent
+  buyer: number;
+  type: OfferType;
+  fee: number;
+  sellOnPct?: number;
+  wageSharePct?: number; // loans: % of wage the borrowing club pays
+  optionFee?: number;
+  loanLength?: 'half' | 'full';
+  status: 'pending' | 'countered' | 'accepted' | 'rejected' | 'completed' | 'withdrawn';
+  counterFee?: number;
+  round: number;
+  week: number;
+  season: number;
+}
+
+export interface TransferRecord {
+  season: number;
+  week: number;
+  pid: number;
+  name: string;
+  from: number | null;
+  to: number | null;
+  fee: number;
+  type: OfferType | 'release' | 'retire';
+}
+
+export interface ScoutAssignment {
+  pos: string; // Position or 'ANY'
+  minAge: number;
+  maxAge: number;
+  maxFee: number;
+  maxWage: number;
+}
+
+export interface ScoutReport {
+  pid: number;
+  ovr: [number, number];
+  pot: [number, number] | null;
+  level: number;
+  season: number;
+  week: number;
+  traits: boolean;
+}
+
+export interface ScoutingState {
+  assignments: Record<number, ScoutAssignment>; // staff id -> assignment
+  reports: Record<number, ScoutReport>; // player id -> report
+  shortlist: number[]; // recommended (newest first)
+  starred: number[]; // user-starred players
+  lastList: Record<number, number>; // staff id -> week counter of last report
+}
+
+export type StaffRole = 'scout' | 'coach_att' | 'coach_mid' | 'coach_def' | 'coach_gk' | 'physio' | 'doctor' | 'youth_coach' | 'commercial';
+
+export interface Staff {
+  id: number;
+  first: string;
+  last: string;
+  age: number;
+  role: StaffRole;
+  level: number;
+  wage: number;
+  endSeason: number;
 }

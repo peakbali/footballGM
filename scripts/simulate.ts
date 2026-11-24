@@ -50,6 +50,9 @@ for (let i = 0; i < seasons; i++) {
     const avg = l.clubIds.map((id) => (idx.get(id) ?? []).map((p) => p.ovr).sort((a, b) => b - a).slice(0, 11)).flat();
     return (avg.reduce((a, b) => a + b, 0) / avg.length - DIV_AVG_OVR[l.div]).toFixed(1);
   });
+  const u = s.clubs[s.userClubId];
+  const L = s.fin.last;
+  console.log(`  user ${u.name} div ${u.div} cash ${u.cash} | last season ${JSON.stringify(L)} | transfers ${s.transfers.filter((t) => t.season === season || t.season === season + 1).length}`);
   console.log(`Season ${season}: ${(secs / 1000).toFixed(2)} s (max week ${maxWeek.toFixed(0)} ms) | goals/game ${(goals / (games / 2)).toFixed(2)} | H/D/A ${pct(hw, hw + dr + aw)}/${pct(dr, hw + dr + aw)}/${pct(aw, hw + dr + aw)} | champion pts ${champPts.join(',')} | XI OVR vs band: ${drift.join(' ')} | players ${s.players.size}`);
   void hw; void dr; void aw;
 }

@@ -4,8 +4,6 @@ import { advanceWeek, type WeekResult } from '../core/season';
 import { newGame as createWorld } from '../core/world';
 import { SqliteSave } from '../storage/sqliteStore';
 import { markAllDirty } from '../storage/serialize';
-import { runInitSystems } from '../core/systems';
-import { Rng } from '../core/rng';
 
 type Listener = () => void;
 
@@ -41,7 +39,6 @@ class Store {
     this.bump();
     await new Promise((r) => setTimeout(r, 30));
     const s = createWorld(seed, clubName);
-    runInitSystems(s, new Rng(seed ^ 0xabc));
     await SqliteSave.wipe();
     markAllDirty();
     this.save = await SqliteSave.create();

@@ -19,8 +19,7 @@ export interface Snapshot {
 }
 export const TABLES: (keyof Snapshot)[] = ['meta', 'club', 'player', 'league', 'fixture', 'report', 'history', 'inbox', 'news'];
 
-/** Players whose rows might have changed since the last save. Systems add ids here. */
-export const dirtyPlayers = new Set<number>();
+import { dirtyPlayers } from '../core/systems/dirty';
 let fullPlayerPass = true;
 export function markAllDirty() {
   fullPlayerPass = true;

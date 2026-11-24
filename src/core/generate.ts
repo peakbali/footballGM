@@ -4,7 +4,7 @@ import { DIV_AVG_OVR } from './data/pyramid';
 import { marketWage, playerValue } from './data/economy';
 import { posOvr, recomputeOvr } from './ratings';
 import { clamp, type Rng } from './rng';
-import { emptyStats } from './state';
+import { emptyStats, invalidateSquads } from './state';
 import type { DevType, Player, SquadRole } from './types';
 
 const N_ATTR = ATTRS.length;
@@ -144,6 +144,7 @@ export function roleForRank(rank: number): SquadRole {
 /** Give a player a permanent contract at a club in division `div`. */
 export function signContract(rng: Rng, p: Player, clubId: number, div: number, season: number, role: SquadRole): void {
   const wage = Math.round(marketWage(p.ovr, div, DIV_AVG_OVR[div]) * rng.range(0.85, 1.15));
+  if (p.clubId !== clubId) invalidateSquads();
   p.clubId = clubId;
   p.contract = {
     type: 'permanent',

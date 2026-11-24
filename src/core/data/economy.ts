@@ -17,11 +17,11 @@ export const ECONOMY: DivEconomy[] = [
   { wage: 3500, capacity: 12000, attendance: 8000, ticket: 24, tv: 1_500_000, sponsor: 350_000, merch: 500_000, startCash: 1_500_000 },
   { wage: 1800, capacity: 8000, attendance: 4500, ticket: 20, tv: 1_000_000, sponsor: 150_000, merch: 200_000, startCash: 600_000 },
   { wage: 800, capacity: 5000, attendance: 2000, ticket: 18, tv: 120_000, sponsor: 60_000, merch: 60_000, startCash: 200_000 },
-  { wage: 350, capacity: 3000, attendance: 700, ticket: 14, tv: 40_000, sponsor: 25_000, merch: 20_000, startCash: 80_000 },
-  { wage: 180, capacity: 2000, attendance: 350, ticket: 12, tv: 10_000, sponsor: 12_000, merch: 8_000, startCash: 50_000 },
-  { wage: 100, capacity: 1500, attendance: 200, ticket: 10, tv: 5_000, sponsor: 6_000, merch: 4_000, startCash: 40_000 },
-  { wage: 50, capacity: 1000, attendance: 110, ticket: 7, tv: 2_500, sponsor: 3_000, merch: 1_500, startCash: 40_000 },
-  { wage: 25, capacity: 600, attendance: 60, ticket: 5, tv: 1_000, sponsor: 1_500, merch: 500, startCash: 25_000 },
+  { wage: 300, capacity: 3000, attendance: 700, ticket: 14, tv: 40_000, sponsor: 25_000, merch: 20_000, startCash: 80_000 },
+  { wage: 120, capacity: 2000, attendance: 350, ticket: 12, tv: 10_000, sponsor: 12_000, merch: 8_000, startCash: 50_000 },
+  { wage: 50, capacity: 1500, attendance: 200, ticket: 10, tv: 5_000, sponsor: 6_000, merch: 4_000, startCash: 40_000 },
+  { wage: 16, capacity: 1000, attendance: 110, ticket: 7, tv: 2_500, sponsor: 3_000, merch: 1_500, startCash: 40_000 },
+  { wage: 8, capacity: 600, attendance: 60, ticket: 5, tv: 1_000, sponsor: 1_500, merch: 500, startCash: 25_000 },
 ];
 
 export const USER_START_CASH = 40_000;
@@ -41,7 +41,7 @@ export function playerValue(ovr: number, pot: number, age: number, yearsLeft: nu
 /** Weekly wage a player expects at a club of the given division. */
 export function marketWage(ovr: number, div: number, divAvgOvr: number): number {
   const base = ECONOMY[div].wage;
-  return roundMoney(Math.max(10, base * Math.exp((ovr - divAvgOvr) * 0.11)));
+  return roundMoney(Math.max(3, base * Math.exp((ovr - divAvgOvr) * 0.11)));
 }
 
 export function roundMoney(v: number): number {
