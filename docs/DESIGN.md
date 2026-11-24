@@ -1212,3 +1212,7 @@ CREATE TABLE club_record (
 | **5. Extras** | Depth | Cups, foreign player pools, real player data | As prioritised |
 
 Each stage ends with a playable build on device (Capacitor) and a balance pass using the headless sim.
+
+### 13.2g Season reel and offer portraits **[Agreed]**
+- The end-of-season reel gives every page its own mood: a sunburst and confetti (or rain after relegation) result page, an LED scoreboard with counting numbers, a spotlight "stars" page with portraits (tap to open the player), a money page with animated income/cost bars and falling coins, a board verdict with a dial and stamped goals, a blueprint-style history page, a gold hall of records, and a sunrise next-season page. All pixel art, CSS-only particles, skippable by swipe, tap on the dots or Next, and reduced-motion safe.
+- Any inbox message about a player (rival bid, swap, loan request, wants to leave, plus old offers, loan options and transfer requests) shows his portrait, with the rival club badge on its corner. Tapping it opens his page from the inbox, hub and popup. The decision popup hides while any page is open over it and returns when it closes; back pops one level as usual.

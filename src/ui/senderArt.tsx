@@ -1,6 +1,7 @@
 import type { ArtKey } from './cardArt';
 import type { GameState } from '../core/state';
-import type { InboxMessage } from '../core/types';
+import type { InboxMessage, Player } from '../core/types';
+import { nav } from './store';
 import { Badge } from './components';
 import { Portrait } from './portrait';
 
@@ -67,19 +68,37 @@ export function Pixel({ icon, color, size = 28 }: { icon: string; color: string;
   );
 }
 
-/** Round tile: a player's portrait, a club badge, or the sender's pixel icon on its colour. */
-export function Avatar({ s, m, size = 36 }: { s: GameState; m: InboxMessage; size?: number }) {
+/** The player an inbox message is about: decision sender, or the player behind an offer / loan option / transfer request. */
+export function messagePlayer(s: GameState, m: InboxMessage): Player | undefined {
+  if (m.from?.pid != null) return s.players.get(m.from.pid);
+  const a = m.action;
+  if (!a || a.ref == null) return undefined;
+  if (a.kind === 'offer_in') { const o = s.offers.find((x) => x.id === a.ref); return o ? s.players.get(o.pid) : undefined; }
+  if (a.kind === 'loan_option' || a.kind === 'transfer_request') return s.players.get(a.ref);
+  return undefined;
+}
+
+/** Round tile: the player an offer is about (tap to open him, club badge on the corner), a club badge, or the sender's pixel icon on its colour. */
+export function Avatar({ s, m, size = 36, tap = true }: { s: GameState; m: InboxMessage; size?: number; tap?: boolean }) {
   const kind = senderKind(m);
   const k = KINDS[kind];
-  const p = m.from?.pid != null ? s.players.get(m.from.pid) : undefined;
+  const p = messagePlayer(s, m);
   const club = m.from?.club != null ? s.clubs[m.from.club] : undefined;
   let inner;
-  if (kind === 'club' && club) inner = <Badge club={club} size={size - 8} />;
-  else if (p && (kind === 'player' || kind === 'staff')) inner = <Portrait p={p} size={size - 4} />;
+  if (p) inner = <Portrait p={p} size={size - 4} />;
+  else if (kind === 'club' && club) inner = <Badge club={club} size={size - 8} />;
   else inner = <Pixel icon={k.icon} color={k.color} size={size - 12} />;
+  const open = p && tap ? (e: Event) => { e.stopPropagation(); nav.push({ kind: 'player', id: p.id }); } : undefined;
   return (
-    <span class="avatar" style={{ width: size, height: size, borderColor: k.color, background: `linear-gradient(180deg, ${k.color}33, ${k.color}14)` }}>
+    <span
+      class={`avatar ${open ? 'tappable' : ''}`}
+      role={open ? 'button' : undefined}
+      aria-label={open ? `Open ${p!.first} ${p!.last}` : undefined}
+      onClick={open}
+      style={{ width: size, height: size, borderColor: k.color, background: `linear-gradient(180deg, ${k.color}33, ${k.color}14)` }}
+    >
       {inner}
+      {p && club && kind === 'club' && <span class="avatar-club"><Badge club={club} size={Math.max(14, Math.round(size * 0.36))} /></span>}
     </span>
   );
 }

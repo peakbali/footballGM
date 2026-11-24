@@ -9,6 +9,8 @@ import { money, nav, store, useStore } from '../store';
 import { registerClubSection } from './clubSections';
 import { registerOverlay } from '../overlays';
 import { sfx } from '../audio';
+import { CardArt, type ArtKey } from '../cardArt';
+import { Portrait } from '../portrait';
 
 // ---------- chart: one measure per chart, all seasons, tap a point for its value
 
@@ -62,6 +64,7 @@ function Graphs({ list }: { list: UserSeason[] }) {
 }
 
 // ---------- end-of-season reel
+// Each page has its own mood (background, pixel scene, particles, reveal) so the reel feels like a show, not a list.
 
 const OUTCOME: Record<string, [string, string]> = {
   champion: ['CHAMPIONS!', 'gold'],
@@ -71,6 +74,62 @@ const OUTCOME: Record<string, [string, string]> = {
   stayed: ['SEASON COMPLETE', ''],
 };
 
+/** Counts up from 0 to the target, so numbers land with a bit of drama. */
+function useCount(target: number, ms = 900, delay = 0): number {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) { setV(target); return; }
+    let raf = 0;
+    let t0 = 0;
+    const t = setTimeout(() => {
+      const step = (now: number) => {
+        if (!t0) t0 = now;
+        const k = Math.min(1, (now - t0) / ms);
+        setV(Math.round(target * (1 - (1 - k) * (1 - k))));
+        if (k < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    }, delay);
+    return () => { clearTimeout(t); cancelAnimationFrame(raf); };
+  }, [target]);
+  return v;
+}
+
+const CONFETTI = ['#ffcc4d', '#e0525a', '#38b26a', '#5a78e0', '#ffffff', '#e8803a'];
+/** Falling pixel particles: confetti, coins, rain, sparkles. Pure CSS, positions are fixed so it is cheap. */
+function Fx({ kind, n = 22 }: { kind: 'confetti' | 'coins' | 'rain' | 'stars' | 'embers'; n?: number }) {
+  return (
+    <div class={`fx fx-${kind}`} aria-hidden="true">
+      {Array.from({ length: n }, (_, k) => (
+        <span
+          key={k}
+          style={{ '--x': `${(k * 37 + 11) % 100}%`, '--d': `${((k * 53) % 17) / 10 + (kind === 'rain' ? 0.5 : 1.8)}s`, '--w': `${((k * 29) % 23) / 10}s`, '--c': kind === 'confetti' ? CONFETTI[k % CONFETTI.length] : kind === 'coins' ? '#ffcc4d' : kind === 'rain' ? '#6f7fb0' : kind === 'embers' ? '#ff9640' : '#fff6c0', '--s': `${3 + (k % 3) * 2}px` } as never}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Banner({ art, h = 110 }: { art: ArtKey; h?: number }) {
+  return <div class="reel-banner" style={{ height: h }}><CardArt art={art} wide /></div>;
+}
+
+const MOOD = ['m-result', 'm-board', 'm-stars', 'm-money', 'm-verdict', 'm-chart', 'm-records', 'm-next'];
+
+function Stat({ n, label, fmt = (v: number) => v.toLocaleString(), k }: { n: number; label: string; fmt?: (v: number) => string; k: number }) {
+  const v = useCount(n, 900, k * 110);
+  return <div class="stat" style={{ '--n': k } as never}><b>{fmt(v)}</b><span>{label}</span></div>;
+}
+
+function Bar({ label, value, max, tone, text }: { label: string; value: number; max: number; tone: string; text: string }) {
+  return (
+    <div class="mbar">
+      <div class="between small"><span>{label}</span><b class={tone}>{text}</b></div>
+      <div class="mbar-track"><i class={tone} style={{ '--w': `${Math.max(4, Math.round((value / Math.max(1, max)) * 100))}%` } as never} /></div>
+    </div>
+  );
+}
+
 function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
   const user = s.clubs[s.userClubId];
   const all = seasons(s);
@@ -78,20 +137,25 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
   switch (i) {
     case 0: {
       const [txt, cls] = OUTCOME[u.outcome ?? 'stayed'];
+      const up = u.outcome === 'champion' || u.outcome === 'promoted' || u.outcome === 'playoff_winner';
       const me = u.table.findIndex((r) => r.id === user.id);
-      const rows = u.table.slice(Math.max(0, Math.min(me - 3, u.table.length - 7)), Math.max(0, Math.min(me - 3, u.table.length - 7)) + 7);
+      const from = Math.max(0, Math.min(me - 3, u.table.length - 7));
+      const rows = u.table.slice(from, from + 7);
+      const pos = useCount(u.pos, 700, 500);
       return (
-        <div class="reel-body">
+        <div class={`reel-body pg0 ${up ? 'up' : u.outcome === 'relegated' ? 'down' : ''}`}>
+          {up && <div class="rays" aria-hidden="true" />}
+          {up ? <Fx kind="confetti" n={28} /> : u.outcome === 'relegated' ? <Fx kind="rain" n={26} /> : null}
           <div class="reel-kicker">{u.league}</div>
-          <Badge club={user} size={64} />
-          <div class={`reel-big ${cls} ${u.outcome !== 'stayed' && u.outcome !== 'relegated' ? 'pop' : ''}`}>{txt}</div>
-          <div class="reel-hero">{ordinal(u.pos)}</div>
+          <div class="badge-slam"><Badge club={user} size={84} /></div>
+          <div class={`reel-big slam ${cls}`}>{txt}</div>
+          <div class="reel-hero">{ordinal(pos || 1)}</div>
           <div class="dim small">{u.pts} points · {u.w}W {u.d}D {u.l}L</div>
-          <table class="tbl" style={{ marginTop: 12 }}>
+          <table class="tbl rise" style={{ marginTop: 12 }}>
             <tbody>
               {rows.map((r) => {
-                const pos = u.table.indexOf(r) + 1;
-                return <tr key={r.id} class={r.id === user.id ? 'me' : ''}><td class="l dim">{pos}</td><td class="l club">{r.short}</td><td class="dim">{r.gd > 0 ? `+${r.gd}` : r.gd}</td><td><b>{r.pts}</b></td></tr>;
+                const p = u.table.indexOf(r) + 1;
+                return <tr key={r.id} class={r.id === user.id ? 'me' : ''}><td class="l dim">{p}</td><td class="l club">{r.short}</td><td class="dim">{r.gd > 0 ? `+${r.gd}` : r.gd}</td><td><b>{r.pts}</b></td></tr>;
               })}
             </tbody>
           </table>
@@ -100,70 +164,91 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
     }
     case 1:
       return (
-        <div class="reel-body">
-          <div class="reel-kicker">By the numbers</div>
-          <div class="reel-grid">
-            <div><b>{u.gf}</b><span>goals scored</span></div>
-            <div><b>{u.ga}</b><span>conceded</span></div>
-            <div><b>{u.pts}</b><span>points</span></div>
-            <div><b>{u.cs}</b><span>clean sheets</span></div>
-            <div><b>{u.avgAtt.toLocaleString()}</b><span>avg attendance</span></div>
-            <div><b>{u.bestAtt.toLocaleString()}</b><span>best crowd</span></div>
+        <div class="reel-body pg1">
+          <Banner art="scoreboard" h={96} />
+          <div class="reel-kicker led">By the numbers</div>
+          <div class="reel-grid led-grid">
+            <Stat k={0} n={u.gf} label="goals scored" />
+            <Stat k={1} n={u.ga} label="conceded" />
+            <Stat k={2} n={u.pts} label="points" />
+            <Stat k={3} n={u.cs} label="clean sheets" />
+            <Stat k={4} n={u.avgAtt} label="avg attendance" />
+            <Stat k={5} n={u.bestAtt} label="best crowd" />
           </div>
-          {u.bigWin && <div class="small" style={{ marginTop: 14 }}>Biggest win: <b class="gold">{u.bigWin.text}</b></div>}
-          {u.cup && <div class="small" style={{ marginTop: 6 }}>FA Cup: <b class={u.cup.won ? 'gold' : ''}>{u.cup.text}</b></div>}
+          {u.bigWin && <div class="strip" style={{ '--n': 6 } as never}>⚽ Biggest win <b class="gold">{u.bigWin.text}</b></div>}
+          {u.cup && <div class="strip" style={{ '--n': 7 } as never}>🏆 FA Cup <b class={u.cup.won ? 'gold' : ''}>{u.cup.text}</b></div>}
         </div>
       );
     case 2: {
       const st = u.stars;
-      const row = (label: string, h: typeof st.pots, unit: string) =>
-        h ? (
-          <div class="reel-star" onClick={() => s.players.has(h.id) && nav.push({ kind: 'player', id: h.id })}>
-            <span class="tiny dim">{label}</span>
-            <div class="name">{h.name} <span class="tiny dim">{h.pos}</span></div>
-            <div class="gold small">{unit === '+' ? `+${h.value} OVR` : `${h.value} ${unit}`}</div>
+      const row = (k: number, label: string, h: typeof st.pots, unit: string, icon: string) => {
+        if (!h) return null;
+        const p = s.players.get(h.id);
+        return (
+          <div class="star" style={{ '--n': k } as never} onClick={() => p && nav.push({ kind: 'player', id: h.id })}>
+            <div class="star-pic">{p ? <Portrait p={p} size={56} /> : <span class="star-ico">{icon}</span>}</div>
+            <div class="star-txt">
+              <span class="star-tag">{icon} {label}</span>
+              <div class="name">{h.name} <span class="tiny dim">{h.pos}</span></div>
+              <div class="gold small">{unit === '+' ? `+${h.value} OVR` : `${h.value} ${unit}`}</div>
+            </div>
+            <span class="star-go">›</span>
           </div>
-        ) : null;
+        );
+      };
       return (
-        <div class="reel-body">
-          <div class="reel-kicker">Stars of the season</div>
-          {row('Player of the season', st.pots, 'avg rating')}
-          {row('Top scorer', st.scorer, 'goals')}
-          {row('Young player', st.young, 'avg rating')}
-          {row('Breakthrough', st.breakthrough, '+')}
+        <div class="reel-body pg2">
+          <Fx kind="stars" n={18} />
+          <div class="spot" aria-hidden="true" />
+          <div class="reel-kicker gold">★ Stars of the season ★</div>
+          {row(0, 'Player of the season', st.pots, 'avg rating', '👑')}
+          {row(1, 'Top scorer', st.scorer, 'goals', '⚽')}
+          {row(2, 'Young player', st.young, 'avg rating', '🌱')}
+          {row(3, 'Breakthrough', st.breakthrough, '+', '🚀')}
           {!st.pots && !st.scorer && <div class="dim small">No standout players this year.</div>}
         </div>
       );
     }
-    case 3:
+    case 3: {
+      const mx = Math.max(u.income, u.costs, 1);
+      const profit = u.cashEnd - u.cashStart;
       return (
-        <div class="reel-body">
-          <div class="reel-kicker">Money</div>
-          <div class="reel-grid two">
-            <div><b class="green">{money(u.income)}</b><span>income</span></div>
-            <div><b class="red">{money(u.costs)}</b><span>costs</span></div>
+        <div class="reel-body pg3">
+          <Fx kind="coins" n={16} />
+          <Banner art="money" h={90} />
+          <div class="reel-kicker gold">Money</div>
+          <Bar label="Income" value={u.income} max={mx} tone="green" text={money(u.income)} />
+          <Bar label="Costs" value={u.costs} max={mx} tone="red" text={money(u.costs)} />
+          <div class="vault rise">
+            <span class="tiny dim">{profit >= 0 ? 'Season profit' : 'Season loss'}</span>
+            <b class={profit >= 0 ? 'green' : 'red'}>{profit >= 0 ? '+' : '−'}{money(Math.abs(profit))}</b>
+            <span class="tiny dim">{money(u.cashStart)} → {money(u.cashEnd)}</span>
           </div>
-          <div class="kv" style={{ marginTop: 14, textAlign: 'left' }}>
-            <span>Balance</span><span>{money(u.cashStart)} → <b class={u.cashEnd >= u.cashStart ? 'green' : 'red'}>{money(u.cashEnd)}</b></span>
+          <div class="kv" style={{ marginTop: 12, textAlign: 'left' }}>
             <span>Biggest signing</span><span>{u.topSigning ? `${u.topSigning.name}, ${money(u.topSigning.fee)}` : 'None'}</span>
             <span>Biggest sale</span><span>{u.topSale ? `${u.topSale.name}, ${money(u.topSale.fee)}` : 'None'}</span>
           </div>
         </div>
       );
+    }
     case 4: {
       const b = u.board;
+      const approval = useCount(b?.after ?? 0, 1000, 300);
+      const good = b ? b.after >= 45 : true;
       return (
-        <div class="reel-body">
-          <div class="reel-kicker">Board verdict</div>
+        <div class={`reel-body pg4 ${good ? '' : 'stern'}`}>
+          <Banner art="board" h={96} />
+          <div class="reel-kicker">The board has spoken</div>
           {b ? (
             <>
-              <div class="reel-big">{approvalLabel(b.after)}</div>
-              <Meter value={b.after} />
-              <div class="small dim">Approval {b.before} → <b class={b.after >= b.before ? 'green' : 'red'}>{b.after}</b></div>
-              <div style={{ marginTop: 12, textAlign: 'left' }}>
-                {b.goals.map((g) => <div class="small" key={g.text}>{g.met ? <span class="green">✓</span> : <span class="red">✗</span>} {g.text}</div>)}
+              <div class="reel-big slam">{approvalLabel(b.after)}</div>
+              <div class="dial"><b>{approval}</b><span class="tiny dim">approval</span></div>
+              <Meter value={approval} />
+              <div class="small dim">Was {b.before} → <b class={b.after >= b.before ? 'green' : 'red'}>{b.after >= b.before ? '▲' : '▼'} {Math.abs(b.after - b.before)}</b></div>
+              <div class="goals">
+                {b.goals.map((g, k) => <div class={`goal ${g.met ? 'ok' : 'no'}`} style={{ '--n': k + 2 } as never} key={g.text}><span class="stamp">{g.met ? '✓' : '✗'}</span><span class="small">{g.text}</span></div>)}
               </div>
-              {(b.cash > 0 || b.discount > 0) && <div class="small gold" style={{ marginTop: 10 }}>Reward: {b.cash > 0 ? `${money(b.cash)} bonus` : ''}{b.cash > 0 && b.discount ? ' and ' : ''}{b.discount ? '20% off your next facility build' : ''}</div>}
+              {(b.cash > 0 || b.discount > 0) && <div class="reward rise">🎁 {b.cash > 0 ? `${money(b.cash)} bonus` : ''}{b.cash > 0 && b.discount ? ' and ' : ''}{b.discount ? '20% off your next facility build' : ''}</div>}
             </>
           ) : <div class="dim small">The board had no goals this season.</div>}
         </div>
@@ -171,17 +256,19 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
     }
     case 5:
       return (
-        <div class="reel-body" style={{ textAlign: 'left' }}>
-          <div class="reel-kicker" style={{ textAlign: 'center' }}>History · {all.length} season{all.length === 1 ? '' : 's'}</div>
+        <div class="reel-body pg5" style={{ textAlign: 'left' }}>
+          <div class="reel-kicker cyan" style={{ textAlign: 'center' }}>History · {all.length} season{all.length === 1 ? '' : 's'}</div>
           <Graphs list={all} />
         </div>
       );
     case 6: {
       const top = topScorerAllTime(s);
       return (
-        <div class="reel-body">
-          <div class="reel-kicker">Records</div>
-          {u.records.length ? u.records.map((r) => <div class="reel-record pop" key={r}>★ {r}</div>) : <div class="dim small">{all.length === 1 ? 'Your first season sets the benchmarks.' : 'No new club records this time.'}</div>}
+        <div class="reel-body pg6">
+          <Fx kind="stars" n={14} />
+          <Banner art="trophy" h={110} />
+          <div class="reel-kicker gold">Hall of records</div>
+          {u.records.length ? u.records.map((r, k) => <div class="medal" style={{ '--n': k } as never} key={r}><span class="medal-ico">★</span>{r}</div>) : <div class="dim small">{all.length === 1 ? 'Your first season sets the benchmarks.' : 'No new club records this time.'}</div>}
           <div class="kv" style={{ marginTop: 14, textAlign: 'left' }}>
             {R.pts && <><span>Most points</span><span>{R.pts.v} ({R.pts.season})</span></>}
             {R.goals && <><span>Most goals</span><span>{R.goals.name}, {R.goals.v}</span></>}
@@ -198,16 +285,18 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
       const nextDiv = u.outcome === 'champion' || u.outcome === 'promoted' || u.outcome === 'playoff_winner' ? Math.max(1, u.div - 1) : u.outcome === 'relegated' ? Math.min(10, u.div + 1) : u.div;
       const expiring = [...s.players.values()].filter((p) => p.clubId === user.id && !p.academy && p.contract?.type === 'permanent' && p.contract.endSeason === u.season);
       return (
-        <div class="reel-body">
-          <div class="reel-kicker">Next season</div>
-          <div class="reel-big">Division {nextDiv}</div>
-          <div class="small dim">{nextDiv === u.div ? u.league : nextDiv < u.div ? 'A step up the pyramid' : 'A step down. Time to rebuild.'}</div>
+        <div class="reel-body pg7">
+          <div class="sunrise" aria-hidden="true"><i /></div>
+          <Banner art="stadium" h={120} />
+          <div class="reel-kicker">A new season dawns</div>
+          <div class="reel-hero big">DIV {nextDiv}</div>
+          <div class="small dim">{nextDiv === u.div ? u.league : nextDiv < u.div ? '▲ A step up the pyramid' : '▼ A step down. Time to rebuild.'}</div>
           <div class="kv" style={{ marginTop: 14, textAlign: 'left' }}>
             <span>Contracts expiring</span><span>{expiring.length ? expiring.slice(0, 5).map((p) => p.last).join(', ') + (expiring.length > 5 ? ` +${expiring.length - 5}` : '') : 'None'}</span>
             <span>Summer window</span><span>Opens in June</span>
             <span>Board goals</span><span>Set in July</span>
           </div>
-          <button class="btn gold block" style={{ marginTop: 18 }} onClick={() => { s.ext.reelSeen = u.season; nav.pop(); void store.persist(); }}>On to next season ›</button>
+          <button class="btn gold block reel-go" style={{ marginTop: 18 }} onClick={() => { s.ext.reelSeen = u.season; nav.pop(); void store.persist(); }}>On to next season ›</button>
         </div>
       );
     }
@@ -232,8 +321,9 @@ function Reel({ season }: { season: number }) {
     if (n !== i) sfx('swipe');
     setI(n);
   };
+  const tone = i === 0 ? (u.outcome === 'relegated' ? 'm-down' : u.outcome === 'stayed' ? '' : 'm-up') : '';
   return (
-    <div class="reel" onPointerDown={(e) => setTx(e.clientX)} onPointerUp={(e) => { if (tx != null && Math.abs(e.clientX - tx) > 40) go(e.clientX < tx ? 1 : -1); setTx(null); }}>
+    <div class={`reel ${MOOD[i]} ${tone}`} onPointerDown={(e) => setTx(e.clientX)} onPointerUp={(e) => { if (tx != null && Math.abs(e.clientX - tx) > 40) go(e.clientX < tx ? 1 : -1); setTx(null); }}>
       <div class="reel-top">
         <button class="back" onClick={() => { s.ext.reelSeen = u.season; nav.pop(); }}>✕</button>
         <div class="reel-dots">{Array.from({ length: REEL_N }, (_, k) => <span key={k} class={k === i ? 'on' : k < i ? 'done' : ''} onClick={() => setI(k)} />)}</div>

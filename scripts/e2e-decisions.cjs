@@ -17,6 +17,12 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   expect('popup appears after Continue (pre-season decision)', await p.locator('.dpop').count(), 1);
   const w1 = await week();
   expect('popup shows 2+ choices with consequence chips', (await p.locator('.dchoice').count()) >= 2 && (await p.locator('.dchoice .dchip').count()) >= 2, true);
+  if (await p.locator('.dpop .avatar.tappable').count()) {
+    await p.tap('.dpop .avatar.tappable'); await p.waitForTimeout(500);
+    expect('tapping the player opens his page and hides the popup', [await p.locator('.dpop').count(), await p.locator('.overlay, .ovl').count() > 0 || (await p.locator('.dpop').count()) === 0], [0, true]);
+    await p.goBack(); await p.waitForTimeout(500);
+    expect('back returns to the popup', await p.locator('.dpop').count(), 1);
+  } else console.log('SKIP player tap (first decision is not about a player)');
   await p.tap('.later'); await p.waitForTimeout(400);
   expect('Decide later hides the popup', await p.locator('.dpop').count(), 0);
   await p.tap('button.continue'); await p.waitForTimeout(600);
