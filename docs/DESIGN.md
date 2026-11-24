@@ -718,6 +718,8 @@ Every player has a unique **pixel portrait** (16 by 18 grid), drawn from his id 
 
 Portraits appear on squad rows, club squad lists, scout recommendations, the starred shortlist, free agents, and large on the player screen. Each position group has its own idle animation: **keepers** bounce their gloves, **defenders** shake their head ("no way past"), **midfielders** scan left and right with their eyes, **forwards** do a quick sprint bounce with speed streaks. Animations stop with the system's reduced-motion setting.
 
+**Formation pitch** (Squad tab): each starter on the pitch is shown with his portrait, an OVR chip at the top right, his last name, and a coloured tag under it with the **slot position** he fills (GK, LB, CB, RB, LWB, RWB, CM, LM, RM, ST and so on; tag colour is the position group). An amber outline on the tag means he is playing out of his main position, and a gold frame on the portrait means he is locked into the XI. Tapping a player opens his screen.
+
 ---
 
 ## 14. Data schema
