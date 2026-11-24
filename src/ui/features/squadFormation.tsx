@@ -84,11 +84,11 @@ function Lineup({ s }: { s: GameState }) {
         })}
       </svg>
       <div class="bench-head">Bench</div>
-      <div class="bench">
+      <div class="bench" style={{ gridTemplateColumns: `repeat(${Math.max(lu.bench.length, 1)}, minmax(0, 1fr))` }}>
         {lu.bench.map((p) => (
           <div key={p.id} class="bench-p" onClick={() => nav.push({ kind: 'player', id: p.id })}>
             <div class="bench-img" style={p.locked ? { outline: '2px solid #ffcc4d' } : undefined}>
-              <Portrait p={p} size={40} />
+              <Portrait p={p} size={32} />
               <span class="bench-ovr" style={{ background: ovrColor(p.ovr) }}>{p.ovr}</span>
             </div>
             <div class="bench-name">{p.last}</div>
