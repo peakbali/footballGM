@@ -273,3 +273,7 @@ table.tbl.compact { font-size: 12px; }
 .sq-item .tiny { font-size: 11px; }
 .sq-sort { background: none; border: 0; padding: 2px 0; font: inherit; color: inherit; text-align: right; cursor: pointer; white-space: nowrap; }
 .sq-sort.on { color: var(--gold); }
+.pt .sq-sort { text-align: center; overflow: hidden; }
+.pt .sq-cols.lined > span { padding: 0; justify-content: center; }
+.pt .sq-cols .sq-c { text-align: center; }
+.pt .sq-item .tiny { white-space: nowrap; }

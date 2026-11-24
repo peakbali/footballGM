@@ -45,11 +45,11 @@ export function PlayerTable({ s, players, sort, onSort, limit = 40 }: { s: GameS
     <button key={k} class={`sq-sort ${sort.key === k ? 'on' : ''}`} style={{ width: '100%' }} onClick={() => onSort(k)}>{label}{arrow(k)}</button>
   );
   return (
-    <div>
+    <div class="pt">
       <div class="sq-head">
         <span class="grow" />
         <div class="sq-cols lined">{COLS.map(([k, l, w]) => <span key={k} style={{ width: w }}>{btn(k, l, w)}</span>)}</div>
-        <span style={{ width: 36 }}>{btn('ovr', 'OVR', 36)}</span>
+        <span style={{ width: 25, textAlign: 'center' }}>{btn('ovr', 'OVR', 25)}</span>
       </div>
       {rows.length === 0 && <div class="empty">Nobody here yet.</div>}
       {rows.map((p) => {
@@ -61,7 +61,7 @@ export function PlayerTable({ s, players, sort, onSort, limit = 40 }: { s: GameS
             key={p.id}
             p={p}
             compact
-            sub={<>{club ? <><Badge club={club} size={12} /> {club.short}</> : <span class="green">Free</span>}{s.scouting.starred.includes(p.id) && <span class="gold"> ★</span>}</>}
+            sub={<>{club ? <Badge club={club} size={14} /> : <span class="green">Free</span>}{s.scouting.starred.includes(p.id) && <span class="gold"> ★</span>}</>}
             right={
               <div class="sq-cols lined">
                 <span class="sq-c" style={{ width: 30 }}>{s.season - p.birthYear}</span>
