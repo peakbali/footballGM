@@ -1,6 +1,6 @@
 # footballGM: Game Design Document
 
-> Status: **Draft v0.1** (2026-11-24). Captures the concept agreed in project chat, plus proposals needed to make it buildable.
+> Status: **Draft v0.2** (2026-11-24). Captures the concept agreed in project chat, plus proposals needed to make it buildable.
 > Sections marked **[Agreed]** reflect decisions already made. Sections marked **[Proposal]** are starting points for tuning and review. Anything unresolved lives in [Open questions](#15-open-questions).
 
 ## Contents
@@ -71,24 +71,37 @@ You are the **General Manager** of a club starting in division 9 of the English 
 
 The English pyramid, Steps 1 to 6 of the National League System, gives 10 divisions in play. The player starts in **division 9**.
 
-| Div | Real level | Leagues (parallel) | Approx clubs | Sim depth |
-|---|---|---|---|---|
-| 1 | Premier League | 1 | 20 | Bulk |
-| 2 | Championship | 1 | 24 | Bulk |
-| 3 | League One | 1 | 24 | Bulk |
-| 4 | League Two | 1 | 24 | Bulk |
-| 5 | National League | 1 | 24 | Bulk |
-| 6 | National League North / South | 2 | 48 | Bulk |
-| 7 | Step 3 (NPL Premier, Isthmian Premier, Southern Premier Central/South) | 4 | ~88 | Bulk |
-| 8 | Step 4 (8 regional leagues) | 8 | ~170 | Bulk |
-| 9 | Step 5 (~16 regional leagues) | ~16 | ~320 | **Own league: full sim.** Others: bulk |
-| 10 | Step 6 (~17 regional leagues) | ~17 | ~340 | Bulk |
+Only **one league per tier is simulated**: the single leagues at divisions 1 to 5, plus the player's **regional chain** at divisions 6 to 10 (the one regional league per tier that the club's region feeds into). **[Agreed]**
 
-Roughly **1,100 clubs** in total.
+| Div | Real level | Real leagues at this tier | Simulated leagues | Approx clubs (all) | Sim depth |
+|---|---|---|---|---|---|
+| 1 | Premier League | 1 | 1 | 20 | Bulk |
+| 2 | Championship | 1 | 1 | 24 | Bulk |
+| 3 | League One | 1 | 1 | 24 | Bulk |
+| 4 | League Two | 1 | 1 | 24 | Bulk |
+| 5 | National League | 1 | 1 | 24 | Bulk |
+| 6 | National League North / South | 2 | 1 (chain) | 48 | Bulk |
+| 7 | Step 3 (NPL Premier, Isthmian Premier, Southern Premier Central/South) | 4 | 1 (chain) | ~88 | Bulk |
+| 8 | Step 4 (8 regional leagues) | 8 | 1 (chain) | ~170 | Bulk |
+| 9 | Step 5 (~16 regional leagues) | ~16 | 1 (chain) | ~320 | **Own league: full sim** |
+| 10 | Step 6 (~17 regional leagues) | ~17 | 1 (chain) | ~340 | Bulk |
+
+That is **10 simulated leagues, about 220 clubs with fixtures**, out of roughly **1,100 clubs** in the world.
 
 - **Full sim** = event-stream match engine for every match in the player's current league.
-- **Bulk sim** = fast strength-based score generation (see [6.4](#64-bulk-sim-for-other-leagues)).
-- **Parallel leagues:** every club has a `region` (lat/long or region code). Promotion/relegation moves clubs into the geographically appropriate league at the level above/below. Reallocation rule in [Open questions](#15-open-questions).
+- **Bulk sim** = fast strength-based score generation for the other 9 simulated leagues (see [6.4](#64-bulk-sim-for-other-leagues)).
+- **Off-chain clubs** (the other regional leagues at divisions 6 to 10) exist as **name, region, division and a strength rating only**. They have no fixtures, tables or match stats. **Their players are fully real in the database**: they can be scouted, bought, loaned, and they develop yearly like everyone else. The goal is an immersive transfer market while keeping the simulation small and fast.
+- **Off-chain strength** is a single number recalculated yearly from the club's best 14 players, plus small random drift. It drives AI transfer behaviour and who moves between tiers.
+
+**The regional chain [Proposal]**
+
+- The chain is fixed when the player picks a club: for each of divisions 6 to 10, the regional league that the club's own league feeds into (by the real feeder structure, falling back to nearest league centroid).
+- When the player is promoted or relegated, the chain does not change; the club just moves to the chain league at the new tier.
+- **Promotion and relegation across the chain boundary** keep every simulated league at a fixed size:
+  - Clubs relegated out of a chain league drop into the off-chain pool of the tier below (assigned to their nearest regional league).
+  - Their replacements come up from that tier's pool: the off-chain clubs with the highest strength rating, weighted toward clubs nearest the chain league's region.
+  - Clubs promoted out of division 6 into division 5 come from the chain league as normal; division 5 relegations into division 6 go to the chain league if the club is in its region, otherwise to the off-chain pool and a pool club is pulled into the chain to keep the size.
+- Off-chain clubs reshuffle between tiers once a year by strength (a light "virtual" promotion/relegation), so the world doesn't stagnate.
 - Below division 10 is a virtual "feeder" pool: relegated div 10 clubs drop out of play and are replaced by generated or real Step 7 clubs.
 
 ### 3.2 Clubs **[Agreed]**
@@ -295,14 +308,16 @@ The engine emits an **event stream** (`{minute, type, team, playerIds, x, y}`), 
 
 ### 6.4 Bulk sim for other leagues **[Proposal]**
 
-For every other league, each match uses a Poisson model:
+For the other 9 simulated leagues, each match uses a Poisson model:
 
 ```
 λ_home = baseGoals × (attack_home / defence_away)^k × 1.03
 λ_away = baseGoals × (attack_away / defence_home)^k
 ```
 
-`attack` and `defence` are club-level numbers recalculated monthly from the top 14 players. Goals are then assigned to players weighted by position and finishing, so the top scorer charts in every league stay believable. No events are stored.
+`attack` and `defence` are club-level numbers recalculated monthly from the top 14 players. Goals are then assigned to players weighted by position and finishing, so the top scorer charts in every simulated league stay believable. No events are stored.
+
+**Off-chain clubs play no matches.** For yearly progression, their players get an estimated playing-time share from their rank in the club's squad (top 11 by OVR = regular starter, next 5 = rotation, rest = backup). Their season stats stay empty, and scouting reports show "regional league" instead of numbers.
 
 ---
 
@@ -355,7 +370,7 @@ Each AI club has a type that drives its behaviour:
 | **Developer** | Young (17 to 22), high POT, loans in | Sells once players peak | Pays market |
 | **Seller** | Cheap, free agents | Sells whenever offered fair value | Pays below market |
 
-AI transfer logic runs in the windows: each club checks its weakest position against its budget and makes 0 to 3 moves. Only clubs in divisions 1 to 8 run full logic. Divisions 9 to 10 mostly use free agents.
+AI transfer logic runs in the windows: each club checks its weakest position against its budget and makes 0 to 3 moves. Only simulated-league clubs in divisions 1 to 8 run full logic. Divisions 9 to 10 mostly use free agents. Off-chain clubs run a light version once per window: they sell to whoever bids fair value and backfill from free agents, so their squads stay around 20 players.
 
 ### 7.7 News feed **[Agreed]**
 
@@ -661,6 +676,7 @@ CREATE TABLE save_meta (
   version INTEGER NOT NULL,           -- schema version for migrations
   seed INTEGER NOT NULL,
   user_club_id INTEGER NOT NULL,
+  chain_json TEXT NOT NULL,           -- league id per division 6..10 for the user's regional chain
   current_season INTEGER NOT NULL,    -- e.g. 2025 = 2025/26
   current_week INTEGER NOT NULL,      -- 1..52 (week 1 = first week of July)
   settings_json TEXT                  -- mute, speed, etc.
@@ -688,7 +704,9 @@ CREATE TABLE league (
   num_teams INTEGER NOT NULL,
   promo_spots INTEGER NOT NULL,
   playoff_spots INTEGER NOT NULL,
-  releg_spots INTEGER NOT NULL
+  releg_spots INTEGER NOT NULL,
+  is_simulated INTEGER NOT NULL DEFAULT 0, -- 1 = divisions 1-5 + the user's regional chain
+  center_lat REAL, center_lon REAL         -- for regional assignment
 );
 
 CREATE TABLE club (
@@ -707,10 +725,11 @@ CREATE TABLE club (
   ai_type TEXT CHECK (ai_type IN ('buyer','developer','seller')),
   cash INTEGER NOT NULL DEFAULT 0,
   ticket_price INTEGER NOT NULL,
-  formation TEXT NOT NULL DEFAULT '4-4-2'
+  formation TEXT NOT NULL DEFAULT '4-4-2',
+  strength REAL                       -- off-chain clubs: yearly strength rating (top 14 players)
 );
 
-CREATE TABLE club_season (           -- membership + standings per season
+CREATE TABLE club_season (           -- membership per season; standings only for simulated leagues
   club_id INTEGER NOT NULL REFERENCES club(id),
   season INTEGER NOT NULL,
   league_id INTEGER NOT NULL REFERENCES league(id),
@@ -1042,7 +1061,7 @@ CREATE TABLE club_record (
 |---|---|---|
 | 1 | **Real player data source and licensing.** Which dataset for 2025/26 squads, and is scraping acceptable for a personal, non-commercial app? | Build the pipeline against a CSV so the source can be swapped; ship generated-only until decided. |
 | 2 | How to **estimate ratings for real players** without copying another game's ratings? | Estimate from league level, minutes, age and market-value tier (see [3.4](#34-data-pipeline)). |
-| 3 | **Parallel league reallocation** at steps 3 to 6 when clubs go up/down. Pure geography, or keep fixed league sizes and move borderline clubs? | Fixed league sizes, reassign by nearest league centroid with balancing. |
+| 3 | ~~Parallel league reallocation~~ **Decided:** simulate only the player's regional chain; off-chain clubs are names + strength, players still in the database (see [3.1](#31-the-pyramid-agreed--proposal)). Remaining question: should the chain ever change (e.g. if the user wants to start somewhere else in a new save)? | Chain fixed per save. |
 | 4 | Does the user **pick any club** in division 9, or from a curated list? | Any club in any div 9 league. |
 | 5 | **Playoffs** for promotion (real pyramid uses them at several levels)? | Yes, single-match semi + final, simulated with the same engine. |
 | 6 | Can the user **lock players** into the XI, or is auto-pick final? | Auto-pick plus a "lock" toggle per player. |
