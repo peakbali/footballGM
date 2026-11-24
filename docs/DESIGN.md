@@ -680,6 +680,10 @@ Bottom tabs: **Hub · Squad · Transfers · Club · League**.
 | Club | Finances & projections, facilities builder, staff, sponsors, board goals |
 | League | Table, fixtures/results, stats leaders, other divisions, club history |
 
+### 13.2b Install as an app **[Agreed]**
+
+The web build is an installable PWA: web app manifest, pixel icons (a ball under floodlights), and a service worker that precaches the whole game so it loads and plays offline, under any base path (it is hosted at /footballGM/). An **Install app** button appears on the title screen and in Settings (Chrome/Edge/Android use the install prompt; iPhone/iPad show the Share, Add to Home Screen steps). Each deploy stamps a new cache version, so updates arrive on the next online launch. The single-file artifact build has no service worker.
+
 ### 13.3 Evolving stadium hub **[Agreed]**
 
 The hub scene is built from layered pixel sprites that reflect facility upgrades: a lone rail and a portacabin in division 9, stands and floodlights later, a full bowl in division 1. Crowd density reflects last home attendance. Day/night tint follows match day.
