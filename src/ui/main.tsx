@@ -1,4 +1,5 @@
 import { render } from 'preact';
+import './styleUnits';
 import '@fontsource/silkscreen/latin-400.css';
 import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-600.css';

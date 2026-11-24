@@ -44,7 +44,7 @@ export function App() {
   return (
     <div class="app">
       <div class="topbar">
-        {nav.tab !== 'hub' && <button class="back" style={{ fontSize: 14, color: 'var(--gold)', marginRight: 2 }} onClick={() => nav.setTab('hub')} aria-label="Back to hub">‹ Hub</button>}
+        {nav.tab !== 'hub' && <button class="back" style={{ fontSize: 13, color: 'var(--gold)', marginRight: 2, whiteSpace: 'nowrap' }} onClick={() => nav.setTab('hub')} aria-label="Back to hub">‹ Hub</button>}
         <Badge club={club} size={30} />
         <div style={{ minWidth: 0 }}>
           <div class="title">{club.short}</div>

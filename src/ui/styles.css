@@ -253,3 +253,11 @@ table.tbl.compact { font-size: 12px; }
 @keyframes swipe-from-right { from { transform: translateX(36px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes swipe-from-left { from { transform: translateX(-36px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .swipe-pane.from-right, .swipe-pane.from-left { animation: none; } }
+
+/* squad list sub-pages (contract / form / attributes) */
+.sq-head { display: flex; align-items: center; gap: 10px; padding: 0 4px 4px; border-bottom: 1px solid var(--line); font-family: var(--px); font-size: 9px; color: var(--dim); text-align: right; }
+.sq-head .grow { flex: 1; }
+.sq-cols { display: flex; flex: none; }
+.sq-c, .sq-cols > span { display: inline-block; }
+.sq-c { font-size: 11px; text-align: right; white-space: nowrap; }
+.sq-c.dim, .sq-c .dim { color: var(--dim); }

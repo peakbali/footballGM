@@ -19,9 +19,16 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   };
   const active = async (sel) => (await p.textContent(sel)).trim();
   let failed = 0;
+  // a tap right after a CDP touch swipe is sometimes swallowed: wait, tap, and check
+  const gotoTab = async (name) => {
+    for (let i = 0; i < 3; i++) {
+      await p.waitForTimeout(400); await p.tap(`.tabs button:has-text("${name}")`); await p.waitForTimeout(400);
+      if ((await p.textContent('.tabs button.on')).includes(name)) return;
+    }
+  };
   const expect = (name, got, want) => { const ok = got === want; console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : `(got "${got}", want "${want}")`); if (!ok) failed++; };
 
-  await p.tap('.tabs button:has-text("Transfers")');
+  await gotoTab('Transfers');
   const on = () => active('.chips[data-seg-bar] .chip.on');
   expect('transfers starts on Scouted', (await on()).toLowerCase(), 'scouted');
   await swipe(300, 500, 60, 500);
@@ -51,15 +58,21 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   await swipe(300, 650, 60, 650);
   expect('swipe left again -> news', (await on()).toLowerCase(), 'news');
 
-  await p.tap('.tabs button:has-text("League")');
+  await gotoTab('League');
   const seg = () => active('.seg[data-seg-bar] button.on');
   await swipe(300, 500, 60, 500);
   expect('league swipe left -> fixtures', await seg(), 'fixtures');
-  await p.waitForTimeout(300); await p.tap('.tabs button:has-text("Club")'); await p.waitForTimeout(400);
+  await p.waitForTimeout(300); await gotoTab('Club');
   await swipe(300, 500, 60, 500);
   expect('club swipe left -> Staff', await seg(), 'Staff');
   await swipe(60, 500, 300, 500);
   expect('club swipe right -> Money', await seg(), 'Money');
+  await p.waitForTimeout(300); await gotoTab('Squad');
+  await p.evaluate(() => { document.querySelector('.content').scrollTop = 600; });
+  await swipe(300, 300, 60, 300);
+  expect('squad list swipe left -> Form', await seg(), 'Form');
+  await swipe(300, 300, 60, 300);
+  expect('squad list swipe left -> Attributes', await seg(), 'Attributes');
   console.log('console errors:', JSON.stringify(errs));
   await b.close();
   process.exit(failed ? 1 : 0);
