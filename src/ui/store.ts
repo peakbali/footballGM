@@ -146,6 +146,23 @@ class Nav {
 }
 export const nav = new Nav();
 
+/**
+ * Browser / phone back button: close the top screen, then go to the hub tab, and never leave
+ * the game (which showed a blank page). One guard history entry is kept above the page at all times.
+ */
+export function installBackHandler() {
+  if (typeof window === 'undefined' || !window.history?.pushState) return;
+  const guard = () => window.history.pushState({ fgm: 'guard' }, '');
+  if (window.history.state?.fgm !== 'guard') guard();
+  window.addEventListener('popstate', () => {
+    if (store.state) {
+      if (nav.stack.length) nav.pop();
+      else if (nav.tab !== 'hub') nav.setTab('hub');
+    }
+    guard();
+  });
+}
+
 export function money(v: number): string {
   const neg = v < 0;
   const a = Math.abs(v);

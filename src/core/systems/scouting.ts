@@ -1,9 +1,10 @@
 import { POSITIONS, type Position } from '../data/positions';
-import { hashSeed, Rng } from '../rng';
+import { clamp, hashSeed, Rng } from '../rng';
 import { squadOf, type GameState } from '../state';
 import { registerSystem } from '../systems';
 import type { Player, ScoutReport, Staff } from '../types';
-import { askingPrice } from './transfers';
+import { askingPrice, clubRank, willingToJoin } from './transfers';
+import { facState } from './facilities';
 import { askingWage } from './contracts';
 import { addMessage } from '../season';
 import { staffCap } from './staff';
@@ -64,6 +65,35 @@ export function coverage(level: number): number {
   return scoutAccuracy(level).range;
 }
 
+/**
+ * How keen a player is to join the user's club, 0-100 (DESIGN 8). 50+ means interested.
+ * Moving up the pyramid, a starting place, good facilities, a calm personality, low morale
+ * where he is, being a free agent or being older all make him keener. Stable within a season.
+ */
+export function interestIn(s: GameState, p: Player): number {
+  const user = s.clubs[s.userClubId];
+  const fromDiv = p.clubId != null ? s.clubs[p.clubId].div : user.div;
+  const best = Math.max(0, ...squadOf(s, s.userClubId).filter((q) => q.pos === p.pos && !q.academy).map((q) => q.ovr));
+  const fac = facState(s).levels;
+  const age = s.season - p.birthYear;
+  let v = 50;
+  v += (fromDiv - user.div) * 12; // stepping up is exciting, stepping down is not
+  v += p.ovr >= best - 2 ? 10 : -10; // would he play?
+  if (p.clubId != null) v += clubRank(s, p) >= 11 ? 10 : -5; // not playing where he is
+  else v += 15; // free agents want a club
+  v += (fac.training - 1) * 2 + (fac.stadium - 1) * 1.5;
+  v += (p.personality - 50) * 0.2;
+  if (p.morale < 40) v += 10;
+  if (age >= 30) v += 5;
+  v += new Rng(hashSeed(s.seed, p.id, s.season, 4242)).range(-10, 10);
+  return Math.round(clamp(v, 0, 100));
+}
+
+/** Would this player consider a move to the user's club right now? */
+export function isInterested(s: GameState, p: Player): boolean {
+  return willingToJoin(s, p, p.clubId == null ? 'free' : 'permanent') == null && interestIn(s, p) >= 50;
+}
+
 /** Build a shortlist for one scout's assignment. */
 export function scoutShortlist(s: GameState, rng: Rng, st: Staff): Player[] {
   const a = s.scouting.assignments[st.id] ?? { pos: 'ANY', minAge: 16, maxAge: 34, maxFee: Infinity, maxWage: Infinity };
@@ -84,6 +114,7 @@ export function scoutShortlist(s: GameState, rng: Rng, st: Staff): Player[] {
     const age = s.season - p.birthYear;
     if (age < a.minAge || age > a.maxAge) continue;
     if (p.ovr < posAvg(p.pos) - 4 && p.pot < posAvg(p.pos) + 4) continue;
+    if (!isInterested(s, p)) continue; // scouts only recommend players open to joining
     cands.push(p);
   }
   // affordability filter (fee + wage) on a sample to keep it fast
