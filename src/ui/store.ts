@@ -1,3 +1,4 @@
+import { installBackNav } from './backNav';
 import { useEffect, useState } from 'preact/hooks';
 import type { GameState } from '../core/state';
 import { advanceWeek, type WeekResult } from '../core/season';
@@ -146,21 +147,22 @@ class Nav {
 }
 export const nav = new Nav();
 
-/**
- * Browser / phone back button: close the top screen, then go to the hub tab, and never leave
- * the game (which showed a blank page). One guard history entry is kept above the page at all times.
- */
+/** Hooks the browser back button up to the screen stack (see backNav.ts). */
 export function installBackHandler() {
-  if (typeof window === 'undefined' || !window.history?.pushState) return;
-  const guard = () => window.history.pushState({ fgm: 'guard' }, '');
-  if (window.history.state?.fgm !== 'guard') guard();
-  window.addEventListener('popstate', () => {
-    if (store.state) {
-      if (nav.stack.length) nav.pop();
-      else if (nav.tab !== 'hub') nav.setTab('hub');
-    }
-    guard();
-  });
+  if (typeof window === 'undefined') return;
+  installBackNav(
+    window,
+    {
+      depth: () => nav.stack.length + (nav.tab !== 'hub' ? 1 : 0),
+      closeTop: () => {
+        if (nav.stack.length) nav.stack.pop();
+        else nav.tab = 'hub';
+        store.bump();
+      },
+      active: () => !!store.state,
+    },
+    (fn) => { store.subscribe(fn); },
+  );
 }
 
 export function money(v: number): string {
