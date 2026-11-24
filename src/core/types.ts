@@ -81,12 +81,21 @@ export interface Player {
   minutesShare?: number; // rolling playing time share, 0..1
 }
 
+export interface Crest {
+  shape: number; // CREST_SHAPES
+  pattern: number; // CREST_PATTERNS
+  icon: number; // CREST_ICONS, 0 = none
+  iconColor?: string;
+}
+
 export interface Club {
   id: number;
   name: string;
   short: string;
   abbrev: string;
   colors: [string, string];
+  /** Crest design (DESIGN 13.2k). Missing = the original shield with pattern id % 4. */
+  crest?: Crest;
   stadium: string;
   capacity: number;
   seats: number;

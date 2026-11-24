@@ -13,6 +13,7 @@ import { setClubScreen } from '../tabs';
 import { Stepper } from './widgets';
 import { clubSections } from './clubSections';
 import { setStaffPage } from '../squadExtras';
+import { ClubHeader } from './clubIdentityUI';
 
 const LABEL: Record<FinCat, string> = {
   gate: 'Gate receipts', tv: 'TV & central', prize: 'Prize money', sponsor: 'Sponsors', merch: 'Merchandise', sales: 'Player sales', other_in: 'Other income',
@@ -182,6 +183,7 @@ function ClubTab() {
   const extra = clubSections();
   return (
     <div>
+      <ClubHeader s={s} />
       <div class="seg" data-seg-bar>
         {[['money', 'Money'], ...extra.map((e) => [e.key, e.label])].map(([k, l]) => <button key={k} class={seg === k ? 'on' : ''} onClick={() => setSeg(k)}>{l}</button>)}
       </div>

@@ -9,4 +9,5 @@ import './clubBuilding';
 import './history';
 import './cupView';
 import './achievementsUI';
+import './clubIdentityUI';
 export {};

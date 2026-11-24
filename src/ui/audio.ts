@@ -8,7 +8,7 @@ import { store } from './store';
  * upright-style bass, soft clean percussion (no noise: kick, rim and ride are all tuned sine tones), a sparse
  * vibraphone melody, and everything through a gentle low-pass and a small, smooth room reverb, with headroom so
  * nothing clips. (An earlier version had vinyl crackle and noise drums; they were removed as too noisy.) Chords, fills and melody notes vary from bar to bar, so it does not
- * sound like a short loop. 'hub' is slow and mellow; 'match' is a little brighter and busier.
+ * sound like a short loop. One mellow loop plays everywhere, continuously.
  *
  * Effects are short and soft, tuned to the same jazzy palette (see `Sfx`).
  */
@@ -85,11 +85,18 @@ function ensure(): AudioContext | null {
   return ctx;
 }
 
+let lastMusic = -1;
+
 export function applyVolumes() {
   if (!ctx || !master) return;
   const st = settings();
   master.gain.value = st.muted ? 0 : 0.55;
-  musicGain!.gain.value = st.music * 0.8;
+  const m = st.music * 0.8;
+  if (m !== lastMusic) { // only when the setting changes, so a store update never cuts into a duck
+    lastMusic = m;
+    musicGain!.gain.cancelScheduledValues(ctx.currentTime);
+    musicGain!.gain.setValueAtTime(m, ctx.currentTime);
+  }
   musicVerb!.gain.value = st.music * 0.12;
   sfxGain!.gain.value = st.sfx * 0.6;
 }
@@ -232,20 +239,8 @@ const HUB: Style = {
   ],
   scale: [65, 67, 69, 72, 74, 76, 77, 79],
 };
-// A minor: i-iv-VII-III and a ii-V turnaround, a bit quicker and with more drums
-const MATCH: Style = {
-  bpm: 88,
-  swing: 0.6,
-  busy: 0.8,
-  progressions: [
-    [{ root: 45, notes: [55, 59, 60, 64] }, { root: 38, notes: [53, 57, 60, 64] }, { root: 43, notes: [53, 57, 59, 64] }, { root: 36, notes: [52, 55, 59, 62] }],
-    [{ root: 41, notes: [52, 57, 60, 64] }, { root: 40, notes: [56, 59, 62, 65] }, { root: 45, notes: [55, 59, 60, 64] }, { root: 45, notes: [55, 60, 62, 64] }],
-  ],
-  scale: [69, 72, 74, 76, 79, 81, 84],
-};
-
 let style: Style | null = null;
-let currentName: 'hub' | 'match' | null = null;
+let currentName: 'hub' | null = null;
 let timer: number | null = null;
 let beatTime = 0;
 let beat = 0; // beats since start
@@ -292,24 +287,34 @@ function scheduleBeat(t: number) {
   }
 }
 
+// Notes are scheduled this far ahead. Web Audio plays scheduled notes on its own thread, so the music keeps
+// going while the main thread is busy (simulating a week, saving, opening a popup or the season reel).
+const LOOKAHEAD = 4;
+
 function tick() {
   if (!ctx || !style) return;
-  while (beatTime < ctx.currentTime + 0.25) {
+  // after a very long stall, skip the beats that were missed instead of playing them all at once
+  if (beatTime < ctx.currentTime) beatTime = ctx.currentTime + 0.05;
+  while (beatTime < ctx.currentTime + LOOKAHEAD) {
     scheduleBeat(beatTime);
     beatTime += 60 / style.bpm;
     beat++;
   }
 }
 
-/** Switch the background loop ('hub', 'match' or null to stop). */
-export function music(name: 'hub' | 'match' | null) {
+/**
+ * Start the background music ('hub') or stop it (null). The music plays continuously across screens, popups, the
+ * match report and the season reel; it only pauses when the app goes to the background (and is silent when muted).
+ * Calling it again with the same name does nothing, so it never restarts.
+ */
+export function music(name: 'hub' | null) {
   if (name === currentName && (timer != null || !name)) return;
   currentName = name;
   if (timer != null) {
     clearInterval(timer);
     timer = null;
   }
-  style = name === 'hub' ? HUB : name === 'match' ? MATCH : null;
+  style = name === 'hub' ? HUB : null;
   if (!style) return;
   const c = ensure();
   if (!c || c.state !== 'running') return; // starts on the first user gesture
@@ -329,11 +334,25 @@ export type Sfx =
 
 let lastTick = 0;
 
+/** Lower the music a little under a popup or reel sound, then bring it back. Never stops it. */
+function duck(c: AudioContext) {
+  if (!musicGain) return;
+  const g = musicGain.gain;
+  const full = settings().music * 0.8;
+  const now = c.currentTime;
+  g.cancelScheduledValues(now);
+  g.setValueAtTime(g.value, now);
+  g.linearRampToValueAtTime(full * 0.6, now + 0.05);
+  g.setValueAtTime(full * 0.6, now + 0.6);
+  g.linearRampToValueAtTime(full, now + 1.4);
+}
+
 export function sfx(name: Sfx) {
   const c = ensure();
   if (!c || c.state !== 'running' || settings().muted || !sfxGain || settings().sfx <= 0) return;
   const t = c.currentTime + 0.01;
   const d = sfxGain;
+  if (name !== 'tick' && name !== 'tap' && name !== 'click') duck(c);
   const ep = (notes: number[], gap: number, dur = 0.6, vel = 0.14) => notes.forEach((n, i) => epiano(d, t + i * gap, n, dur, vel));
   switch (name) {
     case 'click': { const g = env(d, t, 0.06, 0.035, 0.003); osc(g, t, 'sine', 1500, 0.035, 0, 1100); break; }
