@@ -4,7 +4,7 @@ import { squadOf, userClub, type GameState } from '../../core/state';
 import { seniorCount, SQUAD_MAX, SQUAD_MIN } from '../../core/systems/contracts';
 import { userWageBill } from '../../core/systems/finance';
 import { effectiveOvr } from '../../core/ratings';
-import { Card, ovrColor } from '../components';
+import { Card, PosPill, ovrColor } from '../components';
 import { Portrait } from '../portrait';
 import { LINE } from '../../core/data/positions';
 import { money, nav, store } from '../store';
@@ -83,8 +83,20 @@ function Lineup({ s }: { s: GameState }) {
           );
         })}
       </svg>
-      <div class="tiny dim" style={{ marginTop: 6 }}>The XI is picked automatically by effective rating and morale. The tag under each player is the slot he fills (amber outline: out of his main position). Lock a player from his screen to force him in (gold frame).</div>
-      <div class="tiny dim">Bench: {lu.bench.map((p) => p.last).join(', ') || 'none'}</div>
+      <div class="bench-head">Bench</div>
+      <div class="bench">
+        {lu.bench.map((p) => (
+          <div key={p.id} class="bench-p" onClick={() => nav.push({ kind: 'player', id: p.id })}>
+            <div class="bench-img" style={p.locked ? { outline: '2px solid #ffcc4d' } : undefined}>
+              <Portrait p={p} size={40} />
+              <span class="bench-ovr" style={{ background: ovrColor(p.ovr) }}>{p.ovr}</span>
+            </div>
+            <div class="bench-name">{p.last}</div>
+            <PosPill pos={p.pos} />
+          </div>
+        ))}
+        {lu.bench.length === 0 && <span class="tiny dim">No substitutes.</span>}
+      </div>
       {n < SQUAD_MIN && <div class="amber small" style={{ marginTop: 6 }}>Squad below {SQUAD_MIN}: sign players or promote academy players.</div>}
     </Card>
   );
