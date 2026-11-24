@@ -137,6 +137,9 @@ function TransfersTab() {
   const [seg, setSeg] = useState<Seg>('scouted');
   const [pos, setPos] = useState('ANY');
   const [sort, pick] = useSort();
+  const [undo, setUndo] = useState<Player | null>(null);
+  const remove = (p: Player) => { s.scouting.starred = s.scouting.starred.filter((x) => x !== p.id); setUndo(p); store.bump(); };
+  const restore = () => { if (undo && !s.scouting.starred.includes(undo.id)) s.scouting.starred = [undo.id, ...s.scouting.starred]; setUndo(null); store.bump(); };
   const w = isWindowOpen(s.week);
   const incoming = s.inbox.filter((m) => m.action?.kind === 'offer_in' && !m.resolved).length;
   const isList = LIST_SEGS.includes(seg);
@@ -170,7 +173,8 @@ function TransfersTab() {
       <SwipePages keys={keys} value={value} onChange={go}>
         {isList && (
           <Card title={LIST_TITLE[seg]}>
-            {all.length === 0 ? <div class="empty">{LIST_EMPTY[seg]}</div> : <PlayerTable s={s} players={list} sort={sort} onSort={pick} />}
+            {all.length === 0 ? <div class="empty">{LIST_EMPTY[seg]}</div> : <PlayerTable s={s} players={list} sort={sort} onSort={pick} onRemove={seg === 'shortlist' ? remove : undefined} />}
+            {seg === 'shortlist' && undo && <div class="between small" style={{ marginTop: 8 }}><span class="dim">Removed {undo.first[0]}. {undo.last} from your shortlist</span><button class="btn small" onClick={restore}>Undo</button></div>}
             {seg === 'free' && all.length > 0 && <div class="tiny dim">Best 40 shown. Division {s.clubs[s.userClubId].div} wages apply.</div>}
           </Card>
         )}

@@ -29,7 +29,7 @@ export function useSort(): [{ key: SortKey; dir: 1 | -1 }, (k: SortKey) => void]
   return [sort, pick];
 }
 
-export function PlayerTable({ s, players, sort, onSort, limit = 40 }: { s: GameState; players: Player[]; sort: { key: SortKey; dir: 1 | -1 }; onSort: (k: SortKey) => void; limit?: number }) {
+export function PlayerTable({ s, players, sort, onSort, limit = 40, onRemove }: { s: GameState; players: Player[]; sort: { key: SortKey; dir: 1 | -1 }; onSort: (k: SortKey) => void; limit?: number; onRemove?: (p: Player) => void }) {
   const rows = [...players]
     .sort((a, b) => {
       const x = valueOf(s, a, sort.key), y = valueOf(s, b, sort.key);
@@ -47,7 +47,7 @@ export function PlayerTable({ s, players, sort, onSort, limit = 40 }: { s: GameS
     <div class="pt">
       <div class="sq-head">
         <span class="grow" />
-        <div class="sq-cols lined">{COLS.map(([k, l, w]) => <span key={k} style={{ width: w }}>{btn(k, l, w)}</span>)}</div>
+        <div class="sq-cols lined">{COLS.map(([k, l, w]) => <span key={k} style={{ width: w }}>{btn(k, l, w)}</span>)}{onRemove && <span style={{ width: 26 }} />}</div>
         <span style={{ width: 25, textAlign: 'center' }}>{btn('ovr', 'OVR', 25)}</span>
       </div>
       {rows.length === 0 && <div class="empty">Nobody here yet.</div>}
@@ -60,13 +60,14 @@ export function PlayerTable({ s, players, sort, onSort, limit = 40 }: { s: GameS
             key={p.id}
             p={p}
             compact
-            sub={<>{club ? <Badge club={club} size={14} /> : <span class="green">Free</span>}{s.scouting.starred.includes(p.id) && <span class="gold"> ★</span>}</>}
+            sub={<>{club ? <Badge club={club} size={14} /> : <span class="green">Free</span>}{!onRemove && s.scouting.starred.includes(p.id) && <span class="gold">★</span>}</>}
             right={
               <div class="sq-cols lined">
                 <span class="sq-c" style={{ width: 30 }}>{s.season - p.birthYear}</span>
                 <span class="sq-c" style={{ width: 36 }}>{k.pot ?? '?'}</span>
                 <span class="sq-c" style={{ width: 46 }}>{money(p.value)}</span>
                 <span class="sq-c" style={{ width: 40 }}><PersonalityFace v={pers} size={18} /></span>
+                {onRemove && <span class="sq-c" style={{ width: 26 }}><button class="sq-x" aria-label="Remove from shortlist" onClick={(e) => { e.stopPropagation(); onRemove(p); }}>✕</button></span>}
               </div>
             }
           />

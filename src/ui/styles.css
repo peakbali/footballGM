@@ -277,3 +277,5 @@ table.tbl.compact { font-size: 12px; }
 .pt .sq-cols.lined > span { padding: 0; justify-content: center; }
 .pt .sq-cols .sq-c { text-align: center; }
 .pt .sq-item .tiny { white-space: nowrap; }
+.sq-x { background: none; border: 0; color: var(--dim); font-size: 14px; padding: 6px 4px; cursor: pointer; }
+.sq-x:active { color: #e5383b; }
