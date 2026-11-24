@@ -279,3 +279,9 @@ table.tbl.compact { font-size: 12px; }
 .pt .sq-item .tiny { white-space: nowrap; }
 .sq-x { background: none; border: 0; color: var(--dim); font-size: 14px; padding: 6px 4px; cursor: pointer; }
 .sq-x:active { color: #e5383b; }
+.bench-head { font-family: var(--px); font-size: 10px; color: var(--dim); margin: 8px 0 4px; }
+.bench { display: flex; gap: 10px; overflow-x: auto; padding: 9px 10px 6px 4px; scrollbar-width: none; }
+.bench-p { flex: none; width: 52px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+.bench-img { position: relative; width: 40px; height: 40px; }
+.bench-ovr { position: absolute; right: -7px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px; border: 2px solid #070b18; color: #0b1020; font: 9px/14px var(--px); text-align: center; box-sizing: border-box; padding: 0 2px; }
+.bench-name { font-size: 11px; font-weight: 700; max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
