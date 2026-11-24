@@ -54,7 +54,7 @@ function DealScreen({ pid }: { pid: number }) {
         <div class="row">
           {club && <Badge club={club} size={36} />}
           <div class="grow small">
-            <div>Value: <b>{money(estVal)}</b>{!k.exact && <span class="dim"> (estimate)</span>}</div>
+            <div>Value: <b>{money(estVal)}</b>{k.ovr == null && <span class="dim"> (estimate)</span>}</div>
             {p.contract && <div class="dim">Wage {money(p.contract.wage)}/wk · contract to {p.contract.endSeason + 1}</div>}
             <div class="dim">Your cash: <b class={user.cash < 0 ? 'red' : 'gold'}>{money(user.cash)}</b> · squad {seniorCount(s)}/{SQUAD_MAX}</div>
           </div>

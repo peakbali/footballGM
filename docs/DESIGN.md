@@ -239,8 +239,8 @@ Neighbouring divisions overlap: a good div 9 player is an average div 8 player.
 
 ### 4.5 POT and unscouted values **[Agreed]**
 
-- **POT** is the hidden ceiling the player can reach. Shown to the user only through scouting, as a range or "?".
-- Unscouted values show as `?` (reference game style). Partly scouted values show a range, e.g. `62 to 70`.
+- **POT** is the hidden ceiling the player can reach. Shown to the user only through scouting (or, for your own players, your coaches).
+- OVR and POT are always shown as **one number, never a range**: either the correct value or `?` (reference game style). Unscouted values show as `?`. (Changed 2026-11-24 after playtesting: ranges felt clunky.)
 
 ---
 
@@ -266,6 +266,7 @@ Free agents and loans are allowed **any time**.
 1. Hub screen shows next match, league position, money, alerts, and the evolving stadium.
 2. Player makes decisions (optional).
 3. Tap **Continue**. The game advances week by week and **stops at events**: offers received, contract expiring, scout report ready, facility finished, window opening/closing, board message, end of season.
+   When the week includes your match, its report opens with a second **Continue** button in the same bottom-right spot, which takes you back to the hub.
 4. Inbox batches minor items (results of other leagues, small news).
 5. **Autosave every week**, single save slot.
 
@@ -410,16 +411,18 @@ Minimal: notable transfers in your division and the top division, record fees, y
 
 **[Proposal] Mechanics**
 
-| Scout level | OVR shown as | POT shown as | Divisions covered |
-|---|---|---|---|
-| 1 to 20 | Range ±8 | `?` | Own division ±1 |
-| 21 to 40 | Range ±5 | Range ±12 | ±2 |
-| 41 to 60 | Range ±3 | Range ±8 | ±3 |
-| 61 to 80 | Range ±1 | Range ±4 | ±5 |
-| 81 to 100 | Exact | Range ±2, traits visible | All (and foreign pools later) |
+A scout report always shows the player's **true OVR**. POT is either the **true number** or `?`. Scout level decides how many players' POT the scout can read: a good scout gives the correct POT for most players, a poor one leaves most as `?`. Which players a scout can read is stable, so a better scout always sees at least what a worse one sees.
+
+| Scout level | POT read for | Divisions covered |
+|---|---|---|
+| 1 to 20 | about 25 to 40% of players | Own division ±1 |
+| 21 to 40 | about 40 to 55% | ±2 |
+| 41 to 60 | about 55 to 65% | ±3 |
+| 61 to 80 | about 70 to 80% | ±5 |
+| 81 to 100 | about 80 to 95%, traits visible | All (and foreign pools later) |
 
 - Each scout delivers **one shortlist (3 to 6 players) every 2 weeks**. More scouts = more lists.
-- Once a player is scouted, the report is stored. Your own squad is always exactly known for OVR; POT accuracy uses your best coach's level.
+- Once a player is scouted, the report is stored and stays current for this season and the next. Your own squad's OVR is always known; whether you see a player's POT uses your best coach's level the same way. Players in your own league show their OVR (you watch them every week) and `?` for POT until scouted.
 
 ---
 
@@ -442,6 +445,7 @@ Minimal: notable transfers in your division and the top division, record fees, y
 - Staff have a **level 1 to 100**, a wage and a contract length.
 - **Staff level is capped by facilities**: e.g. a coach above the training ground's cap works at the cap level.
 - Staff are hired from a generated pool that refreshes every month.
+- The Staff screen has filter chips by type (All, Coaches, Medical, then each role) and every role carries a small pixel tag: `S` scout, `AC`/`MC`/`DC`/`GC` attacking/midfield/defensive/goalkeeping coach, `P` physio, `+` doctor, `Y` youth coach, `£` commercial manager.
 
 ### 9.2 Facilities **[Agreed]**
 
@@ -661,6 +665,7 @@ A swipeable sequence of full-screen cards:
 - **Pixel chrome** (frames, buttons, icons, badges) plus a **clean compact font** for data and tables.
 - **Not** Kairosoft or cartoon.
 - Reference game: an American-football GM app. Borrow: hub screen with a big **Advance/Continue** button, **hexagon OVR badges**, **bottom tab bar**, `?` for unscouted values.
+- **Feature card backdrops**: cards for distinct features, mostly on the Club tab, carry a faded pixel scene in the top-right corner (stadium stands for Stadium, goal and cones for Training, school building for Academy, shop front for Commercial, bank and coins for Finances, ticket for Tickets, billboard for Sponsors, clipboard for Staff, boardroom for Board, trophy for History). Lists and data-heavy cards stay plain.
 
 ### 13.2 Screens **[Proposal]**
 

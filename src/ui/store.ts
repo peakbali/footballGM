@@ -121,7 +121,7 @@ export function useStore(): Store {
 /** Simple navigation stack for overlays. */
 export type Overlay =
   | { kind: 'player'; id: number }
-  | { kind: 'match'; fixtureId: number }
+  | { kind: 'match'; fixtureId: number; after?: boolean } // after = opened by Continue: show a Continue back to the hub
   | { kind: 'club'; id: number }
   | { kind: 'inbox' }
   | { kind: 'settings' }

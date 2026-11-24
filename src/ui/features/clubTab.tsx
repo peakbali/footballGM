@@ -3,7 +3,7 @@ import { userClub, type GameState } from '../../core/state';
 import { projection, ticketRange, totals, userWageBill, staffWageBill, upkeep } from '../../core/systems/finance';
 import { STAFF_ROLES, staffCap, maxScouts } from '../../core/systems/staff';
 import { ECONOMY } from '../../core/data/economy';
-import type { FinCat, Staff } from '../../core/types';
+import type { FinCat, Staff, StaffRole } from '../../core/types';
 import { INCOME_CATS, COST_CATS } from '../../core/types';
 import { Card } from '../components';
 import { money, store, useStore } from '../store';
@@ -42,7 +42,7 @@ function Finances({ s }: { s: GameState }) {
   const [lo, hi] = ticketRange(c, s);
   return (
     <>
-      <Card title="Finances">
+      <Card title="Finances" art="money">
         <div class="kv">
           <span>Cash</span><b class={c.cash < 0 ? 'red' : 'gold'}>{money(c.cash)}</b>
           <span>Projected 30 June</span><b class={pr.end < 0 ? 'red' : 'green'}>{money(pr.end)}</b>
@@ -58,7 +58,7 @@ function Finances({ s }: { s: GameState }) {
         {COST_CATS.filter((k) => s.fin.season[k]).map((k) => <div class="between small" key={k} style={{ padding: '3px 0' }}><span>{LABEL[k]}</span><span class="red">{money(s.fin.season[k]!)}</span></div>)}
         {Object.keys(s.fin.last).length > 0 && <div class="tiny dim" style={{ marginTop: 6 }}>Last season: income {money(last.inc)}, costs {money(-last.cost)}, net {money(last.net)}</div>}
       </Card>
-      <Card title="Tickets">
+      <Card title="Tickets" art="tickets">
         <div class="between"><span class="small">Price</span><Stepper value={c.ticket} onChange={(v) => { c.ticket = v; store.bump(); }} step={1} min={lo} max={hi} fmt={(v) => `£${v}`} /></div>
         <div class="tiny dim" style={{ marginTop: 6 }}>Division average £{ECONOMY[c.div].ticket}. Cheaper tickets bring bigger crowds. Last crowd: {c.lastAttendance?.toLocaleString() ?? '-'} of {c.capacity.toLocaleString()}.</div>
       </Card>
@@ -69,7 +69,7 @@ function Finances({ s }: { s: GameState }) {
 function Sponsors({ s }: { s: GameState }) {
   const active = s.sponsors.filter((d) => d.status === 'active');
   return (
-    <Card title="Sponsors">
+    <Card title="Sponsors" art="sponsors">
       {active.length === 0 && <div class="empty">No active sponsor. Offers arrive at the start of each season.</div>}
       {active.map((d) => (
         <div class="item" key={d.id}>
@@ -83,8 +83,35 @@ function Sponsors({ s }: { s: GameState }) {
   );
 }
 
+/** Pixel role tag shown before each staff role, e.g. [S] for scout. */
+export const ROLE_TAG: Record<StaffRole, { tag: string; color: string; short: string }> = {
+  scout: { tag: 'S', color: '#5aa0ff', short: 'Scout' },
+  coach_att: { tag: 'AC', color: '#e0525a', short: 'Attack' },
+  coach_mid: { tag: 'MC', color: '#ffcc4d', short: 'Midfield' },
+  coach_def: { tag: 'DC', color: '#4cc38a', short: 'Defence' },
+  coach_gk: { tag: 'GC', color: '#35c0c0', short: 'Keepers' },
+  physio: { tag: 'P', color: '#ff9640', short: 'Physio' },
+  doctor: { tag: '+', color: '#e8ecff', short: 'Doctor' },
+  youth_coach: { tag: 'Y', color: '#b48cff', short: 'Youth' },
+  commercial: { tag: '£', color: '#d9a520', short: 'Commercial' },
+};
+
+export function RoleTag({ role }: { role: StaffRole }) {
+  const t = ROLE_TAG[role];
+  return <span class="role-tag" style={{ background: t.color }}>{t.tag}</span>;
+}
+
+const STAFF_FILTERS: { key: string; label: string; roles: StaffRole[] }[] = [
+  { key: 'all', label: 'All', roles: STAFF_ROLES.map((r) => r.role) },
+  { key: 'coaches', label: 'Coaches', roles: ['coach_att', 'coach_mid', 'coach_def', 'coach_gk'] },
+  { key: 'medical', label: 'Medical', roles: ['physio', 'doctor'] },
+  ...STAFF_ROLES.map((r) => ({ key: r.role, label: ROLE_TAG[r.role].short, roles: [r.role] })),
+];
+
 function StaffCard({ s }: { s: GameState }) {
   const [hiring, setHiring] = useState<string | null>(null);
+  const [filter, setFilter] = useState('all');
+  const roles = STAFF_FILTERS.find((f) => f.key === filter)!.roles;
   const div = userClub(s).div;
   const hire = (st: Staff) => {
     if (st.role !== 'scout') s.staff = s.staff.filter((x) => x.role !== st.role);
@@ -96,15 +123,22 @@ function StaffCard({ s }: { s: GameState }) {
     void store.persist();
   };
   return (
-    <Card title={`Staff · ${money(staffWageBill(s))}/wk`}>
-      {STAFF_ROLES.map((r) => {
+    <Card title={`Staff · ${money(staffWageBill(s))}/wk`} art="staff">
+      <div class="chips">
+        {STAFF_FILTERS.map((f) => (
+          <button key={f.key} class={`chip ${filter === f.key ? 'on' : ''}`} onClick={() => { setFilter(f.key); setHiring(null); }}>
+            {f.roles.length === 1 && <RoleTag role={f.roles[0]} />}{f.label}
+          </button>
+        ))}
+      </div>
+      {STAFF_ROLES.filter((r) => roles.includes(r.role)).map((r) => {
         const list = s.staff.filter((x) => x.role === r.role);
         const cap = staffCap(s, r.role);
         return (
           <div key={r.role} style={{ borderBottom: '1px solid var(--line)', padding: '6px 0' }}>
             <div class="between">
               <div>
-                <div class="name small">{r.label}</div>
+                <div class="name small"><RoleTag role={r.role} />{r.label}</div>
                 {list.map((x) => <div class="tiny" key={x.id}>{x.first} {x.last} · <b class={x.level > cap ? 'amber' : ''}>{Math.min(x.level, cap)}</b>{x.level > cap ? `/${x.level}` : ''} · {money(x.wage)}/wk · to {x.endSeason + 1} <button class="linkbtn" onClick={() => { s.staff = s.staff.filter((y) => y.id !== x.id); store.bump(); }}>dismiss</button></div>)}
                 {list.length === 0 && <div class="tiny red">Vacant</div>}
               </div>

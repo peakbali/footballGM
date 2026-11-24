@@ -1,5 +1,5 @@
 import { POSITIONS, type Position } from '../data/positions';
-import { hashSeed, Rng, clamp } from '../rng';
+import { hashSeed, Rng } from '../rng';
 import { squadOf, type GameState } from '../state';
 import { registerSystem } from '../systems';
 import type { Player, ScoutReport, Staff } from '../types';
@@ -8,59 +8,55 @@ import { askingWage } from './contracts';
 import { addMessage } from '../season';
 import { staffCap } from './staff';
 
-/** Scout level table (DESIGN 8). */
-export function scoutAccuracy(level: number): { ovr: number; pot: number | null; range: number; traits: boolean } {
-  if (level <= 20) return { ovr: 8, pot: null, range: 1, traits: false };
-  if (level <= 40) return { ovr: 5, pot: 12, range: 2, traits: false };
-  if (level <= 60) return { ovr: 3, pot: 8, range: 3, traits: false };
-  if (level <= 80) return { ovr: 1, pot: 4, range: 5, traits: false };
-  return { ovr: 0, pot: 2, range: 10, traits: true };
+/** Scout level table (DESIGN 8). A scouted OVR is always the true number; POT is either the true number or "?". */
+export function scoutAccuracy(level: number): { potChance: number; range: number; traits: boolean } {
+  const potChance = Math.min(0.95, 0.25 + (0.7 * level) / 100);
+  if (level <= 20) return { potChance, range: 1, traits: false };
+  if (level <= 40) return { potChance, range: 2, traits: false };
+  if (level <= 60) return { potChance, range: 3, traits: false };
+  if (level <= 80) return { potChance, range: 5, traits: false };
+  return { potChance, range: 10, traits: true };
 }
 
 function effLevel(s: GameState, st: Staff) {
   return Math.min(st.level, staffCap(s, 'scout'));
 }
 
-/** Stable (per player + level) noisy range around the true value. */
-function noisyRange(seed: number, pid: number, v: number, err: number): [number, number] {
-  if (err <= 0) return [v, v];
-  const r = new Rng(hashSeed(seed, pid, err));
-  const shift = Math.round(r.range(-err, err) * 0.6);
-  return [clamp(v + shift - err, 1, 99), clamp(v + shift + err, 1, 99)];
+/** Whether a judge of this level reads this player's POT. Stable per player, so a better judge sees everything a worse one does. */
+export function seesPot(seed: number, pid: number, level: number): boolean {
+  return new Rng(hashSeed(seed, pid, 313)).next() < scoutAccuracy(level).potChance;
 }
 
 export function makeReport(s: GameState, p: Player, level: number): ScoutReport {
-  const acc = scoutAccuracy(level);
   const prev = s.scouting.reports[p.id];
+  if (prev && typeof prev.ovr === 'number' && prev.level > level && prev.season === s.season) return prev;
   const rep: ScoutReport = {
     pid: p.id,
-    ovr: noisyRange(s.seed, p.id, p.ovr, acc.ovr),
-    pot: acc.pot == null ? null : noisyRange(s.seed ^ 77, p.id, p.pot, acc.pot),
-    level, season: s.season, week: s.week, traits: acc.traits,
+    ovr: p.ovr,
+    pot: seesPot(s.seed, p.id, level) ? p.pot : null,
+    level, season: s.season, week: s.week, traits: scoutAccuracy(level).traits,
   };
-  if (prev && prev.level > level && prev.season === s.season) return prev;
   s.scouting.reports[p.id] = rep;
   return rep;
 }
 
-/** What the user knows about a player. */
-export function knowledgeOf(s: GameState, p: Player): { exact: boolean; ovrRange?: [number, number]; potRange?: [number, number] } {
+/** What the user knows about a player: each value is the true number or null ("?"). */
+export function knowledgeOf(s: GameState, p: Player): { ovr: number | null; pot: number | null } {
   if (p.clubId === s.userClubId || p.contract?.parentClubId === s.userClubId) {
-    // own players: exact OVR; POT accuracy from best coach
+    // own players: OVR known; POT read by the best coach
     const coach = Math.max(0, ...s.staff.filter((x) => x.role.startsWith('coach')).map((x) => x.level));
-    const acc = scoutAccuracy(coach + 20).pot ?? 10;
-    return { exact: true, potRange: noisyRange(s.seed ^ 91, p.id, p.pot, acc) };
+    return { ovr: p.ovr, pot: seesPot(s.seed ^ 91, p.id, coach + 20) ? p.pot : null };
   }
   const r = s.scouting.reports[p.id];
-  if (r) {
+  if (r && typeof r.ovr === 'number') {
+    // a report is current for this season and the next; ratings move, so the numbers shown are today's
     const fresh = s.season - r.season <= 1;
-    if (r.ovr[0] === r.ovr[1] && fresh) return { exact: true, ovrRange: r.ovr, potRange: r.pot ?? undefined };
-    return { exact: false, ovrRange: fresh ? r.ovr : [r.ovr[0] - 3, r.ovr[1] + 3], potRange: r.pot ?? undefined };
+    return { ovr: fresh ? p.ovr : null, pot: r.pot != null ? p.pot : null };
   }
-  // Players in your own league are roughly known from watching them
+  // Players in your own league are known from watching them
   const userLeague = s.leagues.find((l) => l.clubIds.includes(s.userClubId))!;
-  if (p.clubId != null && userLeague.clubIds.includes(p.clubId)) return { exact: false, ovrRange: noisyRange(s.seed ^ 5, p.id, p.ovr, 6) };
-  return { exact: false };
+  if (p.clubId != null && userLeague.clubIds.includes(p.clubId)) return { ovr: p.ovr, pot: null };
+  return { ovr: null, pot: null };
 }
 
 /** Divisions a scout of this level covers relative to the user's division. */

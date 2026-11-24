@@ -38,7 +38,7 @@ export function ClubViewScreen({ id }: { id: number }) {
       <Card title={`Squad · ${squad.length}`}>
         {squad.map((p) => {
           const k = knowledge(s, p);
-          return <PlayerRow key={p.id} p={{ ...p, ovr: k.exact ? p.ovr : (null as unknown as number) }} sub={<>{s.season - p.birthYear}y</>} onClick={undefined} />;
+          return <PlayerRow key={p.id} p={{ ...p, ovr: k.ovr as number }} sub={<>{s.season - p.birthYear}y</>} onClick={undefined} />;
         })}
       </Card>
     </Overlay>

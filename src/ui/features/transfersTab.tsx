@@ -10,18 +10,18 @@ import { money, nav, store, useStore } from '../store';
 import { knowledge } from '../playerExtras';
 import { setTransfersScreen } from '../tabs';
 import { Stepper, niceStep } from './widgets';
+import { RoleTag } from './clubTab';
 
 export function KnownRow({ s, p }: { s: GameState; p: Player }) {
   const k = knowledge(s, p);
   const club = p.clubId != null ? s.clubs[p.clubId] : null;
-  const label = k.exact ? p.ovr : k.ovrRange ? `${k.ovrRange[0]}-${k.ovrRange[1]}` : null;
   return (
     <div class="item" onClick={() => nav.push({ kind: 'player', id: p.id })}>
-      <Hex value={label} color={k.exact || k.ovrRange ? undefined : '#4a5590'} />
+      <Hex value={k.ovr} color={k.ovr != null ? undefined : '#4a5590'} />
       <div class="grow">
         <div class="name">{p.first[0]}. {p.last} {s.scouting.starred.includes(p.id) ? <span class="gold">★</span> : ''}</div>
         <div class="tiny dim row" style={{ gap: 6 }}>
-          <PosPill pos={p.pos} /> {s.season - p.birthYear}y · POT {k.potRange ? `${k.potRange[0]}-${k.potRange[1]}` : '?'}
+          <PosPill pos={p.pos} /> {s.season - p.birthYear}y · POT {k.pot ?? '?'}
         </div>
       </div>
       <div style={{ textAlign: 'right' }} class="tiny">
@@ -66,8 +66,8 @@ function Scouts({ s }: { s: GameState }) {
         const lvl = Math.min(st.level, cap);
         const acc = scoutAccuracy(lvl);
         return (
-          <Card key={st.id} title={`${st.first} ${st.last} · level ${lvl}${st.level > cap ? ` (capped from ${st.level})` : ''}`}>
-            <div class="tiny dim" style={{ marginBottom: 8 }}>Covers your division ±{coverage(lvl)} · OVR ±{acc.ovr} · POT {acc.pot == null ? 'unknown' : `±${acc.pot}`} · a shortlist every 2 weeks</div>
+          <Card key={st.id} title={<span><RoleTag role="scout" />{`${st.first} ${st.last} · level ${lvl}${st.level > cap ? ` (capped from ${st.level})` : ''}`}</span>}>
+            <div class="tiny dim" style={{ marginBottom: 8 }}>Covers your division ±{coverage(lvl)} · reads the potential of about {Math.round(acc.potChance * 100)}% of players · a shortlist every 2 weeks</div>
             <div class="small dim">Position</div>
             <div class="chips">{['ANY', ...POSITIONS].map((pos) => <button key={pos} class={`chip ${a.pos === pos ? 'on' : ''}`} onClick={() => { a.pos = pos; store.bump(); }}>{pos}</button>)}</div>
             <div class="between" style={{ marginBottom: 6 }}><span class="small">Min age</span><Stepper value={a.minAge} onChange={(v) => { a.minAge = v; store.bump(); }} step={1} min={15} max={a.maxAge} fmt={(v) => `${v}`} /></div>

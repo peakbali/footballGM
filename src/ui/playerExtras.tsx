@@ -2,14 +2,14 @@ import type { JSX } from 'preact';
 import type { GameState } from '../core/state';
 import type { Player } from '../core/types';
 
+/** Each value is the true number or null, shown as "?". */
 export interface Knowledge {
-  exact: boolean;
-  ovrRange?: [number, number];
-  potRange?: [number, number];
+  ovr: number | null;
+  pot: number | null;
 }
 
 type KnowFn = (s: GameState, p: Player) => Knowledge;
-let knowFn: KnowFn = (s, p) => ({ exact: true, potRange: [p.pot, p.pot] });
+let knowFn: KnowFn = (s, p) => ({ ovr: p.ovr, pot: p.pot });
 /** Scouting overrides what the user knows about a player. */
 export function setKnowledgeFn(fn: KnowFn) {
   knowFn = fn;

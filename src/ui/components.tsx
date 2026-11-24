@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { LINE, type Position } from '../core/data/positions';
 import type { Club, Player } from '../core/types';
 import { nav } from './store';
+import { CardArt, type ArtKey } from './cardArt';
 
 /** Hexagon OVR badge (reference style). `value` null = unknown "?". */
 export function Hex({ value, size = 34, label, color }: { value: number | string | null; size?: number; label?: string; color?: string }) {
@@ -59,9 +60,10 @@ export function Form({ form }: { form: string }) {
   );
 }
 
-export function Card({ title, action, children }: { title?: ComponentChildren; action?: ComponentChildren; children: ComponentChildren }) {
+export function Card({ title, action, children, art }: { title?: ComponentChildren; action?: ComponentChildren; children: ComponentChildren; art?: ArtKey }) {
   return (
-    <div class="card">
+    <div class={art ? 'card has-art' : 'card'}>
+      {art && <CardArt art={art} />}
       {title && (
         <h3>
           <span>{title}</span>

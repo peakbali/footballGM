@@ -270,8 +270,8 @@ export interface ScoutAssignment {
 
 export interface ScoutReport {
   pid: number;
-  ovr: [number, number];
-  pot: [number, number] | null;
+  ovr: number; // older saves may hold a [lo, hi] range; those reports are treated as not made
+  pot: number | null; // null = this scout could not read the potential
   level: number;
   season: number;
   week: number;

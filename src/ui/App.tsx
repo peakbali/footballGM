@@ -69,7 +69,7 @@ export function App() {
         ))}
       </div>
       {top?.kind === 'player' && <PlayerScreen id={top.id} />}
-      {top?.kind === 'match' && <MatchScreen fixtureId={top.fixtureId} />}
+      {top?.kind === 'match' && <MatchScreen fixtureId={top.fixtureId} after={top.after} />}
       {top?.kind === 'inbox' && <InboxScreen />}
       {top?.kind === 'club' && <ClubViewScreen id={top.id} />}
       {top?.kind === 'settings' && <SettingsScreen />}
