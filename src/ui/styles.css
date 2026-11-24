@@ -229,3 +229,19 @@ table.tbl.compact { font-size: 12px; }
   .tbl.compact td { padding: 2px 3px; }
   .hub .money-row .big { font-size: 15px; }
 }
+
+/* ---------- Portraits: idle animation per position group */
+.portrait { border-radius: 3px; background: #0b1020; }
+@keyframes pt-glove { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes pt-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-0.7px); } 75% { transform: translateX(0.7px); } }
+@keyframes pt-scan { 0%, 45% { transform: translateX(-0.8px); } 50%, 95% { transform: translateX(0.8px); } 100% { transform: translateX(-0.8px); } }
+@keyframes pt-sprint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+@keyframes pt-streak { 0%, 100% { opacity: 0.9; transform: translateX(0); } 50% { opacity: 0.2; transform: translateX(-1.5px); } }
+.pt-GK .pt-glove-l { animation: pt-glove 0.9s steps(2) infinite; }
+.pt-GK .pt-glove-r { animation: pt-glove 0.9s steps(2) infinite 0.45s; }
+.pt-DEF .pt-head { animation: pt-shake 1.4s steps(4) infinite; }
+.pt-MID .pt-eyes { animation: pt-scan 2.2s steps(1) infinite; }
+.pt-ATT .pt-body { animation: pt-sprint 0.45s steps(2) infinite; }
+.pt-ATT .pt-streak { animation: pt-streak 0.45s steps(2) infinite; }
+@media (prefers-reduced-motion: reduce) { .portrait * { animation: none !important; } }
+.item .portrait { box-shadow: 0 2px 0 #070b18; }
