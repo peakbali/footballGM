@@ -47,6 +47,19 @@ const standalone = process.argv.includes('--standalone');
   await p.tap('.tabs button:has-text("Club")'); await p.goBack(); await p.waitForTimeout(300);
   const onHub = (await p.textContent('.tabs button.on')).includes('Hub');
   console.log(onHub ? 'PASS' : 'FAIL', 'club tab, back goes to hub'); if (!onHub) failed++;
+  // every main tab: one back goes to the hub, a second keeps the game on screen, and the in-app Hub button works
+  for (const tab of ['Squad', 'Transfers', 'Club', 'League']) {
+    await p.tap(`.tabs button:has-text("${tab}")`); await p.waitForTimeout(150);
+    await p.goBack(); await p.waitForTimeout(300);
+    const hub = (await p.textContent('.tabs button.on')).includes('Hub');
+    await p.goBack(); await p.waitForTimeout(300);
+    const still = await alive();
+    console.log(hub && still ? 'PASS' : 'FAIL', `${tab} tab: back goes to hub, then stays`); if (!(hub && still)) failed++;
+    await p.tap(`.tabs button:has-text("${tab}")`); await p.waitForTimeout(150);
+    await p.tap('.topbar button[aria-label="Back to hub"]'); await p.waitForTimeout(200);
+    const btn = (await p.textContent('.tabs button.on')).includes('Hub');
+    console.log(btn ? 'PASS' : 'FAIL', `${tab} tab: in-app Hub button`); if (!btn) failed++;
+  }
   // match report opened by Continue, then back
   await p.tap('button.continue'); await p.waitForSelector('.overlay, button.continue:not([disabled])', { timeout: 30000 });
   if (await overlay()) { await p.goBack(); await p.waitForTimeout(300); const ok = (await alive()) && !(await overlay()); console.log(ok ? 'PASS' : 'FAIL', 'match report after Continue'); if (!ok) failed++; }

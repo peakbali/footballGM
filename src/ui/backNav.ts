@@ -5,9 +5,14 @@
  * with the screens: one entry for the hub, one more when a tab other than the hub is open, one more for every
  * overlay on top. Back then closes the top overlay, then goes to the hub, and never leaves the game.
  *
- * Chrome skips history entries that were added without a user gesture when the user presses back, so entries
- * are only added from a click/tap (the guard entry is added on the first pointerdown, never on load) and we
- * never push from inside a popstate handler.
+ * Chrome skips history entries that were added without a user activation when the user presses back. On a phone
+ * a touch `pointerdown` does NOT count as activation (only pointerup/click/keydown do), so the guard entry is
+ * added on the first pointerup/click/keydown, never on load and never on pointerdown.
+ *
+ * It is also defensive about entries that did get skipped: every back press closes exactly one level (overlay,
+ * then tab) whatever entry the browser landed on, and the guard entries are pushed again straight away, so back
+ * can never leave the game for a blank page. Entries are re-checked when the page is shown again (bfcache, PWA
+ * resume).
  */
 export interface HistoryLike {
   state: unknown;
@@ -16,7 +21,8 @@ export interface HistoryLike {
 }
 export interface WindowLike {
   history: HistoryLike;
-  addEventListener(type: 'popstate' | 'pointerdown', fn: (e: { state?: unknown }) => void, opts?: unknown): void;
+  addEventListener(type: 'popstate' | 'pointerup' | 'click' | 'keydown' | 'pageshow', fn: (e: { state?: unknown }) => void, opts?: unknown): void;
+  document?: { visibilityState?: string; addEventListener(type: 'visibilitychange', fn: () => void): void };
 }
 export interface NavModel {
   /** overlays on top, plus one when a tab other than the hub is open */
@@ -32,6 +38,8 @@ export interface BackController {
   sync(): void;
   /** call from a user gesture */
   arm(): void;
+  /** call when the page is shown again (pageshow, tab visible): re-reads the history and repairs the guard entries */
+  resume(): void;
   /** current number of game entries above the page's first entry (for tests) */
   level(): number;
 }
@@ -63,22 +71,18 @@ export function createBackController(win: WindowLike, model: NavModel): BackCont
   win.addEventListener('popstate', (e) => {
     if (ignore > 0) { ignore--; return; }
     const l = levelOf(e.state);
-    if (l === 0) {
-      // went back past the hub entry: stay in the game by returning to it
-      h = 1;
-      ignore++;
-      win.history.go(1);
-      return;
-    }
+    const back = l < h;
     h = l;
     if (!model.active()) return;
     applying = true;
     try {
-      while (model.depth() + 1 > h && model.depth() > 0) model.closeTop();
+      // one level per back press, even if the browser skipped guard entries and landed further back
+      if (back && model.depth() > 0) model.closeTop();
     } finally {
       applying = false;
     }
-    sync();
+    if (!armed && h > 0) armed = true;
+    if (armed) sync(); // pushes the guard entries again when we landed below the screen depth (e.g. on the page's first entry)
   });
 
   return {
@@ -89,6 +93,11 @@ export function createBackController(win: WindowLike, model: NavModel): BackCont
       push(1);
       sync();
     },
+    resume() {
+      h = levelOf(win.history.state);
+      if (h > 0) armed = true;
+      if (armed) sync();
+    },
     level: () => h,
   };
 }
@@ -96,7 +105,11 @@ export function createBackController(win: WindowLike, model: NavModel): BackCont
 export function installBackNav(win: Window, model: NavModel, onChange: (fn: () => void) => void): BackController | null {
   if (!win.history?.pushState) return null;
   const c = createBackController(win as unknown as WindowLike, model);
-  win.addEventListener('pointerdown', () => c.arm(), { capture: true, passive: true } as AddEventListenerOptions);
+  const arm = () => c.arm();
+  // events that count as a user activation (a touch pointerdown does not)
+  for (const type of ['pointerup', 'click', 'keydown'] as const) win.addEventListener(type, arm, { capture: true, passive: true } as AddEventListenerOptions);
+  win.addEventListener('pageshow', () => c.resume());
+  win.document?.addEventListener('visibilitychange', () => { if (win.document?.visibilityState === 'visible') c.resume(); });
   onChange(() => c.sync());
   return c;
 }
