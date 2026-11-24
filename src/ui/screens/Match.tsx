@@ -3,6 +3,7 @@ import { nav, useStore } from '../store';
 import { matchExtras } from '../matchExtras';
 import type { MatchEvent } from '../../core/types';
 
+const HOW: Record<string, string> = { brk: 'run in behind', head: 'header', long: 'long shot' };
 const ICON: Record<string, string> = { goal: '⚽', pen: '⚽ (pen)', save: '🧤', miss: '↗', yellow: '🟨', red: '🟥', injury: '✚', sub: '⇄', ko: '', ft: '', ht: '' };
 
 export function MatchScreen({ fixtureId, after }: { fixtureId: number; after?: boolean }) {
@@ -19,7 +20,7 @@ export function MatchScreen({ fixtureId, after }: { fixtureId: number; after?: b
   };
   const describe = (e: MatchEvent) => {
     switch (e.t) {
-      case 'goal': return <><b>GOAL</b> {name(e.p)}{e.p2 ? <span class="dim"> (assist {name(e.p2)})</span> : ''}</>;
+      case 'goal': return <><b>GOAL</b> {name(e.p)}{e.k && HOW[e.k] ? <span class="dim"> ({HOW[e.k]})</span> : ''}{e.p2 ? <span class="dim"> (assist {name(e.p2)})</span> : ''}</>;
       case 'pen': return <><b>PENALTY GOAL</b> {name(e.p)}</>;
       case 'save': return <>{name(e.p)} forces a save{e.p2 ? <> from {name(e.p2)}</> : ''} <span class="dim tiny">xG {e.xg}</span></>;
       case 'miss': return <>{name(e.p)} shoots wide <span class="dim tiny">xG {e.xg}</span></>;
@@ -89,6 +90,18 @@ export function MatchScreen({ fixtureId, after }: { fixtureId: number; after?: b
               </div>
             ))}
           </div>
+        </Card>
+      )}
+      {rep?.keys && rep.keys.length > 0 && (
+        <Card title="Key matchups" art="board">
+          {rep.keys.map((k, i) => {
+            const who = k.side ? a : h;
+            return (
+              <div key={i} class="small" style={{ padding: '4px 0', borderBottom: '1px solid var(--line)' }}>
+                <b>{k.label}</b> <span class="dim">·</span> <b class="gold">{who.short}</b> <span class="dim">{k.note}</span> <span class="tiny dim">({k.a} v {k.d})</span>
+              </div>
+            );
+          })}
         </Card>
       )}
       {rep && (

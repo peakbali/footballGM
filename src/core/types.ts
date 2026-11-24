@@ -133,6 +133,7 @@ export interface MatchEvent {
   p?: number; // player id
   p2?: number; // assister / other
   xg?: number;
+  k?: 'open' | 'brk' | 'head' | 'long'; // kind of chance (goals, saves, misses)
   x?: number;
   y?: number;
 }
@@ -156,6 +157,8 @@ export interface MatchReport {
   lineups: [number[], number[]];
   ratings: Record<number, number>;
   motm?: number;
+  /** The attribute matchups that mattered most: side = index of the team with the edge (0 home, 1 away). */
+  keys?: { label: string; side: number; a: number; d: number; note: string }[];
 }
 
 export interface TableRow {
