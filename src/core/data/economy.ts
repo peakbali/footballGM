@@ -30,9 +30,10 @@ export const USER_START_CASH = 40_000;
 export function playerValue(ovr: number, pot: number, age: number, yearsLeft: number): number {
   const d = ovr - 35;
   let v = 1000 * Math.exp(0.07 * d + 0.0024 * d * Math.abs(d));
-  const ageF = age <= 18 ? 1.4 : age <= 25 ? 1.4 - ((age - 18) / 7) * 0.4 : age >= 33 ? 0.3 : 1 - ((age - 25) / 8) * 0.7;
+  // young players carry a premium, 25 to 28 is the peak, the value falls from 29 as the decline (from 31) gets closer
+  const ageF = age <= 18 ? 1.4 : age <= 24 ? 1.4 - ((age - 18) / 6) * 0.4 : age <= 28 ? 1 : age >= 34 ? 0.3 : [0.9, 0.8, 0.65, 0.5, 0.4][age - 29];
   const potGap = Math.max(0, pot - ovr);
-  const potF = age < 24 ? 1 + Math.min(potGap, 25) * 0.04 : 1;
+  const potF = age < 25 ? 1 + Math.min(potGap, 25) * 0.04 : 1;
   const contractF = yearsLeft >= 3 ? 1 : yearsLeft >= 2 ? 0.85 : yearsLeft >= 1 ? 0.65 : 0.35;
   v *= ageF * potF * contractF;
   return roundMoney(v);

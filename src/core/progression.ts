@@ -6,11 +6,12 @@ import type { Player } from './types';
 /** Expected OVR change per season for a standard player at this age (DESIGN 10.2). */
 export function ageCurve(age: number): number {
   if (age <= 19) return 4.5;
-  if (age <= 23) return 2.5;
-  if (age <= 26) return 0.4;
-  if (age <= 29) return -0.6;
-  if (age <= 32) return -2.5;
-  return -5;
+  if (age <= 24) return 2.4; // strong growth up to 24
+  if (age <= 28) return 0.3; // slight growth 25 to 28
+  if (age <= 30) return 0; // flat at 29 and 30
+  if (age <= 32) return -3.5; // decline starts at 31
+  if (age <= 34) return -5;
+  return -6;
 }
 
 export interface DevContext {
