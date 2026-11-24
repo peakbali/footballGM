@@ -696,6 +696,10 @@ Board, building projects and the cup card moved off the hub (Board and Facilitie
 
 The web build is an installable PWA: web app manifest, pixel icons (a ball under floodlights), and a service worker that precaches the whole game so it loads and plays offline, under any base path (it is hosted at /footballGM/). An **Install app** button appears on the title screen and in Settings (Chrome/Edge/Android use the install prompt; iPhone/iPad show the Share, Add to Home Screen steps). Each deploy stamps a new cache version, so updates arrive on the next online launch. The single-file artifact build has no service worker.
 
+### 13.2c Back button **[Agreed]**
+
+The browser and phone back button must never leave the game (that showed a blank page). Browser history is kept in step with the screens: one entry for the hub, one more while a tab other than the hub is open, one more per overlay on top. Back closes the top overlay, then returns to the hub, and stays on the hub. Entries are only added from a tap (Chrome skips entries added without a user gesture, which was the cause of the blank page), the first one on the first touch rather than on load, and never from inside a back event. Logic lives in `src/ui/backNav.ts` with a test (`tests/back.test.ts`) that models Chrome's skipping and opens every kind of screen; `scripts/e2e-back.cjs` repeats the check in a real browser, including the installed-app mode.
+
 ### 13.3 Evolving stadium hub **[Agreed]**
 
 The hub scene is built from layered pixel sprites that reflect facility upgrades: a lone rail and a portacabin in division 9, stands and floodlights later, a full bowl in division 1. Crowd density reflects last home attendance. Day/night tint follows match day.
