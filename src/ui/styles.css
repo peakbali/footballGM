@@ -255,7 +255,7 @@ table.tbl.compact { font-size: 12px; }
 @media (prefers-reduced-motion: reduce) { .swipe-pane.from-right, .swipe-pane.from-left { animation: none; } }
 
 /* squad list sub-pages (contract / form / attributes) */
-.sq-head { display: flex; align-items: center; gap: 10px; padding: 0 4px 4px; border-bottom: 1px solid var(--line); font-family: var(--px); font-size: 9px; color: var(--dim); text-align: right; }
+.sq-head { display: flex; align-items: center; gap: 6px; padding: 0 4px 4px; border-bottom: 1px solid var(--line); font-family: var(--px); font-size: 9px; color: var(--dim); text-align: right; }
 .sq-head .grow { flex: 1; }
 .sq-cols { display: flex; flex: none; }
 .sq-c, .sq-cols > span { display: inline-block; }
@@ -263,4 +263,9 @@ table.tbl.compact { font-size: 12px; }
 .sq-c.dim, .sq-c .dim { color: var(--dim); }
 /* contract sub-page: a line between wage, expiry and value */
 .sq-cols.lined { align-self: stretch; align-items: center; }
-.sq-cols.lined > span { box-sizing: border-box; border-left: 1px solid var(--line); padding: 0 5px; align-self: stretch; display: inline-flex; align-items: center; justify-content: flex-end; }
+.sq-cols.lined > span { box-sizing: border-box; border-left: 1px solid var(--line); padding: 0 3px; align-self: stretch; display: inline-flex; align-items: center; justify-content: flex-end; }
+
+/* compact squad rows: smaller portrait and badge so full names fit on a 360px phone */
+.item.sq-item { gap: 6px; padding: 8px 4px; }
+.sq-item .name { font-size: 13px; }
+.sq-item .tiny { font-size: 11px; }

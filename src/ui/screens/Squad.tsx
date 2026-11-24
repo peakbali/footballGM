@@ -15,9 +15,9 @@ const VIEWS = ['contract', 'form', 'attributes'] as const;
 type View = (typeof VIEWS)[number];
 const VIEW_LABEL: Record<View, string> = { contract: 'Contract', form: 'Form', attributes: 'Attributes' };
 const COLS: Record<View, [string, number][]> = {
-  contract: [['Wage', 48], ['Exp', 44], ['Value', 50]],
-  form: [['App', 26], ['G', 22], ['A', 22], ['Avg', 30], ['CS', 24]],
-  attributes: [['TEC', 30], ['MEN', 30], ['PHY', 30], ['GK', 30]],
+  contract: [['Wage', 40], ['Exp', 40], ['Value', 44]],
+  form: [['App', 24], ['G', 20], ['A', 20], ['Avg', 28], ['CS', 22]],
+  attributes: [['TEC', 28], ['MEN', 28], ['PHY', 28], ['GK', 28]],
 };
 
 export function SquadScreen() {
@@ -37,7 +37,7 @@ export function SquadScreen() {
           <div class="sq-head">
             <span class="grow" />
             <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{COLS[view].map(([l, w]) => <span key={l} style={{ width: w }}>{l}</span>)}</div>
-            <span style={{ width: 31 }}>OVR</span>
+            <span style={{ width: 25 }}>OVR</span>
           </div>
           {sorted.map((p) => <SquadRow key={p.id} p={p} season={s.season} view={view} />)}
         </SwipePages>
@@ -80,6 +80,7 @@ export function SquadRow({ p, season, view }: { p: Player; season: number; view?
   return (
     <PlayerRow
       p={p}
+      compact={!!view}
       sub={<>
         {season - p.birthYear}y
         {p.injury > 0 && <span class="red"> ✚{p.injury}w</span>}

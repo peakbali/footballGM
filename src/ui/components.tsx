@@ -103,10 +103,10 @@ export function Bar({ value, max = 100, color }: { value: number; max?: number; 
   );
 }
 
-export function PlayerRow({ p, right, sub, onClick }: { p: Player; right?: ComponentChildren; sub?: ComponentChildren; onClick?: () => void }) {
+export function PlayerRow({ p, right, sub, onClick, compact }: { p: Player; right?: ComponentChildren; sub?: ComponentChildren; onClick?: () => void; compact?: boolean }) {
   return (
-    <div class="item" onClick={onClick ?? (() => nav.push({ kind: 'player', id: p.id }))}>
-      <Portrait p={p} />
+    <div class={compact ? 'item sq-item' : 'item'} onClick={onClick ?? (() => nav.push({ kind: 'player', id: p.id }))}>
+      <Portrait p={p} size={compact ? 32 : undefined} />
       <div class="grow">
         <div class="name">{p.first[0]}. {p.last}</div>
         <div class="tiny dim row" style={{ gap: 6 }}>
@@ -114,7 +114,7 @@ export function PlayerRow({ p, right, sub, onClick }: { p: Player; right?: Compo
         </div>
       </div>
       {right}
-      <Hex value={p.ovr} />
+      <Hex value={p.ovr} size={compact ? 28 : undefined} />
     </div>
   );
 }
