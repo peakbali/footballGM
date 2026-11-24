@@ -1,5 +1,6 @@
 import { Card, Overlay } from '../components';
 import { store, useStore } from '../store';
+import { InstallApp } from '../installCard';
 
 export function SettingsScreen() {
   const st = useStore();
@@ -19,6 +20,9 @@ export function SettingsScreen() {
           <span>Effects</span>
           <input type="range" min={0} max={1} step={0.1} value={s.settings.sfx} onInput={(e) => { s.settings.sfx = +(e.target as HTMLInputElement).value; store.bump(); }} />
         </label>
+      </Card>
+      <Card title="Install">
+        <InstallApp />
       </Card>
       <Card title="Save">
         <div class="small dim" style={{ marginBottom: 10 }}>The game autosaves every week to this device (one save slot).</div>

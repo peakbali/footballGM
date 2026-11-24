@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { startingLeagues, clubsInLeague } from '../../core/world';
 import { SqliteSave } from '../../storage/sqliteStore';
 import { store } from '../store';
+import { InstallApp } from '../installCard';
 
 export function StartScreen() {
   const [step, setStep] = useState<'menu' | 'league' | 'club'>('menu');
@@ -22,6 +23,7 @@ export function StartScreen() {
         {hasSave && <button class="btn primary block" onClick={() => store.load()}>Continue career</button>}
         <button class={`btn block ${hasSave ? '' : 'primary'}`} onClick={() => setStep('league')}>New career</button>
         {hasSave && <div class="tiny dim">Starting a new career replaces your saved game.</div>}
+        <InstallApp compact />
       </div>
     );
 
