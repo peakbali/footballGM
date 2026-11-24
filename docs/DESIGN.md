@@ -722,7 +722,7 @@ Logic lives in `src/ui/backNav.ts` with a test (`tests/back.test.ts`) that model
 
 ### 13.2e Squad list sub-pages **[Agreed]**
 
-The squad box on the Squad tab has no sort buttons any more. It has three swipeable sub-pages with chips (Contract, Form, Attributes), in the same swipe-anywhere style as the other pages. The left of every row is the same on all three: portrait, name, position tag, age (plus injury, ban and loan notes). The players are listed by position (keepers, defenders, midfielders, forwards), best OVR first within a position. The OVR badge stays fixed on the right of every row. A small header row names the columns. Tapping a row opens the player screen, which has the full attribute detail.
+The squad box on the Squad tab has no sort buttons any more. It has three swipeable sub-pages with chips (Contract, Form, Attributes), in the same swipe-anywhere style as the other pages. The left of every row is the same on all three: portrait, name, position tag, age (plus injury, ban and loan notes). The players are listed by position (keepers, defenders, midfielders, forwards), best OVR first within a position. The OVR badge stays fixed on the right of every row. Rows are compact (32 px portrait, 28 px OVR badge, 13 px name, narrow columns) so names such as "D. Henderson" show in full on a 360 px phone. A small header row names the columns. Tapping a row opens the player screen, which has the full attribute detail.
 
 | Sub-page | Columns |
 |---|---|
