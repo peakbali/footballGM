@@ -45,9 +45,8 @@ export function makeReport(s: GameState, p: Player, level: number): ScoutReport 
 /** What the user knows about a player: each value is the true number or null ("?"). */
 export function knowledgeOf(s: GameState, p: Player): { ovr: number | null; pot: number | null } {
   if (p.clubId === s.userClubId || p.contract?.parentClubId === s.userClubId) {
-    // own players: OVR known; POT read by the best coach
-    const coach = Math.max(0, ...s.staff.filter((x) => x.role.startsWith('coach')).map((x) => x.level));
-    return { ovr: p.ovr, pot: seesPot(s.seed ^ 91, p.id, coach + 20) ? p.pot : null };
+    // own players (and loanees from you): OVR and POT are always known
+    return { ovr: p.ovr, pot: p.pot };
   }
   const r = s.scouting.reports[p.id];
   if (r && typeof r.ovr === 'number') {

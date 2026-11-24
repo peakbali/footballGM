@@ -18,7 +18,7 @@ const VIEW_LABEL: Record<View, string> = { contract: 'Contract', form: 'Form', a
 const COLS: Record<View, [string, number][]> = {
   contract: [['Wage', 40], ['Exp', 40], ['Value', 44]],
   form: [['App', 24], ['G', 20], ['A', 20], ['Avg', 28], ['CS', 22]],
-  attributes: [['TEC', 28], ['MEN', 28], ['PHY', 28], ['GK', 28]],
+  attributes: [['TEC', 28], ['MEN', 28], ['PHY', 28], ['GK', 28], ['POT', 30]],
 };
 
 export function SquadScreen() {
@@ -72,6 +72,7 @@ function viewCells(p: Player, view: View, season: number) {
       if (gk && p.pos !== 'GK') return <span class="dim">{v}</span>;
       return <b style={{ color: ovrColor(v) }}>{v}</b>;
     });
+    vals.push(<b class="gold">{p.pot}</b>);
   }
   void season;
   return cols.map(([l, w], i) => <Cell key={l} w={w}>{vals[i]}</Cell>);
