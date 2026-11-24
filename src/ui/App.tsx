@@ -15,6 +15,7 @@ import { ClubScreen } from './screens/Club';
 import { customOverlay } from './overlays';
 import { userClub } from '../core/state';
 import { music } from './audio';
+import { DecisionPopup } from './features/decisionUI';
 
 const TABS = [
   ['hub', 'Hub'],
@@ -75,6 +76,7 @@ export function App() {
       {top?.kind === 'club' && <ClubViewScreen id={top.id} />}
       {top?.kind === 'settings' && <SettingsScreen />}
       {top?.kind === 'custom' && customOverlay(top.key, top.data)}
+      <DecisionPopup />
     </div>
   );
 }

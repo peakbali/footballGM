@@ -214,7 +214,7 @@ function payFee(s: GameState, p: Player, buyerId: number, sellerId: number | nul
 
 // ---------------- Selling (AI offers for the user's players)
 
-function aiBuyerFor(s: GameState, rng: Rng, p: Player, idx: Map<number, Player[]>, loan: boolean): number | null {
+export function aiBuyerFor(s: GameState, rng: Rng, p: Player, idx: Map<number, Player[]>, loan: boolean): number | null {
   const user = s.clubs[s.userClubId];
   const cands: number[] = [];
   for (const lg of s.leagues) {
@@ -230,7 +230,8 @@ function aiBuyerFor(s: GameState, rng: Rng, p: Player, idx: Map<number, Player[]
   return cands.length ? rng.pick(cands) : null;
 }
 
-export function aiOfferFor(s: GameState, rng: Rng, p: Player, buyer: number, loan: boolean) {
+/** An AI club's pending bid (or loan request) for one of the user's players, without any message. */
+export function makeIncomingOffer(s: GameState, rng: Rng, p: Player, buyer: number, loan: boolean): TransferOffer {
   const offer: TransferOffer = {
     id: s.nextOfferId++, pid: p.id, seller: s.userClubId, buyer, type: loan ? 'loan' : 'permanent',
     fee: loan ? 0 : roundMoney(p.value * rng.range(0.75, 1.25) * (p.listed ? 0.9 : 1.3)),
@@ -239,6 +240,11 @@ export function aiOfferFor(s: GameState, rng: Rng, p: Player, buyer: number, loa
     status: 'pending', round: 1, week: s.week, season: s.season,
   };
   s.offers.push(offer);
+  return offer;
+}
+
+export function aiOfferFor(s: GameState, rng: Rng, p: Player, buyer: number, loan: boolean) {
+  const offer = makeIncomingOffer(s, rng, p, buyer, loan);
   const b = s.clubs[buyer];
   addMessage(s, {
     cat: 'Transfers',

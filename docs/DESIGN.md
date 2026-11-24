@@ -664,6 +664,20 @@ contractFactor: 1.0 with 3+ years, down to 0.3 with < 6 months left
 - Batched messages grouped by category (Transfers, Squad, Staff, Finance, Board, League).
 - Only messages that need a decision stop the Continue button.
 
+### 12.2a Decision events and the inbox look **[Agreed]**
+
+**Decision events** are short popups with 2 or 3 choices. Each choice shows its consequences as chips (green good, red bad, grey neutral) and, after you pick, an outcome screen says what happened. They stop Continue: while one is undecided, Continue shows the popup again instead of playing the week ("Decide later" hides it until the next one). The chosen option and outcome stay in the inbox history.
+
+| When | Rate | Types |
+|---|---|---|
+| Pre-season (weeks 1 to 5) | about 3 to 5, first one in week 1 | pre-season tour, training-kit sponsor, star contract talks, youth trial, board stretch target |
+| Transfer windows | about one every 3 weeks, plus the last week of each window | rival bid, swap offer, loan request, player wants to leave, veteran offers an extension, deadline-day bargain (last week only) |
+| In season | rare, about one every 8 weeks | dressing-room row, injury gamble, supporters' ticket offer, local radio interview, star contract talks, player wants to leave |
+
+At most one new decision a week (two in the last week of a window), at most two undecided at a time, and the same type waits at least 20 weeks. Personality shapes the reactions (a hot-headed star sulks if refused, a loyal veteran takes a pay cut, a low-personality player is harder to talk round). Stakes are low: small cash, morale, board approval, one player. Rival bids and loan requests reuse the real transfer offers, so accepting really sells or loans the player. Code: `src/core/systems/decisions.ts` (a message with `action.kind = 'decision'`; choices are rebuilt from the type each time, so saves stay plain JSON and old saves load).
+
+**Inbox look:** every message has a sender: a player portrait, a club badge, or a pixel icon on a colour tile (board, sponsor, scouting, club, medical, supporters, press, transfers, finance, league). Messages are cards with a colour strip, a sender tag, NEW and DECISION badges, a one-line preview (the outcome for decisions) and the chosen option as a green tag. Undecided decisions sit on top as cards with their choice buttons. The filter chips are by sender. The Hub inbox card uses the same compact rows, and tapping an undecided decision there opens the popup.
+
 ### 12.3 End-of-season reel **[Agreed, an important reward]**
 
 A swipeable sequence of full-screen cards:

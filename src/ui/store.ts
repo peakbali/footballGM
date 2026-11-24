@@ -26,6 +26,8 @@ class Store {
   save: SqliteSave | null = null;
   version = 0;
   busy = false;
+  /** the decision popup stays hidden for decisions up to this message id ("Decide later") */
+  hiddenUpTo = 0;
   lastResult: WeekResult | null = null;
   saving: Promise<unknown> | null = null;
   private listeners = new Set<Listener>();
