@@ -112,12 +112,33 @@ function trophy(): R[] {
   return r;
 }
 
-const SCENES = { stadium, training, academy, commercial, money, tickets, sponsors, staff, board, trophy };
+function pitch(): R[] {
+  const r: R[] = [[0, 0, 64, 32, GREEN]];
+  for (let x = 0; x < 64; x += 8) r.push([x, 0, 4, 32, GREEN2]);
+  r.push([2, 2, 60, 1, WHITE], [2, 29, 60, 1, WHITE], [2, 2, 1, 28, WHITE], [61, 2, 1, 28, WHITE], [31, 2, 1, 28, WHITE]);
+  r.push([26, 13, 12, 1, WHITE], [26, 18, 12, 1, WHITE], [26, 13, 1, 6, WHITE], [37, 13, 1, 6, WHITE]);
+  r.push([2, 10, 8, 1, WHITE], [2, 21, 8, 1, WHITE], [9, 10, 1, 12, WHITE], [54, 10, 8, 1, WHITE], [54, 21, 8, 1, WHITE], [54, 10, 1, 12, WHITE]);
+  return r;
+}
+
+function scoreboard(): R[] {
+  const r: R[] = [[8, 4, 48, 20, '#0b1024'], [6, 2, 52, 2, STEEL], [10, 24, 3, 8, STEEL], [51, 24, 3, 8, STEEL]];
+  r.push([14, 8, 12, 12, NAVY], [38, 8, 12, 12, NAVY], [18, 10, 4, 8, GOLD], [42, 10, 4, 8, GOLD], [29, 12, 6, 1, WHITE], [29, 15, 6, 1, WHITE]);
+  return r;
+}
+
+function whistle(): R[] {
+  const r: R[] = [[20, 12, 22, 12, STEEL], [42, 14, 10, 6, STEEL], [26, 14, 6, 6, '#0b1024'], [22, 10, 14, 2, STEEL], [30, 6, 3, 4, STEEL]];
+  for (let i = 0; i < 8; i++) r.push([14 - i, 6 + i, 2, 1, RED]);
+  return r;
+}
+
+const SCENES = { pitch, scoreboard, whistle, stadium, training, academy, commercial, money, tickets, sponsors, staff, board, trophy };
 export type ArtKey = keyof typeof SCENES;
 
-export function CardArt({ art }: { art: ArtKey }) {
+export function CardArt({ art, wide }: { art: ArtKey; wide?: boolean }) {
   return (
-    <svg class="card-art" viewBox="0 0 64 32" preserveAspectRatio="xMaxYMin meet" shape-rendering="crispEdges" aria-hidden="true">
+    <svg class={wide ? 'card-art wide' : 'card-art'} viewBox="0 0 64 32" preserveAspectRatio={wide ? 'xMidYMid slice' : 'xMaxYMin meet'} shape-rendering="crispEdges" aria-hidden="true">
       {SCENES[art]().map(([x, y, w, h, c], i) => <rect key={i} x={x} y={y} width={w} height={h} fill={c} />)}
     </svg>
   );

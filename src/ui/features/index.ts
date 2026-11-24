@@ -7,6 +7,5 @@ import './clubTab';
 import './inboxHandlers';
 import './clubBuilding';
 import './history';
-import './watch';
 import './cupView';
 export {};

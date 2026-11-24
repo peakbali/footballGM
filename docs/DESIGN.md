@@ -287,7 +287,7 @@ No quick-season mode. Fast, but the player still makes the decisions.
 
 - Choose a **formation** (4-4-2, 4-3-3, 4-2-3-1, 3-5-2, 5-3-2, 4-1-4-1, 3-4-3 to start).
 - **Auto-pick XI**: best effective OVR per slot, adjusted for fitness and morale. A "lock" toggle per player is an open question.
-- Match = one tap for the result. Optional **watch mode**: 2D pixel pitch + text commentary + live stats.
+- Match = one tap for the result, then a **match report** (score, scorers, player ratings, events, stats). The 2D watch mode was dropped on 2026-11-24 (Khen: not needed).
 
 ### 6.2 Event-stream engine (own league) **[Proposal]**
 
@@ -321,7 +321,7 @@ Unit strengths are computed from the XI's effective position OVRs:
 
 **Calibration targets** (checked by headless sim runs): about 2.6 to 2.9 goals per game, home win ~44%, draw ~26%, away win ~30%, champions usually 80 to 95 points.
 
-The engine emits an **event stream** (`{minute, type, team, playerIds, x, y}`), which feeds the commentary, the stats panel and the 2D watch mode. Result-only mode skips rendering but runs the same engine.
+The engine emits an **event stream** (`{minute, type, team, playerIds, x, y}`), which feeds the event list and the stats panel. Result-only mode skips rendering but runs the same engine.
 
 ### 6.3 Fitness, injuries, suspensions **[Proposal]**
 
@@ -688,9 +688,9 @@ The web build is an installable PWA: web app manifest, pixel icons (a ball under
 
 The hub scene is built from layered pixel sprites that reflect facility upgrades: a lone rail and a portacabin in division 9, stands and floodlights later, a full bowl in division 1. Crowd density reflects last home attendance. Day/night tint follows match day.
 
-### 13.4 Watch mode **[Agreed]**
+### 13.4 Match report **[Agreed]**
 
-Top-down 2D pixel pitch on Canvas, tiny player sprites in club colours, ball trail, text commentary ticker and a live stats panel. Speed controls 1×, 2×, 4×, skip to end.
+Opens after Continue (with its own Continue back to the hub). Top card: a pixel stadium backdrop tinted in the two clubs' colours, a big pixel-font score, and each side's goal scorers centred under its badge and name (minutes beside each scorer). Below, in order: **Player ratings** (man of the match banner, then both XIs with coloured rating chips), **Match events**, **Stats**. Cards carry the same faded pixel art as the Club tab (scoreboard, whistle, pitch). There is no watch mode (removed 2026-11-24).
 
 ### 13.5 Audio **[Agreed]**
 
@@ -1106,7 +1106,7 @@ CREATE TABLE club_record (
 | 11 | **Name generation** for generated players: English only, or mix by region/diaspora? | Weighted mix by region. |
 | 12 | Do **AI clubs** in divisions 9 to 10 develop facilities over time? | Light: reputation and capacity drift with success. |
 | 13 | Is there any **difficulty** setting (e.g. starting cash, AI aggressiveness)? | No difficulty in v1. |
-| 14 | **Watch mode** length: full 90 minutes at speed, or highlights only? | Highlights (chances and goals) with a skip button. |
+| 14 | ~~Watch mode length~~ | Dropped: the 2D watch mode was removed. |
 | 15 | **Pool swap at divisions 2 to 5**: is swapping a relegated club for a stronger pool club fair, or should pool clubs just drift down a tier each year? | One swap per tier per year (see [3.1](#31-the-pyramid-agreed--proposal)). |
 
 ---
@@ -1121,6 +1121,6 @@ CREATE TABLE club_record (
 | **2. Management core** | Be a GM | Squad screen, formation + auto-pick, contracts & negotiation, transfers & loans & clauses, scouting shortlists, AI club behaviour, finances & projections, inbox, Continue flow, autosave | A full season can be played with signings and sales |
 | **3. Club building** | Grow the club | Facilities tree, staff hiring + caps, academy intake, progression & age curve, personality & morale, injuries | Club visibly improves over 5 seasons from div 9 |
 | **4. Reward & polish** | Make it feel great | End-of-season reel, history graphs & records, board goals, pixel art pass, evolving stadium hub, chiptune audio | The reel is something you look forward to |
-| **5. Extras** | Depth | 2D pixel watch mode with commentary, cups, foreign player pools, real player data | As prioritised |
+| **5. Extras** | Depth | Cups, foreign player pools, real player data | As prioritised |
 
 Each stage ends with a playable build on device (Capacitor) and a balance pass using the headless sim.

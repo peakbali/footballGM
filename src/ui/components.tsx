@@ -60,10 +60,10 @@ export function Form({ form }: { form: string }) {
   );
 }
 
-export function Card({ title, action, children, art }: { title?: ComponentChildren; action?: ComponentChildren; children: ComponentChildren; art?: ArtKey }) {
+export function Card({ title, action, children, art, wide }: { title?: ComponentChildren; action?: ComponentChildren; children: ComponentChildren; art?: ArtKey; wide?: boolean }) {
   return (
     <div class={art ? 'card has-art' : 'card'}>
-      {art && <CardArt art={art} />}
+      {art && <CardArt art={art} wide={wide} />}
       {title && (
         <h3>
           <span>{title}</span>
