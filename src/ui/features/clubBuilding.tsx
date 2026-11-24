@@ -1,7 +1,9 @@
 import { useState } from 'preact/hooks';
 import { squadOf, type GameState } from '../../core/state';
 import type { Player } from '../../core/types';
-import { BRANCHES, building, canStart, costOf, effects, facState, facilityUpkeep, gradingNote, nextOptions, startUpgrade, upgradeById, type FacEffect, type Upgrade } from '../../core/systems/facilities';
+import { BRANCHES, MAX_TRACK, TRACKS, building, canStart, costOf, effectText, effects, facState, facilityUpkeep, gradingNote, nextUpgrade, startUpgrade, trackLevel, type Track } from '../../core/systems/facilities';
+import { ITEM_LABEL, PLAYER_COOLDOWN, cannotUse, labInfo, labState, learnablePositions, applyItem, type ItemKind } from '../../core/systems/lab';
+import { A, ATTR_GROUPS, ATTR_LABELS } from '../../core/data/positions';
 import { academyCap, ACADEMY_WEEK, answerTransferRequest, moraleReasons, promoteFromAcademy } from '../../core/systems/people';
 import { releasePlayer } from '../../core/systems/contracts';
 import { staffCap, staffLevel } from '../../core/systems/staff';
@@ -16,81 +18,79 @@ import { registerSquadCard } from '../squadExtras';
 import { SquadRow } from '../screens/Squad';
 import { sfx } from '../audio';
 
-function effText(e: FacEffect): string {
-  const parts: string[] = [];
-  if (e.capacity) parts.push(`+${e.capacity.toLocaleString()} capacity`);
-  if (e.comfort) parts.push(`+${Math.round(e.comfort * 100)}% attendance`);
-  if (e.ticketMax) parts.push(`+${Math.round(e.ticketMax * 100)}% ticket ceiling`);
-  if (e.homeMorale) parts.push('louder home crowd');
-  if (e.merch) parts.push(`+${Math.round(e.merch * 100)}% merchandise`);
-  if (e.matchday) parts.push('matchday spending');
-  if (e.rentals) parts.push('weekly rentals');
-  if (e.injury) parts.push(`${Math.round(-e.injury * 100)}% shorter injuries`);
-  if (e.dev) parts.push(`+${Math.round(e.dev * 100)}% development`);
-  if (e.devPrime) parts.push(`+${Math.round(e.devPrime * 100)}% development (ages 21-26)`);
-  if (e.youthCount) parts.push(`+${e.youthCount} academy intake`);
-  if (e.youthQuality) parts.push('better academy prospects');
-  return parts.join(' · ');
-}
-
 const BRANCH_STAFF: Record<string, string> = {
-  stadium: 'Bigger crowds, higher prices.',
+  stadium: 'Staff cap: none.',
   training: 'Caps coaches, physio and doctor.',
   academy: 'Caps youth coach and scouts.',
   commercial: 'Caps the commercial manager.',
 };
 
-function UpgradeRow({ s, u, onDone }: { s: GameState; u: Upgrade; onDone: () => void }) {
-  const err = canStart(s, u);
+function Pips({ n, building }: { n: number; building: boolean }) {
   return (
-    <div class="item" style={{ cursor: 'default', alignItems: 'flex-start' }}>
-      <div class="grow">
-        <div class="name small" style={{ whiteSpace: 'normal' }}>{u.name}</div>
-        <div class="tiny dim">{u.desc}</div>
-        <div class="tiny green">{effText(u.eff) || 'Raises the level and staff cap'}</div>
-        <div class="tiny dim">{u.weeks} weeks · upkeep {money(u.upkeep)}/wk</div>
+    <span class="fac-pips">
+      {Array.from({ length: MAX_TRACK }, (_, i) => <i key={i} class={i < n ? 'on' : building && i === n ? 'wip' : ''} />)}
+    </span>
+  );
+}
+
+function TrackRow({ s, t, onDone }: { s: GameState; t: Track; onDone: () => void }) {
+  const lvl = trackLevel(s, t.key);
+  const proj = building(s, t.key);
+  const next = nextUpgrade(s, t.key);
+  const err = next ? canStart(s, next) : null;
+  return (
+    <div class="fac-track">
+      <div class="between">
+        <span class="name small">{t.label}</span>
+        <Pips n={lvl} building={!!proj} />
       </div>
-      <button class="btn small primary" disabled={!!err} title={err ?? ''} onClick={() => { startUpgrade(s, u.id); sfx('build'); onDone(); store.bump(); void store.persist(); }}>{money(costOf(s, u))}</button>
+      <div class="tiny dim">{t.desc}</div>
+      {lvl > 0 && <div class="tiny green">Now: {effectText(t.per, lvl)}</div>}
+      {proj ? (
+        <div class="tiny amber" style={{ marginTop: 4 }}>🏗 {proj.up.name}: {proj.weeksLeft} week{proj.weeksLeft === 1 ? '' : 's'} left</div>
+      ) : next ? (
+        <div class="fac-next">
+          <div class="grow">
+            <div class="small"><b>{next.name}</b> <span class="tiny dim">level {next.level}</span></div>
+            <div class="tiny gold">{effectText(t.per)}</div>
+            <div class="tiny dim">{next.weeks} weeks · upkeep {money(next.upkeep)}/wk</div>
+          </div>
+          <button class="btn small primary" disabled={!!err} title={err ?? ''} onClick={() => { startUpgrade(s, next.id); sfx('build'); onDone(); store.bump(); void store.persist(); }}>{money(costOf(s, next))}</button>
+        </div>
+      ) : (
+        <div class="tiny gold" style={{ marginTop: 4 }}>★ Fully upgraded</div>
+      )}
     </div>
   );
 }
 
 function Facilities({ s }: { s: GameState }) {
-  const [open, setOpen] = useState<string | null>(null);
+  const [, setV] = useState(0);
   const f = facState(s);
   const cash = s.clubs[s.userClubId].cash;
   const note = gradingNote(s);
+  const lab = labInfo(s);
+  const st = labState(s);
   return (
     <div>
       <Card title={`Facilities · upkeep ${money(facilityUpkeep(s))}/wk`}>
-        <div class="tiny dim">Cash {money(cash)}. Each branch builds one project at a time. Staff caps are level × 10 + 10.</div>
+        <div class="tiny dim">Cash {money(cash)}. Every sub-facility can be built on its own, one level at a time. Prices follow your division: about what a club of this level earns in a season, spread over the five levels.</div>
         {note && <div class="tiny amber" style={{ marginTop: 6 }}>{note}</div>}
       </Card>
       {BRANCHES.map((b) => {
         const lvl = f.levels[b.key];
-        const proj = building(s, b.key);
-        const opts = nextOptions(s, b.key);
-        const built = f.built.map(upgradeById).filter((u) => u && u.branch === b.key) as Upgrade[];
+        const tracks = TRACKS.filter((x) => x.branch === b.key);
+        const done = tracks.reduce((a, x) => a + trackLevel(s, x.key), 0);
         return (
-          <Card key={b.key} art={b.key as ArtKey} title={<span>{b.label} <span class="gold">Lv {lvl}</span></span>} action={<span class="tiny dim">cap {lvl * 10 + 10}</span>}>
+          <Card key={b.key} art={b.key as ArtKey} title={<span>{b.label} <span class="gold">Lv {lvl}</span></span>} action={<span class="tiny dim">{done}/{tracks.length * MAX_TRACK}</span>}>
             <div class="row" style={{ gap: 3, marginBottom: 6 }}>
-              {Array.from({ length: 10 }, (_, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 1, background: i < lvl ? 'var(--gold)' : proj && i === lvl ? 'var(--amber, #d9a400)' : 'var(--bg)', opacity: proj && i === lvl ? 0.5 : 1 }} />)}
+              {Array.from({ length: 10 }, (_, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 1, background: i < lvl ? 'var(--gold)' : 'var(--bg)' }} />)}
             </div>
-            <div class="tiny dim">{b.desc} {BRANCH_STAFF[b.key]}</div>
-            {built.length > 0 && <div class="tiny" style={{ marginTop: 4 }}>Built: {built.map((u) => u.name).join(', ')}</div>}
-            {proj && <div class="small amber" style={{ marginTop: 6 }}>🏗 {proj.up.name}: {proj.weeksLeft} week{proj.weeksLeft === 1 ? '' : 's'} left</div>}
-            {!proj && opts.length > 0 && (
-              open === b.key ? (
-                <div style={{ marginTop: 6 }}>
-                  {opts.length > 1 && <div class="tiny gold">Choose one. The other option is gone for good.</div>}
-                  {opts.map((u) => <UpgradeRow key={u.id} s={s} u={u} onDone={() => setOpen(null)} />)}
-                  <button class="linkbtn" onClick={() => setOpen(null)}>Close</button>
-                </div>
-              ) : (
-                <button class="btn small" style={{ marginTop: 8 }} onClick={() => setOpen(b.key)}>Upgrade to level {lvl + 1}{opts.length > 1 ? ' (choice)' : ''}</button>
-              )
+            <div class="tiny dim">{b.desc} {BRANCH_STAFF[b.key]}{b.key !== 'stadium' ? ` Cap now ${lvl * 10 + 10}.` : ''}</div>
+            {b.key === 'training' && lab.level > 0 && (
+              <div class="tiny" style={{ marginTop: 4 }}>Skills lab stock: {(['pos', 'stat', 'pers'] as const).map((k) => `${ITEM_LABEL[k]} ${st.stock[k]}/${lab.cap}`).join(' · ')}. New items every {lab.every} weeks. Use them from a player's page.</div>
             )}
-            {!proj && opts.length === 0 && <div class="tiny green" style={{ marginTop: 6 }}>Fully upgraded.</div>}
+            {tracks.map((x) => <TrackRow key={x.key} s={s} t={x} onDone={() => setV((v) => v + 1)} />)}
           </Card>
         );
       })}
@@ -111,7 +111,7 @@ function Academy({ s }: { s: GameState }) {
           <span>Facility</span><span>Level {lvl}</span>
           <span>Youth coach</span><span>{yc || 'Vacant'}{yc ? ` (cap ${staffCap(s, 'youth_coach')})` : ''}</span>
           <span>Next intake</span><span>{weeksTo === 0 ? 'This week' : `March, in ${weeksTo} weeks`}</span>
-          <span>Bonuses</span><span>{effText({ youthCount: e.youthCount, youthQuality: e.youthQuality }) || 'None yet'}</span>
+          <span>Bonuses</span><span>{effectText({ youthCount: e.youthCount, youthQuality: e.youthQuality, youthDev: e.youthDev, grad: e.grad }) || 'None yet'}</span>
         </div>
         <div class="tiny dim" style={{ marginTop: 6 }}>Academy players do not count toward the 30-man squad. They move up automatically at 19.</div>
       </Card>
@@ -168,3 +168,68 @@ function AcademyScreen() {
   return <Overlay title="Academy"><Academy s={s} /></Overlay>;
 }
 registerOverlay('academy', () => <AcademyScreen />);
+
+// Player screen: Skills lab items (Training ground)
+function LabCard({ s, p }: { s: GameState; p: Player }) {
+  const [open, setOpen] = useState<ItemKind | null>(null);
+  const [msg, setMsg] = useState('');
+  const info = labInfo(s);
+  const st = labState(s);
+  if (!info.level) return <Card title="Skills lab"><div class="tiny dim">Build the Skills lab on the Training ground to make training items: teach a position, boost a skill or improve personality.</div></Card>;
+  const take = (kind: ItemKind, arg?: string) => {
+    const r = applyItem(s, p, kind, arg);
+    setMsg(r ?? '');
+    setOpen(null);
+    sfx('build');
+    store.bump();
+    void store.persist();
+  };
+  const groups = ATTR_GROUPS.filter((g) => (p.pos === 'GK' ? g.name !== 'Technical' : g.name !== 'Goalkeeping'));
+  return (
+    <Card title={`Skills lab · level ${info.level}`}>
+      <div class="lab-items">
+        {(['pos', 'stat', 'pers'] as ItemKind[]).map((k) => {
+          const err = cannotUse(s, p, k);
+          const sub = k === 'pos' ? 'New natural position' : k === 'stat' ? `+${info.stat} to one skill` : `+${info.pers} personality`;
+          return (
+            <button key={k} class={`lab-item ${open === k ? 'on' : ''}`} disabled={!!err && open !== k} title={err ?? ''} onClick={() => setOpen(open === k ? null : k)}>
+              <b>{ITEM_LABEL[k]}</b>
+              <span class="tiny dim">{sub}</span>
+              <span class="tiny gold">{st.stock[k]}/{info.cap} in stock</span>
+            </button>
+          );
+        })}
+      </div>
+      {(() => {
+        const err = (['pos', 'stat', 'pers'] as ItemKind[]).map((k) => cannotUse(s, p, k)).find((e) => e && !e.startsWith('None'));
+        return err ? <div class="tiny amber" style={{ marginTop: 6 }}>{err}</div> : null;
+      })()}
+      {open === 'pos' && (
+        <div class="chips" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+          {learnablePositions(s, p).length ? learnablePositions(s, p).map((pos) => <button key={pos} class="chip" onClick={() => take('pos', pos)}>{pos}</button>) : <span class="tiny dim">No position he can learn{info.anyPosition ? '' : ' yet (level 3 lab teaches any position)'}.</span>}
+        </div>
+      )}
+      {open === 'stat' && (
+        <div style={{ marginTop: 8 }}>
+          {groups.map((g) => (
+            <div key={g.name}>
+              <div class="tiny dim" style={{ margin: '6px 0 4px' }}>{g.name}</div>
+              <div class="lab-stats">
+                {g.attrs.map((a) => <button key={a} class="lab-stat" onClick={() => take('stat', a)}><span>{ATTR_LABELS[a]}</span><b>{p.attrs[A[a]]}</b></button>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {open === 'pers' && (
+        <div class="row" style={{ marginTop: 8, gap: 8 }}>
+          <span class="small">Personality {p.personality} → {Math.min(99, p.personality + info.pers)}</span>
+          <button class="btn small primary" onClick={() => take('pers')}>Use</button>
+        </div>
+      )}
+      {msg && <div class="small green" style={{ marginTop: 8 }}>{msg}</div>}
+      <div class="tiny dim" style={{ marginTop: 6 }}>The lab makes one of each every {info.every} weeks (up to {info.cap}). A player can take one session every {PLAYER_COOLDOWN} weeks.</div>
+    </Card>
+  );
+}
+registerPlayerAction((s, p) => (p.clubId === s.userClubId ? <LabCard s={s} p={p} /> : null));

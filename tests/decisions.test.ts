@@ -14,6 +14,7 @@ describe('decision events', () => {
     const perSeason = new Map<number, number>();
     const pre = new Map<number, number>();
     const seen = new Set<string>();
+    const notices = new Map<number, number>();
     for (let i = 0; i < 52 * 3; i++) {
       const season = s.season, week = s.week;
       advanceWeek(s);
@@ -28,13 +29,17 @@ describe('decision events', () => {
         expect(out).toBeTruthy();
         expect(m.resolved).toBe(true);
         expect(m.outcome).toBe(out);
-        seen.add((m.action!.data as { type: string }).type);
+        const type = (m.action!.data as { type: string }).type;
+        seen.add(type);
+        if (type === 'contract_expiring') { notices.set(season, (notices.get(season) ?? 0) + 1); continue; }
         perSeason.set(season, (perSeason.get(season) ?? 0) + 1);
         if (week <= 5) pre.set(season, (pre.get(season) ?? 0) + 1);
       }
-      expect(before).toBeLessThanOrEqual(2);
+      expect(before).toBeLessThanOrEqual(4);
       expect(pendingDecisions(s).length).toBe(0);
     }
+    console.log('contract notices', [...notices]);
+    expect([...notices.values()].reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
     console.log('per season', [...perSeason], 'pre', [...pre], 'types', [...seen].join(','), `${seen.size}/${DECISION_TYPES.length}`);
     expect(DECISION_TYPES.length).toBeGreaterThanOrEqual(15);
     for (const n of pre.values()) expect(n).toBeGreaterThanOrEqual(2);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { newGame, startingLeagues, clubsInLeague } from '../src/core/world';
 import { advanceWeek } from '../src/core/season';
 import { squadOf } from '../src/core/state';
-import { building, facState, nextOptions, startUpgrade } from '../src/core/systems/facilities';
+import { TRACKS, building, effects, facState, nextUpgrade, startUpgrade, trackLevel, upgradeFor } from '../src/core/systems/facilities';
 import { academyIntake, answerTransferRequest, promoteFromAcademy } from '../src/core/systems/people';
 import { staffCap } from '../src/core/systems/staff';
 import { Rng } from '../src/core/rng';
@@ -11,34 +11,65 @@ import '../src/core/systems/all';
 const club = clubsInLeague(startingLeagues()[3].key)[2];
 
 describe('club building', () => {
-  it('builds a facility upgrade over several weeks and applies its effects', () => {
+  it('builds a sub-facility over several weeks and applies its effects', () => {
     const s = newGame(21, club);
     const user = s.clubs[s.userClubId];
     user.cash = 1e6;
-    const opt = nextOptions(s, 'training')[0];
-    expect(startUpgrade(s, opt.id)).toBeNull();
-    expect(building(s, 'training')).not.toBeNull();
-    expect(startUpgrade(s, opt.id)).not.toBeNull(); // one project per branch
-    const capBefore = staffCap(s, 'coach_att');
-    for (let i = 0; i < opt.weeks; i++) advanceWeek(s);
-    expect(facState(s).levels.training).toBe(2);
-    expect(staffCap(s, 'coach_att')).toBeGreaterThan(capBefore);
+    const up = nextUpgrade(s, 'grounds')!;
+    expect(up.level).toBe(1);
+    expect(up.cost).toBeGreaterThan(1000);
+    expect(up.cost).toBeLessThan(10000); // division 9 prices
+    expect(startUpgrade(s, up.id)).toBeNull();
+    expect(building(s, 'grounds')).not.toBeNull();
+    expect(startUpgrade(s, up.id)).not.toBeNull(); // one project per sub-facility
+    expect(startUpgrade(s, nextUpgrade(s, 'gym')!.id)).toBeNull(); // others can build at the same time
+    for (let i = 0; i < 6; i++) advanceWeek(s);
+    expect(trackLevel(s, 'grounds')).toBe(1);
+    expect(trackLevel(s, 'gym')).toBe(1);
+    expect(effects(s).dev).toBeCloseTo(0.037, 3);
     expect(s.inbox.some((m) => m.title.includes('finished'))).toBe(true);
   });
 
-  it('either/or stadium stands add capacity', () => {
+  it('raises the main branch level and staff caps as sub-facilities grow', () => {
+    const s = newGame(22, club);
+    const user = s.clubs[s.userClubId];
+    user.cash = 1e8;
+    const capBefore = staffCap(s, 'coach_att');
+    for (const key of ['grounds', 'gym', 'medical']) for (let l = 0; l < 2; l++) { startUpgrade(s, nextUpgrade(s, key)!.id); for (let i = 0; i < 6; i++) advanceWeek(s); }
+    expect(facState(s).levels.training).toBe(3);
+    expect(staffCap(s, 'coach_att')).toBeGreaterThan(capBefore);
+  });
+
+  it('stands add seats as a share of the ground', () => {
     const s = newGame(22, club);
     const user = s.clubs[s.userClubId];
     user.cash = 1e7;
-    const f = facState(s);
-    f.levels.stadium = 2;
-    const opts = nextOptions(s, 'stadium');
-    expect(opts.length).toBe(2);
     const cap0 = user.capacity;
-    startUpgrade(s, opts[0].id);
-    for (let i = 0; i < opts[0].weeks; i++) advanceWeek(s);
-    expect(user.capacity).toBe(cap0 + opts[0].eff.capacity!);
-    expect(nextOptions(s, 'stadium')[0].level).toBe(4);
+    const up = nextUpgrade(s, 'stands')!;
+    startUpgrade(s, up.id);
+    for (let i = 0; i < up.weeks; i++) advanceWeek(s);
+    expect(user.capacity).toBeGreaterThan(cap0 * 1.1);
+    expect(nextUpgrade(s, 'stands')!.level).toBe(2);
+  });
+
+  it('prices follow the division', () => {
+    const t = TRACKS.find((x) => x.key === 'shop')!;
+    expect(upgradeFor(t, 1, 1).cost).toBeGreaterThan(upgradeFor(t, 1, 5).cost * 50);
+    expect(upgradeFor(t, 5, 9).cost).toBeGreaterThan(upgradeFor(t, 1, 9).cost * 8);
+  });
+
+  it('converts a save from the old ten-level branches', () => {
+    const s = newGame(26, club);
+    const cash0 = s.clubs[s.userClubId].cash;
+    s.ext.fac = { levels: { stadium: 4, training: 10, academy: 1, commercial: 2 }, built: ['stadium-2-x', 'stadium-3-north-stand-seated', 'stadium-4-x'], projects: [{ id: 'commercial-3-clubhouse-bar', weeksLeft: 3 }] };
+    const f = facState(s);
+    expect(f.v).toBe(2);
+    expect(f.levels.training).toBe(10);
+    expect(f.levels.academy).toBe(1);
+    expect(f.levels.stadium).toBeGreaterThanOrEqual(3);
+    expect(f.projects.length).toBe(0);
+    expect(s.clubs[s.userClubId].cash).toBeGreaterThan(cash0); // running project refunded
+    expect(f.upkeep).toBeGreaterThan(0);
   });
 
   it('develops the own squad monthly and moves morale', () => {

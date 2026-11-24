@@ -75,7 +75,7 @@ registerSystem({
   weekly(s, rng, _idx, res) {
     for (const d of s.sponsors) {
       if (d.status !== 'active') continue;
-      txn(s, 'sponsor', d.base / weeksOfDeal(d));
+      txn(s, 'sponsor', (d.base / weeksOfDeal(d)) * ((s.ext.sponsorMult as number | undefined) ?? 1));
     }
     const uf = res.userFixture;
     if (uf && uf.hg != null) {

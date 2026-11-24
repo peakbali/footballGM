@@ -487,3 +487,21 @@ table.tbl.compact { font-size: 12px; }
 .atoast-name { font-family: var(--px); font-size: 14px; color: #fff; margin: 2px 0; text-shadow: 2px 2px 0 #000; }
 .atoast-more { flex: none; font-family: var(--px); font-size: 11px; color: var(--t); border: 2px solid var(--t); border-radius: 4px; padding: 2px 5px; }
 @media (prefers-reduced-motion: reduce) { .atoast { animation-duration: 4.2s; animation-name: none; transform: translateX(-50%); } }
+
+/* ---------- Facilities v2 and Skills lab */
+.fac-track { border-top: 1px solid var(--line); padding: 8px 0 6px; }
+.fac-track:first-of-type { margin-top: 8px; }
+.fac-pips { display: inline-flex; gap: 3px; }
+.fac-pips i { width: 12px; height: 8px; background: var(--bg); border: 1px solid var(--line); }
+.fac-pips i.on { background: var(--gold); border-color: var(--gold); }
+.fac-pips i.wip { background: repeating-linear-gradient(45deg, var(--amber, #d9a400) 0 2px, transparent 2px 4px); border-color: var(--amber, #d9a400); }
+.fac-next { display: flex; gap: 10px; align-items: center; margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,.25); border-radius: 4px; }
+.fac-next .grow { min-width: 0; }
+.lab-items { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.lab-item { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; padding: 8px; background: var(--bg); border: 2px solid var(--line); border-radius: 4px; color: var(--text); cursor: pointer; }
+.lab-item b { font-size: 12px; }
+.lab-item.on { border-color: var(--gold); }
+.lab-item:disabled { opacity: 0.5; cursor: default; }
+.lab-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.lab-stat { display: flex; justify-content: space-between; padding: 5px 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 3px; color: var(--text); font-size: 12px; cursor: pointer; }
+.lab-stat b { color: var(--gold); }

@@ -9,6 +9,7 @@ import { invalidateSquads, squadOf, type GameState } from '../state';
 import { hooks, registerSystem } from '../systems';
 import type { Player, SquadRole, StaffRole } from '../types';
 import { bumpStat } from './stats';
+import { recomputeOvr } from '../ratings';
 import { dirtyPlayers } from './dirty';
 import { effects, facState } from './facilities';
 import { staffLevel } from './staff';
@@ -43,6 +44,7 @@ export function userDevContext(s: GameState, p: Player, share: number): DevConte
   const coach = p.academy ? staffLevel(s, 'youth_coach') : staffLevel(s, COACH_FOR[LINE[p.pos]]);
   let bonus = e.dev;
   if (age >= 21 && age <= 26) bonus += e.devPrime; // Analysis suite: 21 to 26, the stretch where most development happens
+  if (p.academy) bonus += e.youthDev; // Youth coaching
   // young players also benefit from the youth coach
   if (!p.academy && age <= 20) bonus += staffLevel(s, 'youth_coach') / 1000;
   return { playtime: p.academy ? 0.55 : share, coach: Math.max(1, coach), facility: fac.levels.training, bonus };
@@ -181,7 +183,7 @@ export function academyIntake(s: GameState, rng: Rng): Player[] {
   const yc = staffLevel(s, 'youth_coach');
   const current = squadOf(s, user.id).filter((p) => p.academy).length;
   const room = Math.max(0, academyCap(s) - current);
-  const n = Math.min(room, clamp(2 + Math.floor(lvl / 2) + e.youthCount + rng.int(0, 2), 3, 12));
+  const n = Math.min(room, clamp(Math.round(2 + Math.floor(lvl / 2) + e.youthCount + rng.int(0, 2)), 3, 12));
   const golden = rng.chance(0.03 + lvl * 0.003);
   const avg = DIV_AVG_OVR[user.div];
   const out: Player[] = [];
@@ -215,6 +217,13 @@ export function academyIntake(s: GameState, rng: Rng): Player[] {
 export function promoteFromAcademy(s: GameState, p: Player) {
   bumpStat(s, 'grads');
   p.academy = false;
+  // First-team pathway: graduates arrive stronger
+  const g = Math.round(effects(s).grad);
+  if (g > 0) {
+    p.attrs = p.attrs.map((v) => Math.min(99, v + g));
+    recomputeOvr(p);
+    p.pot = Math.max(p.pot + g, p.ovr);
+  }
   const user = s.clubs[s.userClubId];
   if (p.contract) {
     p.contract.role = 'youth';
