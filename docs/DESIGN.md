@@ -733,7 +733,7 @@ All three lists have a second chip row with one sub-page per position (ANY plus 
 
 **Shortlist and own POT:** the ★ List rows have a ✕ button column to remove a player from the shortlist, with an Undo line under the table. Your own squad (and your loanees) always show their true POT: the Attributes sub-page has a POT column left of OVR, and the player screen shows it.
 
-**Bench row:** under the Squad pitch the explanatory text is gone; instead a Bench row of the substitutes (portrait, OVR badge, short name, position tag; gold outline if locked) wrapped into a grid (5 per row at 360 px, so two rows for the usual 7), never scrolling, so every substitute is visible at once. Tap a player to open his screen.
+**Bench row:** under the Squad pitch the explanatory text is gone; instead a Bench row of the substitutes (portrait, OVR badge, short name, position tag; gold outline if locked) one single row of equal-width columns (small portrait, OVR badge, short name, position tag) so all 7 fit across a 360 px phone with no scrolling or wrapping. Tap a player to open his screen.
 
 ### 13.2e Squad list sub-pages **[Agreed]**
 
