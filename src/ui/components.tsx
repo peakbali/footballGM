@@ -3,6 +3,7 @@ import { LINE, type Position } from '../core/data/positions';
 import type { Club, Player } from '../core/types';
 import { nav } from './store';
 import { CardArt, type ArtKey } from './cardArt';
+import { Portrait } from './portrait';
 
 /** Hexagon OVR badge (reference style). `value` null = unknown "?". */
 export function Hex({ value, size = 34, label, color }: { value: number | string | null; size?: number; label?: string; color?: string }) {
@@ -105,7 +106,7 @@ export function Bar({ value, max = 100, color }: { value: number; max?: number; 
 export function PlayerRow({ p, right, sub, onClick }: { p: Player; right?: ComponentChildren; sub?: ComponentChildren; onClick?: () => void }) {
   return (
     <div class="item" onClick={onClick ?? (() => nav.push({ kind: 'player', id: p.id }))}>
-      <Hex value={p.ovr} />
+      <Portrait p={p} />
       <div class="grow">
         <div class="name">{p.first[0]}. {p.last}</div>
         <div class="tiny dim row" style={{ gap: 6 }}>
@@ -113,6 +114,7 @@ export function PlayerRow({ p, right, sub, onClick }: { p: Player; right?: Compo
         </div>
       </div>
       {right}
+      <Hex value={p.ovr} />
     </div>
   );
 }

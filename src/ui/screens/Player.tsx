@@ -3,6 +3,7 @@ import { posOvr, familiarityMult } from '../../core/ratings';
 import { Badge, Card, Hex, Overlay, PosPill, Bar } from '../components';
 import { money, nav, useStore } from '../store';
 import { knowledge, playerActions } from '../playerExtras';
+import { Portrait } from '../portrait';
 
 export function personalityLabel(v: number): string {
   return v < 20 ? 'Volatile' : v < 40 ? 'Demanding' : v < 65 ? 'Balanced' : v < 85 ? 'Professional' : 'Model Pro';
@@ -21,6 +22,7 @@ export function PlayerScreen({ id }: { id: number }) {
     <Overlay title={`${p.first} ${p.last}`} sub={`${age} · ${p.nat} · ${club ? club.name : 'Free agent'}`}>
       <Card>
         <div class="row">
+          <Portrait p={p} size={64} />
           <Hex value={k.ovr} size={54} />
           <div class="grow">
             <div class="row" style={{ gap: 6, flexWrap: 'wrap' }}>{POSITIONS.filter((x) => p.fam[x]).map((x) => <PosPill key={x} pos={x} />)}</div>

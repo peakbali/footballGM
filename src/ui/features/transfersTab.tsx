@@ -10,6 +10,7 @@ import { money, nav, store, useStore } from '../store';
 import { knowledge } from '../playerExtras';
 import { setTransfersScreen } from '../tabs';
 import { Stepper, niceStep } from './widgets';
+import { Portrait } from '../portrait';
 import { RoleTag } from './clubTab';
 
 export function KnownRow({ s, p }: { s: GameState; p: Player }) {
@@ -17,7 +18,7 @@ export function KnownRow({ s, p }: { s: GameState; p: Player }) {
   const club = p.clubId != null ? s.clubs[p.clubId] : null;
   return (
     <div class="item" onClick={() => nav.push({ kind: 'player', id: p.id })}>
-      <Hex value={k.ovr} color={k.ovr != null ? undefined : '#4a5590'} />
+      <Portrait p={p} />
       <div class="grow">
         <div class="name">{p.first[0]}. {p.last} {s.scouting.starred.includes(p.id) ? <span class="gold">★</span> : ''}</div>
         <div class="tiny dim row" style={{ gap: 6 }}>
@@ -28,6 +29,7 @@ export function KnownRow({ s, p }: { s: GameState; p: Player }) {
         {club ? <div class="row" style={{ gap: 4, justifyContent: 'flex-end' }}><Badge club={club} size={14} /><span class="dim">{club.country ?? `D${club.div}`}</span></div> : <div class="green">Free</div>}
         <div class="dim">{money(p.value)}</div>
       </div>
+      <Hex value={k.ovr} color={k.ovr != null ? undefined : '#4a5590'} />
     </div>
   );
 }

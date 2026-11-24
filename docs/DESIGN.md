@@ -712,6 +712,12 @@ Opens after Continue (with its own Continue back to the hub). Top card: a pixel 
 
 Chiptune via Web Audio: hub loop, match-day loop, goal sting, promotion fanfare, UI clicks. Global **mute** toggle (and separate music/SFX sliders).
 
+### 13.6 Player portraits **[Agreed]**
+
+Every player has a unique **pixel portrait** (16 by 18 grid), drawn from his id so it never changes: 6 skin tones, 7 hair colours (grey for veterans), 7 hair styles, 3 eye styles, 5 mouth and facial hair options (beards only from 21), and an extra (headband, glasses, earring, freckles, scar). The shirt uses his club's colours (neutral for free agents). The backdrop colour shows the position group (keeper amber, defence blue, midfield green, attack red).
+
+Portraits appear on squad rows, club squad lists, scout recommendations, the starred shortlist, free agents, and large on the player screen. Each position group has its own idle animation: **keepers** bounce their gloves, **defenders** shake their head ("no way past"), **midfielders** scan left and right with their eyes, **forwards** do a quick sprint bounce with speed streaks. Animations stop with the system's reduced-motion setting.
+
 ---
 
 ## 14. Data schema
