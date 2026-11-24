@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { squadOf, type GameState } from '../../core/state';
 import type { Player } from '../../core/types';
-import { BRANCHES, building, canStart, effects, facState, facilityUpkeep, gradingNote, nextOptions, startUpgrade, upgradeById, type FacEffect, type Upgrade } from '../../core/systems/facilities';
+import { BRANCHES, building, canStart, costOf, effects, facState, facilityUpkeep, gradingNote, nextOptions, startUpgrade, upgradeById, type FacEffect, type Upgrade } from '../../core/systems/facilities';
 import { academyCap, ACADEMY_WEEK, answerTransferRequest, moraleReasons, promoteFromAcademy } from '../../core/systems/people';
 import { releasePlayer } from '../../core/systems/contracts';
 import { staffCap, staffLevel } from '../../core/systems/staff';
@@ -14,6 +14,7 @@ import { registerInboxAction } from '../inboxActions';
 import { registerPlayerAction } from '../playerExtras';
 import { registerSquadCard } from '../squadExtras';
 import { SquadRow } from '../screens/Squad';
+import { sfx } from '../audio';
 
 function effText(e: FacEffect): string {
   const parts: string[] = [];
@@ -50,7 +51,7 @@ function UpgradeRow({ s, u, onDone }: { s: GameState; u: Upgrade; onDone: () => 
         <div class="tiny green">{effText(u.eff) || 'Raises the level and staff cap'}</div>
         <div class="tiny dim">{u.weeks} weeks · upkeep {money(u.upkeep)}/wk</div>
       </div>
-      <button class="btn small primary" disabled={!!err} title={err ?? ''} onClick={() => { startUpgrade(s, u.id); onDone(); store.bump(); void store.persist(); }}>{money(u.cost)}</button>
+      <button class="btn small primary" disabled={!!err} title={err ?? ''} onClick={() => { startUpgrade(s, u.id); sfx('build'); onDone(); store.bump(); void store.persist(); }}>{money(costOf(s, u))}</button>
     </div>
   );
 }

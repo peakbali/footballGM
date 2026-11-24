@@ -112,3 +112,51 @@ input[type=range] { padding: 0; }
 .hub-hero { position: relative; border-radius: 4px; overflow: hidden; border: 2px solid var(--line); margin-bottom: 12px; background: #050816; }
 .hub-hero svg, .hub-hero canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
 .hub-hero .over { position: absolute; left: 10px; right: 10px; bottom: 8px; }
+
+/* ---------- Stage 4: animation, reel, charts, board meter */
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+@keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@keyframes beam { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@keyframes flag { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.7); } }
+@keyframes screen { 0%, 100% { opacity: 1; } 33% { opacity: 0.6; } 66% { opacity: 0.85; } }
+@keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes slidein { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 204, 77, 0.5); } 50% { box-shadow: 0 0 0 6px rgba(255, 204, 77, 0); } }
+.crowd-bob { animation: bob 0.9s steps(2) infinite; }
+.matchday .crowd-bob { animation-duration: 0.45s; }
+.twinkle { animation: twinkle 2.4s steps(2) infinite; }
+.beam { animation: beam 3s ease-in-out infinite; }
+.flag { transform-box: fill-box; transform-origin: left; animation: flag 1.2s steps(3) infinite; }
+.screen { animation: screen 2s steps(3) infinite; }
+.continue:not([disabled]) { animation: pulse 2.2s ease-in-out infinite; }
+.pop { animation: pop 0.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .crowd-bob, .twinkle, .beam, .flag, .screen, .continue, .pop, .reel-card { animation: none !important; } }
+
+.meter { display: flex; gap: 2px; width: 100%; }
+.meter span { flex: 1; height: 8px; border-radius: 1px; }
+
+.hchart { margin: 6px 0 10px; }
+.hchart svg { overflow: visible; touch-action: pan-y; }
+.hchart .axis { font-size: 8px; fill: var(--dim); font-family: var(--ui); }
+
+.reel { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 0%, #1c2650 0%, var(--bg) 70%); padding: calc(10px + var(--safe-t)) 14px calc(14px + var(--safe-b)); touch-action: pan-y; }
+.reel-top { display: flex; align-items: center; gap: 10px; }
+.reel-dots { flex: 1; display: flex; gap: 4px; }
+.reel-dots span { flex: 1; height: 4px; border-radius: 1px; background: var(--line); cursor: pointer; }
+.reel-dots span.done { background: var(--dim); }
+.reel-dots span.on { background: var(--gold); }
+.reel-card { flex: 1; overflow-y: auto; margin: 14px 0; animation: slidein 0.25s ease-out; }
+.reel-body { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; }
+.reel-body > .kv, .reel-body > .tbl, .reel-body > div[style*="left"] { width: 100%; }
+.reel-body .hchart { width: 100%; }
+.reel-kicker { font-family: var(--px); font-size: 12px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.reel-big { font-family: var(--px); font-size: 22px; line-height: 1.2; margin: 8px 0 2px; }
+.reel-hero { font-family: var(--px); font-size: 48px; color: var(--gold); text-shadow: 3px 3px 0 #000; line-height: 1; }
+.reel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 8px; }
+.reel-grid > div { background: var(--panel); border: 2px solid var(--line); border-radius: 4px; padding: 12px 6px; display: flex; flex-direction: column; gap: 2px; }
+.reel-grid b { font-family: var(--px); font-size: 20px; }
+.reel-grid span { font-size: 11px; color: var(--dim); }
+.reel-star { width: 100%; background: var(--panel); border: 2px solid var(--line); border-radius: 4px; padding: 10px; text-align: left; cursor: pointer; }
+.reel-record { width: 100%; background: var(--panel); border: 2px solid var(--gold); border-radius: 4px; padding: 8px 10px; color: var(--gold); font-size: 13px; text-align: left; }
+.reel-nav { display: flex; gap: 10px; }
+.reel-nav .btn { flex: 1; }

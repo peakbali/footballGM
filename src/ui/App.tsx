@@ -14,6 +14,7 @@ import { TransfersScreen } from './screens/Transfers';
 import { ClubScreen } from './screens/Club';
 import { customOverlay } from './overlays';
 import { userClub } from '../core/state';
+import { music } from './audio';
 
 const TABS = [
   ['hub', 'Hub'],
@@ -31,11 +32,15 @@ export function App() {
   }, []);
 
   if (booting) return <div class="app"><div class="start"><div class="logo">FOOTBALL<br />GM</div><div class="spinner">Loading...</div></div></div>;
-  if (!st.state) return <div class="app"><StartScreen /></div>;
+  if (!st.state) {
+    music(null);
+    return <div class="app"><StartScreen /></div>;
+  }
 
   const s = st.state;
   const club = userClub(s);
   const top = nav.stack[nav.stack.length - 1];
+  music(top?.kind === 'match' ? 'match' : 'hub');
   return (
     <div class="app">
       <div class="topbar">

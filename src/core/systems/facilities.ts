@@ -189,11 +189,17 @@ export function syncFacilities(s: GameState) {
   s.ext.stadiumLevel = clamp(f.levels.stadium + 1, 1, 11);
 }
 
+/** Price after any board discount. */
+export function costOf(s: GameState, u: Upgrade): number {
+  const d = (s.ext.facDiscount as number | undefined) ?? 0;
+  return Math.round(u.cost * (1 - d));
+}
+
 export function canStart(s: GameState, u: Upgrade): string | null {
   const f = facState(s);
   if (f.levels[u.branch] + 1 !== u.level) return 'Not the next level.';
   if (building(s, u.branch)) return 'Already building in this branch.';
-  if (s.clubs[s.userClubId].cash < u.cost) return 'Not enough cash.';
+  if (s.clubs[s.userClubId].cash < costOf(s, u)) return 'Not enough cash.';
   return null;
 }
 
@@ -202,7 +208,8 @@ export function startUpgrade(s: GameState, id: string): string | null {
   if (!u) return 'Unknown upgrade.';
   const err = canStart(s, u);
   if (err) return err;
-  txn(s, 'build', -u.cost);
+  txn(s, 'build', -costOf(s, u));
+  s.ext.facDiscount = 0;
   facState(s).projects.push({ id, weeksLeft: u.weeks });
   return null;
 }
