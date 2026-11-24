@@ -86,6 +86,7 @@ function useCount(target: number, ms = 900, delay = 0): number {
         if (!t0) t0 = now;
         const k = Math.min(1, (now - t0) / ms);
         setV(Math.round(target * (1 - (1 - k) * (1 - k))));
+        if (k < 1 && target) sfx('tick'); // counter ticks (throttled in the sound engine)
         if (k < 1) raf = requestAnimationFrame(step);
       };
       raf = requestAnimationFrame(step);
@@ -311,14 +312,28 @@ function Reel({ season }: { season: number }) {
   const [i, setI] = useState(0);
   const [tx, setTx] = useState<number | null>(null);
   useEffect(() => {
-    if (i !== 0 || !u) return;
+    if (!u) return;
     const up = u.outcome === 'champion' || u.outcome === 'promoted' || u.outcome === 'playoff_winner';
-    sfx(up ? 'fanfare' : u.outcome === 'relegated' ? 'loss' : 'win');
+    const later = (fx: Parameters<typeof sfx>[0], ms: number) => setTimeout(() => sfx(fx), ms);
+    const ts: ReturnType<typeof setTimeout>[] = [];
+    // each page has its own sound, timed with its animation
+    if (i === 0) {
+      if (up) { sfx('fanfare'); ts.push(later('sparkle', 700)); }
+      else if (u.outcome === 'relegated') { sfx('sad'); ts.push(later('rain', 300)); }
+      else sfx('win');
+    } else if (i === 1) ts.push(later('reveal', 150));
+    else if (i === 2) { ts.push(later('reveal', 100)); ts.push(later('sparkle', 500)); }
+    else if (i === 3) ts.push(later('cash', 250));
+    else if (i === 4) { ts.push(later('stamp', 900)); if ((u.board?.after ?? 50) < 45) ts.push(later('sad', 1100)); else ts.push(later('confirm', 1050)); }
+    else if (i === 5) ts.push(later('reveal', 150));
+    else if (i === 6) ts.push(later('sparkle', 200));
+    else if (i === 7) ts.push(later('rise', 150));
+    return () => ts.forEach(clearTimeout);
   }, [i, u?.season]);
   if (!u) return <Overlay title="Season review"><div class="empty">No review for this season.</div></Overlay>;
   const go = (d: number) => {
     const n = Math.max(0, Math.min(REEL_N - 1, i + d));
-    if (n !== i) sfx('swipe');
+    if (n !== i) sfx('page');
     setI(n);
   };
   const tone = i === 0 ? (u.outcome === 'relegated' ? 'm-down' : u.outcome === 'stayed' ? '' : 'm-up') : '';

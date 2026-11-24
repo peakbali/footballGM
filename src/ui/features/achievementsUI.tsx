@@ -90,7 +90,7 @@ export function AchievementToast() {
   const hold = !id || st.busy || top?.kind === 'match';
   useEffect(() => {
     if (hold) return;
-    sfx('fanfare');
+    sfx('achieve');
     const t = setTimeout(() => { st.toasts.shift(); store.bump(); }, 4200);
     return () => clearTimeout(t);
   }, [id, hold]);

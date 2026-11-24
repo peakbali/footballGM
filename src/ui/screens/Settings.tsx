@@ -17,12 +17,12 @@ export function SettingsScreen() {
           <input type="checkbox" checked={s.settings.muted} onChange={(e) => { s.settings.muted = (e.target as HTMLInputElement).checked; store.bump(); void store.persist(); }} />
         </label>
         <label class="between" style={{ padding: '6px 0' }}>
-          <span>Music</span>
-          <input type="range" min={0} max={1} step={0.1} value={s.settings.music} onInput={(e) => { s.settings.music = +(e.target as HTMLInputElement).value; store.bump(); }} />
+          <span>Music <span class="tiny dim">lo-fi jazz</span></span>
+          <input type="range" min={0} max={1} step={0.1} value={s.settings.music} onInput={(e) => { s.settings.music = +(e.target as HTMLInputElement).value; store.bump(); }} onChange={() => void store.persist()} />
         </label>
         <label class="between" style={{ padding: '6px 0' }}>
           <span>Effects</span>
-          <input type="range" min={0} max={1} step={0.1} value={s.settings.sfx} onInput={(e) => { s.settings.sfx = +(e.target as HTMLInputElement).value; store.bump(); }} />
+          <input type="range" min={0} max={1} step={0.1} value={s.settings.sfx} onInput={(e) => { s.settings.sfx = +(e.target as HTMLInputElement).value; store.bump(); }} onChange={() => void store.persist()} />
         </label>
       </Card>
       <Card title="Install">

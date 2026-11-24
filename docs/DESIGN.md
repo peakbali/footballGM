@@ -781,7 +781,22 @@ Opens after Continue (with its own Continue back to the hub). Top card: a pixel 
 
 ### 13.5 Audio **[Agreed]**
 
-Chiptune via Web Audio: hub loop, match-day loop, goal sting, promotion fanfare, UI clicks. Global **mute** toggle (and separate music/SFX sliders).
+All sound is synthesised in the browser with Web Audio, so there are no audio files and it works offline. Settings has a global **mute** and separate **Music** and **Effects** sliders (saved with the game). Audio pauses when the app is in the background.
+
+**Music (changed 2026-11-24 from chiptune to lo-fi jazz).** A generated lo-fi jazz loop. It has electric piano chords (rootless 7th, 9th and 13th voicings) with a lazy swing, an upright-style bass (root, fifth and approach notes), and soft kick, rim and swung hats with brushes. Over that sits a sparse vibraphone melody, with vinyl hiss and crackle, a wobbling low-pass filter (worn tape) and a small room reverb. The hub loop is F major at 74 bpm, choosing from three progressions (ii-V-I-vi and others). The match loop is A minor at 88 bpm and busier. Chord pushes, fills and melody notes vary every bar, so it never repeats exactly. AI-generated music cannot be made from the build environment, and bundled tracks would add megabytes and need licences, so the loop is procedural.
+
+**Effects.** All effects are short and soft, in the same jazzy palette:
+
+| When | Sound |
+|---|---|
+| Any button or chip | soft click |
+| List rows, bench players, slots | softer tap |
+| Decision choice | two-note piano confirm |
+| Decision popup appears | by type: offers chime like coins, contract reminders rustle paper, the board plays a low chord, everything else a rising three-note pop |
+| Achievement unlocked | piano arpeggio with a vibraphone sparkle |
+| Facility built | thud, knock and chord |
+| Match result | win or loss phrase |
+| Season reel | page whoosh on every page change. Page 1 plays a fanfare and sparkle for promotion or a title, a sad chord and rain for relegation, or a win phrase. Each later page has its own sound: reveal, sparkles for stars and records, coins for money, a stamp for the board verdict (followed by a sad or happy chord), and a rising phrase for next season. Counters tick while they count up. |
 
 ### 13.6 Player portraits **[Agreed]**
 
