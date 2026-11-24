@@ -42,6 +42,15 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   const vis = await p.evaluate(() => { const c = document.querySelector('.chips[data-seg-bar]'), o = c.querySelector('.on').getBoundingClientRect(), r = c.getBoundingClientRect(); return o.left >= r.left - 1 && o.right <= r.right + 1; });
   expect('active chip scrolled into view', vis, true);
 
+  // empty space below a short page still swipes
+  await p.tap('.chips[data-seg-bar] .chip:has-text("Offers")'); await p.waitForTimeout(400);
+  const bottom = await p.evaluate(() => Math.round(document.querySelector('.swipe').getBoundingClientRect().bottom));
+  console.log('offers content ends at', bottom, 'px of', 844);
+  await swipe(300, Math.min(760, bottom + 60), 60, Math.min(760, bottom + 60));
+  expect('swipe from empty space below the boxes', (await on()).toLowerCase(), 'scouts');
+  await swipe(300, 650, 60, 650);
+  expect('swipe left again -> news', (await on()).toLowerCase(), 'news');
+
   await p.tap('.tabs button:has-text("League")');
   const seg = () => active('.seg[data-seg-bar] button.on');
   await swipe(300, 500, 60, 500);

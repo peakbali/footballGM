@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 
 /**
- * Swipe left/right to move between the sub-pages of a screen (Transfers, Club, League...). Wraps the page
+ * Swipe left/right anywhere on the page area to move between the sub-pages of a screen (Transfers, Club, League...). Wraps the page
  * content only; the chip/segment bar stays outside and keeps working by tap. Vertical scrolling is left to
  * the browser (touch-action: pan-y), swipes that start inside a horizontally scrollable row are ignored,
  * and so are swipes from the very edge of the screen (the phone's own back gesture).
@@ -21,12 +21,14 @@ export function SwipePages<K extends string>({ keys, value, onChange, children }
   const root = useRef<HTMLDivElement>(null);
   const prev = useRef<K>(value);
   const dir = useRef('');
-  const t0 = useRef({ x: 0, y: 0, t: 0, ok: false, lock: '' as '' | 'h' | 'v' });
   const idx = keys.indexOf(value);
   if (prev.current !== value) {
     dir.current = keys.indexOf(prev.current) < idx ? 'from-right' : 'from-left';
     prev.current = value;
   }
+  // the handlers live on the whole page area (the scrolling .content), not just on the cards, so a swipe works from anywhere
+  const live = useRef({ keys, idx, onChange });
+  live.current = { keys, idx, onChange };
 
   // keep the active chip in view
   useEffect(() => {
@@ -35,42 +37,58 @@ export function SwipePages<K extends string>({ keys, value, onChange, children }
     if (bar && on) bar.scrollTo({ left: on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
   }, [value]);
 
-  const pane = () => root.current?.firstElementChild as HTMLElement | null;
+  useEffect(() => {
+    const area = (root.current?.closest('.content') as HTMLElement | null) ?? root.current;
+    if (!area) return;
+    const s = { x: 0, y: 0, t: 0, ok: false, lock: '' as '' | 'h' | 'v' };
+    const pane = () => root.current?.firstElementChild as HTMLElement | null;
+    const reset = () => { const p = pane(); if (p) { p.style.transition = 'transform .15s'; p.style.transform = ''; } };
+    const start = (e: TouchEvent) => {
+      const t = e.touches[0];
+      s.x = t.clientX; s.y = t.clientY; s.t = Date.now(); s.lock = '';
+      s.ok = e.touches.length === 1 && t.clientX > EDGE && t.clientX < window.innerWidth - EDGE && !hScrollable(e.target as Element, area);
+    };
+    const move = (e: TouchEvent) => {
+      if (!s.ok) return;
+      const t = e.touches[0];
+      const dx = t.clientX - s.x, dy = t.clientY - s.y;
+      if (!s.lock && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) s.lock = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'h' : 'v';
+      const p = pane();
+      if (s.lock === 'h' && p) {
+        const { keys: k, idx: i } = live.current;
+        const has = dx < 0 ? i < k.length - 1 : i > 0;
+        p.style.transition = 'none';
+        p.style.transform = `translateX(${dx * (has ? 0.35 : 0.1)}px)`;
+      }
+    };
+    const end = (e: TouchEvent) => {
+      reset();
+      if (!s.ok || s.lock !== 'h') return;
+      const dx = e.changedTouches[0].clientX - s.x;
+      const quick = Date.now() - s.t < 250;
+      if (Math.abs(dx) > (quick ? 35 : 70)) {
+        const { keys: k, idx: i, onChange: change } = live.current;
+        const n = dx < 0 ? i + 1 : i - 1;
+        if (n >= 0 && n < k.length) change(k[n]);
+      }
+    };
+    const prevTA = area.style.touchAction;
+    area.style.touchAction = 'pan-y';
+    area.addEventListener('touchstart', start, { passive: true });
+    area.addEventListener('touchmove', move, { passive: true });
+    area.addEventListener('touchend', end, { passive: true });
+    area.addEventListener('touchcancel', reset, { passive: true });
+    return () => {
+      area.style.touchAction = prevTA;
+      area.removeEventListener('touchstart', start);
+      area.removeEventListener('touchmove', move);
+      area.removeEventListener('touchend', end);
+      area.removeEventListener('touchcancel', reset);
+    };
+  }, []);
+
   return (
-    <div
-      ref={root}
-      class="swipe"
-      onTouchStart={(e) => {
-        const t = e.touches[0];
-        t0.current = { x: t.clientX, y: t.clientY, t: Date.now(), lock: '', ok: e.touches.length === 1 && t.clientX > EDGE && t.clientX < window.innerWidth - EDGE && !hScrollable(e.target as Element, root.current) };
-      }}
-      onTouchMove={(e) => {
-        const s = t0.current;
-        if (!s.ok) return;
-        const t = e.touches[0];
-        const dx = t.clientX - s.x, dy = t.clientY - s.y;
-        if (!s.lock && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) s.lock = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'h' : 'v';
-        const p = pane();
-        if (s.lock === 'h' && p) {
-          const has = dx < 0 ? idx < keys.length - 1 : idx > 0;
-          p.style.transition = 'none';
-          p.style.transform = `translateX(${dx * (has ? 0.35 : 0.1)}px)`;
-        }
-      }}
-      onTouchEnd={(e) => {
-        const s = t0.current;
-        const p = pane();
-        if (p) { p.style.transition = 'transform .15s'; p.style.transform = ''; }
-        if (!s.ok || s.lock !== 'h') return;
-        const dx = e.changedTouches[0].clientX - s.x;
-        const quick = Date.now() - s.t < 250;
-        if (Math.abs(dx) > (quick ? 35 : 70)) {
-          const n = dx < 0 ? idx + 1 : idx - 1;
-          if (n >= 0 && n < keys.length) onChange(keys[n]);
-        }
-      }}
-      onTouchCancel={() => { const p = pane(); if (p) { p.style.transition = 'transform .15s'; p.style.transform = ''; } }}
-    >
+    <div ref={root} class="swipe">
       <div key={value} class={`swipe-pane ${dir.current}`}>{children}</div>
     </div>
   );
