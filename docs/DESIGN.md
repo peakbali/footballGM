@@ -674,11 +674,23 @@ Bottom tabs: **Hub · Squad · Transfers · Club · League**.
 
 | Tab | Contents |
 |---|---|
-| Hub | Pixel stadium scene, next match, Continue button, alerts, money, board meter |
+| Hub | One screen, no scrolling: starting XI OVR (focal point) and next match over the pixel stadium, league table, money, inbox, Continue button. See 13.2a |
 | Squad | Squad list (OVR hex, position, age, morale, fitness, contract), formation picker, player detail, academy |
 | Transfers | Scout shortlists, offers in/out, loan market, free agents, news feed |
 | Club | Finances & projections, facilities builder, staff, sponsors, board goals |
 | League | Table, fixtures/results, stats leaders, other divisions, club history |
+
+### 13.2a Hub layout **[Agreed]**
+
+Redone 2026-11-24 on Khen's feedback. The hub must fit one phone screen with no scrolling. Top to bottom:
+
+1. **Hero** over the evolving pixel stadium (13.3): on the left the **starting XI OVR** as a large hexagon (average effective rating of the auto-picked XI, with its rank in the league and the attack/midfield/defence/keeper unit ratings); on the right the **next match** (opponent, home/away, week and date, opponent's league position, playoff tag) and the last result as a coloured chip.
+2. **League table**: five rows around your club with form, played, goal difference and points, promotion/playoff/relegation colour bars, a link to the full table, and the cup status line when a cup run is active.
+3. **Money**: cash, projected balance at 30 June and a small cash sparkline.
+4. **Inbox**: decisions waiting for you first, then the newest messages, as many as fit; a gold Season review button shows when a review is unseen.
+5. **Continue** stays bottom right.
+
+Board, building projects and the cup card moved off the hub (Board and Facilities live in the Club tab, the cup in its overlay from the table card). On short screens (under 720px high) the hero shrinks and the inbox shows two items.
 
 ### 13.2b Install as an app **[Agreed]**
 

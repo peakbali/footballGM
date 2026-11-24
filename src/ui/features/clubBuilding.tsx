@@ -10,7 +10,6 @@ import { registerOverlay } from '../overlays';
 import { money, nav, store, useStore } from '../store';
 import { registerClubSection } from './clubSections';
 import type { ArtKey } from '../cardArt';
-import { registerHubCard } from '../hubExtras';
 import { registerInboxAction } from '../inboxActions';
 import { registerPlayerAction } from '../playerExtras';
 import { registerSquadCard } from '../squadExtras';
@@ -139,19 +138,6 @@ registerSquadCard((s) => {
   );
 });
 
-// Hub: building projects
-registerHubCard((s) => {
-  const f = facState(s);
-  if (!f.projects.length) return null;
-  return (
-    <Card title="Building">
-      {f.projects.map((p) => {
-        const u = upgradeById(p.id)!;
-        return <div class="between small" key={p.id}><span>{u.name}</span><span class="amber">{p.weeksLeft} wk</span></div>;
-      })}
-    </Card>
-  );
-});
 
 // Player screen: morale reasons + academy actions
 function OwnExtras({ s, p }: { s: GameState; p: Player }) {

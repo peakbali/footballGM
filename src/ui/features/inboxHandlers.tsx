@@ -2,14 +2,10 @@ import { useState } from 'preact/hooks';
 import { hashSeed, Rng } from '../../core/rng';
 import { acceptSponsor } from '../../core/systems/sponsors';
 import { acceptIncoming, counterIncoming, exerciseOption, rejectIncoming } from '../../core/systems/transfers';
-import { projection } from '../../core/systems/finance';
 import type { GameState } from '../../core/state';
 import type { InboxMessage } from '../../core/types';
 import { registerInboxAction } from '../inboxActions';
-import { registerHubCard } from '../hubExtras';
-import { Card } from '../components';
 import { money, nav, store } from '../store';
-import { CashChart } from './clubTab';
 
 registerInboxAction('sponsor_choice', (s, m) => {
   const ids = (m.action!.data as number[]) ?? [];
@@ -68,14 +64,3 @@ registerInboxAction('loan_option', (s, m) => {
   );
 });
 
-registerHubCard((s) => {
-  const c = s.clubs[s.userClubId];
-  const pr = projection(s);
-  return (
-    <Card title="Money" action={<button class="linkbtn" onClick={() => nav.setTab('club')}>Details</button>}>
-      <div class="between small"><span>Cash</span><b class={c.cash < 0 ? 'red' : 'gold'}>{money(c.cash)}</b></div>
-      <div class="between small"><span>Projected 30 June</span><b class={pr.end < 0 ? 'red' : 'green'}>{money(pr.end)}</b></div>
-      <CashChart s={s} />
-    </Card>
-  );
-});

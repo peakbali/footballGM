@@ -2,8 +2,11 @@ import type { GameState } from '../../core/state';
 import { CUP_KEY, CUP_NAME, CUP_WEEKS, cupPrize, cupState, ROUND_NAMES } from '../../core/systems/cup';
 import { Badge, Card, Overlay } from '../components';
 import { money, nav, useStore } from '../store';
-import { registerHubCard } from '../hubExtras';
 import { registerOverlay } from '../overlays';
+
+export function cupLine(s: GameState): string | null {
+  return cupState(s) ? status(s) : null;
+}
 
 function status(s: GameState): string {
   const c = cupState(s);
@@ -17,15 +20,6 @@ function status(s: GameState): string {
   return r < CUP_WEEKS.length ? `${ROUND_NAMES[r]} draw in week ${CUP_WEEKS[r] - 1}` : 'Waiting for the next draw';
 }
 
-registerHubCard((s) => {
-  const c = cupState(s);
-  if (!c) return null;
-  return (
-    <Card title={CUP_NAME} action={<button class="linkbtn" onClick={() => nav.push({ kind: 'custom', key: 'cup' })}>Rounds</button>}>
-      <div class={`small ${c.userWon ? 'gold' : c.userExit != null ? 'dim' : ''}`}>{status(s)}</div>
-    </Card>
-  );
-});
 
 function CupScreen() {
   const s = useStore().state!;
