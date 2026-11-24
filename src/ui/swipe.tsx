@@ -1,0 +1,77 @@
+import { useEffect, useRef } from 'preact/hooks';
+import type { ComponentChildren } from 'preact';
+
+/**
+ * Swipe left/right to move between the sub-pages of a screen (Transfers, Club, League...). Wraps the page
+ * content only; the chip/segment bar stays outside and keeps working by tap. Vertical scrolling is left to
+ * the browser (touch-action: pan-y), swipes that start inside a horizontally scrollable row are ignored,
+ * and so are swipes from the very edge of the screen (the phone's own back gesture).
+ * Mark the bar with `data-seg-bar` so the active chip is scrolled into view.
+ */
+const EDGE = 24;
+const hScrollable = (el: Element | null, stop: Element | null): boolean => {
+  for (; el && el !== stop; el = el.parentElement) {
+    const ox = getComputedStyle(el).overflowX;
+    if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 2) return true;
+  }
+  return false;
+};
+
+export function SwipePages<K extends string>({ keys, value, onChange, children }: { keys: readonly K[]; value: K; onChange: (k: K) => void; children: ComponentChildren }) {
+  const root = useRef<HTMLDivElement>(null);
+  const prev = useRef<K>(value);
+  const dir = useRef('');
+  const t0 = useRef({ x: 0, y: 0, t: 0, ok: false, lock: '' as '' | 'h' | 'v' });
+  const idx = keys.indexOf(value);
+  if (prev.current !== value) {
+    dir.current = keys.indexOf(prev.current) < idx ? 'from-right' : 'from-left';
+    prev.current = value;
+  }
+
+  // keep the active chip in view
+  useEffect(() => {
+    const bar = root.current?.parentElement?.querySelector('[data-seg-bar]') as HTMLElement | null;
+    const on = bar?.querySelector('.on') as HTMLElement | null;
+    if (bar && on) bar.scrollTo({ left: on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
+  }, [value]);
+
+  const pane = () => root.current?.firstElementChild as HTMLElement | null;
+  return (
+    <div
+      ref={root}
+      class="swipe"
+      onTouchStart={(e) => {
+        const t = e.touches[0];
+        t0.current = { x: t.clientX, y: t.clientY, t: Date.now(), lock: '', ok: e.touches.length === 1 && t.clientX > EDGE && t.clientX < window.innerWidth - EDGE && !hScrollable(e.target as Element, root.current) };
+      }}
+      onTouchMove={(e) => {
+        const s = t0.current;
+        if (!s.ok) return;
+        const t = e.touches[0];
+        const dx = t.clientX - s.x, dy = t.clientY - s.y;
+        if (!s.lock && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) s.lock = Math.abs(dx) > Math.abs(dy) * 1.4 ? 'h' : 'v';
+        const p = pane();
+        if (s.lock === 'h' && p) {
+          const has = dx < 0 ? idx < keys.length - 1 : idx > 0;
+          p.style.transition = 'none';
+          p.style.transform = `translateX(${dx * (has ? 0.35 : 0.1)}px)`;
+        }
+      }}
+      onTouchEnd={(e) => {
+        const s = t0.current;
+        const p = pane();
+        if (p) { p.style.transition = 'transform .15s'; p.style.transform = ''; }
+        if (!s.ok || s.lock !== 'h') return;
+        const dx = e.changedTouches[0].clientX - s.x;
+        const quick = Date.now() - s.t < 250;
+        if (Math.abs(dx) > (quick ? 35 : 70)) {
+          const n = dx < 0 ? idx + 1 : idx - 1;
+          if (n >= 0 && n < keys.length) onChange(keys[n]);
+        }
+      }}
+      onTouchCancel={() => { const p = pane(); if (p) { p.style.transition = 'transform .15s'; p.style.transform = ''; } }}
+    >
+      <div key={value} class={`swipe-pane ${dir.current}`}>{children}</div>
+    </div>
+  );
+}

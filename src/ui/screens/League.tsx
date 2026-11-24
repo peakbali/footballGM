@@ -1,3 +1,4 @@
+import { SwipePages } from '../swipe';
 import { useState } from 'preact/hooks';
 import { computeTable } from '../../core/league';
 import { CAL, buildSquadIndex } from '../../core/state';
@@ -5,12 +6,13 @@ import { Badge, Card, Form } from '../components';
 import { nav, useStore } from '../store';
 import type { Fixture } from '../../core/types';
 
+const SEGS = ['table', 'fixtures', 'stats', 'history'] as const;
 export function LeagueScreen() {
   const st = useStore();
   const s = st.state!;
   const userDiv = s.leagues.find((l) => l.clubIds.includes(s.userClubId))!.div;
   const [div, setDiv] = useState(userDiv);
-  const [seg, setSeg] = useState<'table' | 'fixtures' | 'stats' | 'history'>('table');
+  const [seg, setSeg] = useState<(typeof SEGS)[number]>('table');
   const lg = s.leagues[div - 1];
 
   return (
@@ -22,15 +24,17 @@ export function LeagueScreen() {
           </button>
         ))}
       </div>
-      <div class="seg">
-        {(['table', 'fixtures', 'stats', 'history'] as const).map((k) => (
+      <div class="seg" data-seg-bar>
+        {SEGS.map((k) => (
           <button key={k} class={seg === k ? 'on' : ''} onClick={() => setSeg(k)}>{k}</button>
         ))}
       </div>
+      <SwipePages keys={SEGS} value={seg} onChange={setSeg}>
       {seg === 'table' && <TableView div={div} />}
       {seg === 'fixtures' && <FixturesView div={div} />}
       {seg === 'stats' && <StatsView div={div} />}
       {seg === 'history' && <HistoryView />}
+      </SwipePages>
       <div class="tiny dim" style={{ marginTop: 6 }}>{lg.name} · division {div}</div>
     </div>
   );
