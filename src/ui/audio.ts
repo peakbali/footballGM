@@ -5,8 +5,9 @@ import { store } from './store';
  * it works offline and the build stays small.
  *
  * Music is a generated lo-fi jazz loop: electric piano chords (7ths, 9ths, 13ths) with a lazy swing, a soft
- * upright-style bass, brushed drums, a sparse vibraphone melody, vinyl crackle, and everything through a
- * low-pass filter and a small room reverb. Chords, fills and melody notes vary from bar to bar, so it does not
+ * upright-style bass, soft clean percussion (no noise: kick, rim and ride are all tuned sine tones), a sparse
+ * vibraphone melody, and everything through a gentle low-pass and a small, smooth room reverb, with headroom so
+ * nothing clips. (An earlier version had vinyl crackle and noise drums; they were removed as too noisy.) Chords, fills and melody notes vary from bar to bar, so it does not
  * sound like a short loop. 'hub' is slow and mellow; 'match' is a little brighter and busier.
  *
  * Effects are short and soft, tuned to the same jazzy palette (see `Sfx`).
@@ -31,7 +32,12 @@ function impulse(c: AudioContext, secs: number) {
   const buf = c.createBuffer(2, len, c.sampleRate);
   for (let ch = 0; ch < 2; ch++) {
     const d = buf.getChannelData(ch);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    // smoothed (low-passed) noise so the tail is warm, not hissy
+    let y = 0;
+    for (let i = 0; i < len; i++) {
+      y += 0.25 * ((Math.random() * 2 - 1) - y);
+      d[i] = y * Math.pow(1 - i / len, 3);
+    }
   }
   return buf;
 }
@@ -60,12 +66,12 @@ function ensure(): AudioContext | null {
     musicIn.connect(lowpass);
     musicVerb = c.createGain();
     musicVerb.gain.value = 0.35;
-    musicIn.connect(musicVerb).connect(reverb);
+    lowpass.connect(musicVerb).connect(reverb); // the reverb takes the filtered signal, so it adds no top end
     // a slow wobble on the filter, like a worn tape
     const lfo = c.createOscillator();
     const depth = c.createGain();
     lfo.frequency.value = 0.13;
-    depth.gain.value = 500;
+    depth.gain.value = 250;
     lfo.connect(depth).connect(lowpass.frequency);
     lfo.start();
 
@@ -84,7 +90,7 @@ export function applyVolumes() {
   const st = settings();
   master.gain.value = st.muted ? 0 : 0.55;
   musicGain!.gain.value = st.music * 0.8;
-  musicVerb!.gain.value = st.music * 0.18;
+  musicVerb!.gain.value = st.music * 0.12;
   sfxGain!.gain.value = st.sfx * 0.6;
 }
 
@@ -150,7 +156,7 @@ function epiano(dest: AudioNode, t: number, n: number, dur: number, vel = 0.12) 
   osc(g, t, 'sine', f, dur, 5);
   const g2 = env(dest, t, vel * 0.25, Math.min(dur, 0.9), 0.005);
   osc(g2, t, 'sine', f * 2, Math.min(dur, 0.9));
-  const g3 = env(dest, t, vel * 0.12, 0.18, 0.002);
+  const g3 = env(dest, t, vel * 0.08, 0.18, 0.006);
   osc(g3, t, 'sine', f * 7, 0.18);
 }
 
@@ -186,12 +192,22 @@ function bass(dest: AudioNode, t: number, n: number, dur: number, vel = 0.34) {
 }
 
 function kick(dest: AudioNode, t: number, vel = 0.5) {
-  const g = env(dest, t, vel, 0.22, 0.003);
-  osc(g, t, 'sine', 120, 0.22, 0, 42);
+  const g = env(dest, t, vel, 0.22, 0.006);
+  osc(g, t, 'sine', 95, 0.22, 0, 45);
 }
-const snare = (dest: AudioNode, t: number, vel = 0.1) => { noiseHit(dest, t, 0.16, vel, 'bandpass', 2200, 0.7); noiseHit(dest, t, 0.05, vel * 0.6, 'bandpass', 900, 1.2); };
-const hat = (dest: AudioNode, t: number, vel = 0.035) => noiseHit(dest, t, 0.045, vel, 'highpass', 7500, 0.6);
-const brush = (dest: AudioNode, t: number, dur: number, vel = 0.025) => noiseHit(dest, t, dur, vel, 'bandpass', 5000, 0.5);
+/** Soft rim click: two short tuned sines, no noise. */
+const rim = (dest: AudioNode, t: number, vel = 0.05) => {
+  const g = env(dest, t, vel, 0.07, 0.003);
+  osc(g, t, 'sine', 1650, 0.07, 0, 1500);
+  const g2 = env(dest, t, vel * 0.6, 0.05, 0.003);
+  osc(g2, t, 'triangle', 420, 0.05, 0, 380);
+};
+/** Ride-cymbal-like ting: two quiet inharmonic sines with a short decay. */
+const ride = (dest: AudioNode, t: number, vel = 0.012) => {
+  const g = env(dest, t, vel, 0.12, 0.004);
+  osc(g, t, 'sine', 3150, 0.12);
+  osc(g, t, 'sine', 4730, 0.12);
+};
 
 // ---------- music
 
@@ -234,33 +250,6 @@ let timer: number | null = null;
 let beatTime = 0;
 let beat = 0; // beats since start
 let prog: Chord[] = [];
-let crackle: AudioBufferSourceNode | null = null;
-
-function startCrackle(c: AudioContext) {
-  if (crackle) return;
-  const len = c.sampleRate * 4;
-  const buf = c.createBuffer(1, len, c.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) {
-    d[i] = (Math.random() * 2 - 1) * 0.012; // hiss
-    if (Math.random() < 0.0004) d[i] += (Math.random() < 0.5 ? -1 : 1) * rnd(0.2, 0.6); // pops
-  }
-  crackle = c.createBufferSource();
-  crackle.buffer = buf;
-  crackle.loop = true;
-  const f = c.createBiquadFilter();
-  f.type = 'highpass';
-  f.frequency.value = 900;
-  const g = c.createGain();
-  g.gain.value = 0.5;
-  crackle.connect(f).connect(g).connect(musicGain!);
-  crackle.start();
-}
-function stopCrackle() {
-  try { crackle?.stop(); } catch { /* already stopped */ }
-  crackle = null;
-}
-
 function scheduleBeat(t: number) {
   const st = style!;
   const dest = musicIn!;
@@ -285,14 +274,13 @@ function scheduleBeat(t: number) {
   if (b === 2) bass(dest, t + h(), chord.root + pick([7, 7, 12, 10]), spb * 1.6, 0.28);
   if (b === 3 && Math.random() < 0.5) bass(dest, off + h(), next.root + pick([-1, 1, 2]), spb * 0.5, 0.22);
 
-  // drums: lazy kick, rim/snare on 2 and 4, swung hats
-  if (b === 0) kick(dest, t + h(), 0.45);
-  if (b === 2 && Math.random() < 0.5 + st.busy * 0.3) kick(dest, t + h(), 0.32);
-  if (b === 1 && Math.random() < st.busy * 0.4) kick(dest, off + h(), 0.25);
-  if (b === 1 || b === 3) snare(dest, t + h(), st.busy > 0.6 ? 0.1 : 0.075);
-  hat(dest, t + h(), b % 2 ? 0.03 : 0.04);
-  if (Math.random() < 0.4 + st.busy * 0.5) hat(dest, off + h(), 0.022);
-  if (st.busy < 0.6) brush(dest, t, spb * 0.9, 0.018);
+  // drums: lazy kick, rim click on 2 and 4, a quiet swung ride
+  if (b === 0) kick(dest, t + h(), 0.3);
+  if (b === 2 && Math.random() < 0.5 + st.busy * 0.3) kick(dest, t + h(), 0.22);
+  if (b === 1 && Math.random() < st.busy * 0.4) kick(dest, off + h(), 0.16);
+  if (b === 1 || b === 3) rim(dest, t + h(), st.busy > 0.6 ? 0.05 : 0.038);
+  ride(dest, t + h(), b % 2 ? 0.01 : 0.013);
+  if (Math.random() < 0.3 + st.busy * 0.5) ride(dest, off + h(), 0.008);
 
   // vibes melody: sparse notes, more on the second half of every 2 bars
   const want = (bar % 2 === 1 ? 0.45 : 0.2) * (0.6 + st.busy * 0.5);
@@ -322,13 +310,12 @@ export function music(name: 'hub' | 'match' | null) {
     timer = null;
   }
   style = name === 'hub' ? HUB : name === 'match' ? MATCH : null;
-  if (!style) { stopCrackle(); return; }
+  if (!style) return;
   const c = ensure();
   if (!c || c.state !== 'running') return; // starts on the first user gesture
   beat = 0;
   prog = pick(style.progressions);
   beatTime = c.currentTime + 0.1;
-  startCrackle(c);
   timer = window.setInterval(tick, 60);
 }
 
@@ -349,7 +336,7 @@ export function sfx(name: Sfx) {
   const d = sfxGain;
   const ep = (notes: number[], gap: number, dur = 0.6, vel = 0.14) => notes.forEach((n, i) => epiano(d, t + i * gap, n, dur, vel));
   switch (name) {
-    case 'click': { const g = env(d, t, 0.06, 0.035, 0.002); osc(g, t, 'sine', 1500, 0.035, 0, 1100); noiseHit(d, t, 0.02, 0.02, 'highpass', 5000); break; }
+    case 'click': { const g = env(d, t, 0.06, 0.035, 0.003); osc(g, t, 'sine', 1500, 0.035, 0, 1100); break; }
     case 'tap': { const g = env(d, t, 0.045, 0.03, 0.002); osc(g, t, 'sine', 1100, 0.03, 0, 850); break; }
     case 'confirm': ep([72, 79], 0.05, 0.4, 0.12); break;
     case 'swipe': noiseHit(d, t, 0.18, 0.05, 'bandpass', 600, 1.2, 2400); break;
