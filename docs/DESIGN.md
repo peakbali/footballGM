@@ -720,6 +720,14 @@ The browser and phone back button must never leave the game (that showed a blank
 
 Logic lives in `src/ui/backNav.ts` with a test (`tests/back.test.ts`) that models Chrome's skipping and opens every kind of screen; `scripts/e2e-back.cjs` repeats the check in a real browser, including the installed-app mode.
 
+### 13.2f Hub order and Transfers spreadsheet **[Agreed]**
+
+**Hub:** top to bottom: Starting XI / next match hero, Money, Inbox, then the small league table last (the table only shows four rows and keeps room at the bottom for the Continue button). The Inbox card takes all the spare height and its message list scrolls inside the card (up to 40 messages), so the hub still fits one screen.
+
+**Transfers lists:** Scouted, ★ List and Free agents are spreadsheet-style tables: portrait, name, position tag and club on the left, then columns Age, POT, Value, Pers and the OVR badge on the right, with vertical lines between the columns. The header row is a row of sort buttons: tap a column to sort by it (best first, youngest first for Age), tap again to flip; unknown values ("?") always sort last. Personality is shown as a short label (Vol, Dem, Bal, Pro, Model) only when the scouts can read the player (his POT is visible) or he is your own player, otherwise "?", so sorting by it cannot leak hidden information.
+
+All three lists have a second chip row with one sub-page per position (ANY plus every position; Scouted only the positions in the current formation), each chip showing how many players it holds. Swiping goes through the positions one by one and then on to the next list.
+
 ### 13.2e Squad list sub-pages **[Agreed]**
 
 The squad box on the Squad tab has no sort buttons any more. It has three swipeable sub-pages with chips (Contract, Form, Attributes), in the same swipe-anywhere style as the other pages. The left of every row is the same on all three: portrait, name, position tag, age (plus injury, ban and loan notes). The players are listed by position (keepers, defenders, midfielders, forwards), best OVR first within a position. The OVR badge stays fixed on the right of every row. Rows are compact (32 px portrait, 28 px OVR badge, 13 px name, narrow columns) so names such as "D. Henderson" show in full on a 360 px phone. A small header row names the columns. Tapping a row opens the player screen, which has the full attribute detail.

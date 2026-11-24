@@ -61,9 +61,9 @@ export function Form({ form }: { form: string }) {
   );
 }
 
-export function Card({ title, action, children, art, wide }: { title?: ComponentChildren; action?: ComponentChildren; children: ComponentChildren; art?: ArtKey; wide?: boolean }) {
+export function Card({ title, action, children, art, wide, cls }: { title?: ComponentChildren; action?: ComponentChildren; children: ComponentChildren; art?: ArtKey; wide?: boolean; cls?: string }) {
   return (
-    <div class={art ? 'card has-art' : 'card'}>
+    <div class={`${art ? 'card has-art' : 'card'}${cls ? ` ${cls}` : ''}`}>
       {art && <CardArt art={art} wide={wide} />}
       {title && (
         <h3>
