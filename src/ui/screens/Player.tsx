@@ -3,6 +3,7 @@ import { posOvr, familiarityMult } from '../../core/ratings';
 import { Badge, Card, Hex, Overlay, PosPill, Bar } from '../components';
 import { money, nav, useStore } from '../store';
 import { knowledge, playerActions } from '../playerExtras';
+import { PersonalityFace } from '../personalityFace';
 import { Portrait } from '../portrait';
 
 export function personalityLabel(v: number): string {
@@ -34,7 +35,7 @@ export function PlayerScreen({ id }: { id: number }) {
         {own && (
           <div style={{ marginTop: 10 }} class="kv">
             <span>Morale</span><div><Bar value={p.morale} color="var(--blue)" /></div>
-            <span>Personality</span><span>{personalityLabel(p.personality)}</span>
+            <span>Personality</span><span class="row" style={{ gap: 6 }}><PersonalityFace v={p.personality} size={16} />{personalityLabel(p.personality)}</span>
             {p.injury > 0 && <><span>Injury</span><span class="red">{p.injuryName}, {p.injury} wk</span></>}
             {p.ban > 0 && <><span>Suspended</span><span class="red">{p.ban} match(es)</span></>}
           </div>
