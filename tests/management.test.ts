@@ -6,6 +6,7 @@ import { squadOf } from '../src/core/state';
 import { askingPrice, completeDeal, submitBid } from '../src/core/systems/transfers';
 import { askingWage, negotiate, seniorCount } from '../src/core/systems/contracts';
 import { acceptSponsor } from '../src/core/systems/sponsors';
+import { knowledgeOf, makeReport } from '../src/core/systems/scouting';
 import '../src/core/systems/all';
 
 const club = clubsInLeague(startingLeagues()[3].key)[2];
@@ -19,6 +20,27 @@ describe('management', () => {
     const msg = s.inbox.find((m) => m.action?.kind === 'sponsor_choice')!;
     acceptSponsor(s, msg.id, s.sponsors[0].id);
     expect(s.sponsors[0].status).toBe('active');
+  });
+
+  it('scout reports show the true OVR, and POT as the true number or unknown', () => {
+    const s = newGame(13, club);
+    const others = [...s.players.values()].filter((p) => p.clubId != null && s.clubs[p.clubId].div !== s.clubs[s.userClubId].div).slice(0, 300);
+    const seen = (level: number) => {
+      s.scouting.reports = {};
+      let n = 0;
+      for (const p of others) {
+        makeReport(s, p, level);
+        const k = knowledgeOf(s, p);
+        expect(k.ovr).toBe(p.ovr);
+        if (k.pot != null) { expect(k.pot).toBe(p.pot); n++; }
+      }
+      return n;
+    };
+    const bad = seen(10);
+    const good = seen(95);
+    expect(good).toBeGreaterThan(bad * 1.8);
+    s.scouting.reports = {};
+    expect(knowledgeOf(s, others[0])).toEqual({ ovr: null, pot: null });
   });
 
   it('pays wages and income weekly and keeps a ledger', () => {

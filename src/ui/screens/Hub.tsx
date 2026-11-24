@@ -108,7 +108,7 @@ export function HubScreen() {
           sfx(mine > 0 ? 'win' : mine < 0 ? 'loss' : 'click');
         }
         if (r?.seasonEnded && openReelIfPending(s)) return;
-        if (f) nav.push({ kind: 'match', fixtureId: f.id });
+        if (f) nav.push({ kind: 'match', fixtureId: f.id, after: true });
         else if (r?.messages.some((m) => m.action && !m.resolved)) nav.push({ kind: 'inbox' });
       }}>
         {st.busy ? <span class="spinner">Playing...</span> : 'Continue ›'}

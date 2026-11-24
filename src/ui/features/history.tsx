@@ -277,7 +277,7 @@ function BoardSection({ s }: { s: GameState }) {
   const b = boardState(s);
   return (
     <div>
-      <Card title={`Board · ${approvalLabel(b.approval)}`} action={<b>{b.approval}</b>}>
+      <Card title={`Board · ${approvalLabel(b.approval)}`} action={<b>{b.approval}</b>} art="board">
         <Meter value={b.approval} />
         <div class="tiny dim" style={{ marginTop: 6 }}>The board never sacks you. Meeting goals earns a cash bonus, and meeting all of them makes your next facility build 20% cheaper.</div>
       </Card>
@@ -301,7 +301,7 @@ function HistorySection({ s }: { s: GameState }) {
   const list = seasons(s);
   const R = records(s);
   const top = topScorerAllTime(s);
-  if (!list.length) return <Card title="History"><div class="empty small">Your first season is still being written. History and records appear here after the season ends.</div></Card>;
+  if (!list.length) return <Card title="History" art="trophy"><div class="empty small">Your first season is still being written. History and records appear here after the season ends.</div></Card>;
   return (
     <div>
       <Card title="Club history"><Graphs list={list} /></Card>
@@ -316,7 +316,7 @@ function HistorySection({ s }: { s: GameState }) {
           </div>
         ))}
       </Card>
-      <Card title="Records">
+      <Card title="Records" art="trophy">
         <div class="kv">
           {R.bestFinish && <><span>Best finish</span><span>{ordinal(R.bestFinish.pos)} in division {R.bestFinish.div} ({R.bestFinish.season})</span></>}
           {R.pts && <><span>Most points</span><span>{R.pts.v} ({R.pts.season})</span></>}

@@ -9,6 +9,7 @@ import { Card, Overlay } from '../components';
 import { registerOverlay } from '../overlays';
 import { money, nav, store, useStore } from '../store';
 import { registerClubSection } from './clubSections';
+import type { ArtKey } from '../cardArt';
 import { registerHubCard } from '../hubExtras';
 import { registerInboxAction } from '../inboxActions';
 import { registerPlayerAction } from '../playerExtras';
@@ -73,7 +74,7 @@ function Facilities({ s }: { s: GameState }) {
         const opts = nextOptions(s, b.key);
         const built = f.built.map(upgradeById).filter((u) => u && u.branch === b.key) as Upgrade[];
         return (
-          <Card key={b.key} title={<span>{b.label} <span class="gold">Lv {lvl}</span></span>} action={<span class="tiny dim">cap {lvl * 10 + 10}</span>}>
+          <Card key={b.key} art={b.key as ArtKey} title={<span>{b.label} <span class="gold">Lv {lvl}</span></span>} action={<span class="tiny dim">cap {lvl * 10 + 10}</span>}>
             <div class="row" style={{ gap: 3, marginBottom: 6 }}>
               {Array.from({ length: 10 }, (_, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 1, background: i < lvl ? 'var(--gold)' : proj && i === lvl ? 'var(--amber, #d9a400)' : 'var(--bg)', opacity: proj && i === lvl ? 0.5 : 1 }} />)}
             </div>
@@ -107,7 +108,7 @@ function Academy({ s }: { s: GameState }) {
   const weeksTo = (ACADEMY_WEEK - s.week + 52) % 52;
   return (
     <div>
-      <Card title={`Academy · ${list.length}/${academyCap(s)}`}>
+      <Card title={`Academy · ${list.length}/${academyCap(s)}`} art="academy">
         <div class="kv">
           <span>Facility</span><span>Level {lvl}</span>
           <span>Youth coach</span><span>{yc || 'Vacant'}{yc ? ` (cap ${staffCap(s, 'youth_coach')})` : ''}</span>

@@ -16,15 +16,15 @@ export function PlayerScreen({ id }: { id: number }) {
   const k = knowledge(s, p);
   const club = p.clubId != null ? s.clubs[p.clubId] : null;
   const age = s.season - p.birthYear;
-  const show = (v: number) => (k.exact ? v : k.ovrRange != null ? '~' : '?');
+  const show = (v: number) => (k.ovr != null ? v : '?');
   return (
     <Overlay title={`${p.first} ${p.last}`} sub={`${age} · ${p.nat} · ${club ? club.name : 'Free agent'}`}>
       <Card>
         <div class="row">
-          <Hex value={k.exact ? p.ovr : k.ovrRange ? `${k.ovrRange[0]}-${k.ovrRange[1]}` : null} size={54} />
+          <Hex value={k.ovr} size={54} />
           <div class="grow">
             <div class="row" style={{ gap: 6, flexWrap: 'wrap' }}>{POSITIONS.filter((x) => p.fam[x]).map((x) => <PosPill key={x} pos={x} />)}</div>
-            <div class="small dim" style={{ marginTop: 6 }}>Potential: <b class="gold">{k.potRange ? (k.potRange[0] === k.potRange[1] ? k.potRange[0] : `${k.potRange[0]}-${k.potRange[1]}`) : '?'}</b></div>
+            <div class="small dim" style={{ marginTop: 6 }}>Potential: <b class="gold">{k.pot ?? '?'}</b></div>
             <div class="small dim">Value: <b>{money(p.value)}</b></div>
           </div>
           {club && <Badge club={club} size={36} />}
@@ -60,7 +60,7 @@ export function PlayerScreen({ id }: { id: number }) {
           {p.pos === 'GK' || p.pos === 'CB' ? <><span>Clean sheets</span><span>{p.stats.cs}</span></> : null}
         </div>
       </Card>
-      {k.exact ? (
+      {k.ovr != null ? (
         ATTR_GROUPS.filter((g) => (p.pos === 'GK' ? true : g.name !== 'Goalkeeping')).map((g) => (
           <Card key={g.name} title={g.name}>
             <div class="attrgrid">
@@ -74,7 +74,7 @@ export function PlayerScreen({ id }: { id: number }) {
       ) : (
         <Card title="Attributes"><div class="dim small">Scout this player to see his attributes.</div></Card>
       )}
-      {k.exact && (
+      {k.ovr != null && (
         <Card title="Positions">
           <div class="attrgrid">
             {POSITIONS.map((pos) => {
@@ -91,7 +91,7 @@ export function PlayerScreen({ id }: { id: number }) {
               <span>{c.s}/{String(c.s + 1).slice(2)}</span>
               <span class="dim">{c.c >= 0 ? s.clubs[c.c]?.short : 'Free'}</span>
               <span>{c.apps} apps, {c.goals} gls</span>
-              <span>{k.exact ? c.ovr : ''}</span>
+              <span>{k.ovr != null ? c.ovr : ''}</span>
             </div>
           ))}
         </Card>

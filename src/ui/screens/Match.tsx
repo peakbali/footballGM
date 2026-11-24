@@ -5,7 +5,7 @@ import type { MatchEvent } from '../../core/types';
 
 const ICON: Record<string, string> = { goal: '⚽', pen: '⚽ (pen)', save: '🧤', miss: '↗', yellow: '🟨', red: '🟥', injury: '✚', sub: '⇄', ko: '', ft: '', ht: '' };
 
-export function MatchScreen({ fixtureId }: { fixtureId: number }) {
+export function MatchScreen({ fixtureId, after }: { fixtureId: number; after?: boolean }) {
   const s = useStore().state!;
   const f = s.fixtures.find((x) => x.id === fixtureId);
   if (!f) return <Overlay title="Match"><div class="empty">Match not found.</div></Overlay>;
@@ -87,6 +87,12 @@ export function MatchScreen({ fixtureId }: { fixtureId: number }) {
         </Card>
       )}
       {!rep && <div class="empty">Detailed reports are kept for your own league this season.</div>}
+      {after && (
+        <>
+          <div style={{ height: 70 }} />
+          <button class="btn gold continue" onClick={() => nav.setTab('hub')}>Continue ›</button>
+        </>
+      )}
     </Overlay>
   );
 }
