@@ -719,6 +719,18 @@ The browser and phone back button must never leave the game (that showed a blank
 
 Logic lives in `src/ui/backNav.ts` with a test (`tests/back.test.ts`) that models Chrome's skipping and opens every kind of screen; `scripts/e2e-back.cjs` repeats the check in a real browser, including the installed-app mode.
 
+### 13.2e Squad list sub-pages **[Agreed]**
+
+The squad box on the Squad tab has no sort buttons any more. It has three swipeable sub-pages with chips (Contract, Form, Attributes), in the same swipe-anywhere style as the other pages. The left of every row is the same on all three: portrait, name, position tag, age (plus injury, ban, loan and low-fitness notes). The players are listed by position (keepers, defenders, midfielders, forwards), best OVR first within a position. The OVR badge stays fixed on the right of every row. A small header row names the columns. Tapping a row opens the player screen, which has the full attribute detail.
+
+| Sub-page | Columns |
+|---|---|
+| Contract | weekly wage, expiry (June of the contract's end year), value |
+| Form | appearances, goals, assists, average rating, clean sheets (defenders and keepers) |
+| Attributes | technical, mental, physical and goalkeeping averages, coloured like OVR (goalkeeping is dimmed for outfield players) |
+
+**Styling note:** Preact 11 does not add "px" to numeric style values, so `style={{ marginTop: 6 }}` had no effect anywhere in the app. `src/ui/styleUnits.ts` now converts numeric style values to pixels (except unitless properties like flex, opacity, zIndex and lineHeight), which restores the spacing that was intended everywhere.
+
 ### 13.2d Swipe between sub-pages **[Agreed]**
 
 Every screen with sub-pages (Transfers: Scouted, List, Free agents, Offers, Scouts, News; Club: Money, Staff, Facilities, Academy, Board, History; League: Table, Fixtures, Stats, History) can be swiped left and right to move to the next or previous sub-page, as well as tapped. The page slides in from the side (about 0.2 s, off with reduced motion) and follows the finger a little while dragging. The active chip scrolls into view in its bar. The swipe works from anywhere on the page area, including the empty space between and below the cards, not just on the cards. A swipe is only taken when it is clearly horizontal (vertical scrolling is untouched), it is ignored when it starts inside a horizontally scrollable row such as the chip bar, or within 24 px of the screen edge (the phone's own back gesture), and it stops at the first and last sub-page. Component: `src/ui/swipe.tsx`; browser check: `scripts/e2e-swipe.cjs`.
