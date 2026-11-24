@@ -233,7 +233,8 @@ export interface SponsorDeal {
   startSeason: number;
   endSeason: number; // inclusive
   status: 'offered' | 'active' | 'expired' | 'declined';
-  half?: boolean; // half-season deal (winter)
+  half?: boolean; // half-season deal (winter, old saves)
+  slot?: string; // sponsor slot key (shirt, sleeve, ...)
 }
 
 export type OfferType = 'permanent' | 'loan' | 'loan_option' | 'loan_obligation' | 'free';

@@ -74,7 +74,7 @@ export const TRACKS: Track[] = [
   // ---- commercial
   { key: 'shop', branch: 'commercial', label: 'Club shop', tc: 0.5, desc: 'Sell shirts and scarves: much more merchandise money.', names: ['Club shop', 'Online store', 'Megastore', 'Shops in town', 'Global store'], per: { merch: 0.3 } },
   { key: 'catering', branch: 'commercial', label: 'Matchday catering', tc: 0.7, desc: 'Fans spend money on match days.', names: ['Tea hut', 'Food stands', 'Clubhouse bar', 'Fan zone', 'Matchday village'], per: { matchday: 0.08 } },
-  { key: 'partners', branch: 'commercial', label: 'Sponsorship office', tc: 0.6, desc: 'Every sponsor deal pays more.', names: ['Sponsorship desk', 'Commercial office', 'Partnership team', 'Global partners', 'Brand agency'], per: { sponsor: 0.07 } },
+  { key: 'partners', branch: 'commercial', label: 'Sponsorship office', tc: 0.6, desc: 'Every sponsor deal pays more, and levels 2, 4 and 5 each open a new sponsor slot (3 up to 6).', names: ['Sponsorship desk', 'Commercial office', 'Partnership team', 'Global partners', 'Brand agency'], per: { sponsor: 0.07 } },
   { key: 'events', branch: 'commercial', label: 'Conference & events', tc: 0.6, desc: 'Rent the ground out all week.', names: ['Function room', 'Conference centre', 'Events team', 'Club hotel', 'Concert venue'], per: { rentals: 0.12 } },
   { key: 'media', branch: 'commercial', label: 'Media & brand', tc: 0.5, desc: 'A bigger fan base: merchandise, crowds and sponsors.', names: ['Club website', 'Social media team', 'Club TV', 'Media centre', 'Global media'], per: { merch: 0.1, comfort: 0.02, sponsor: 0.02 } },
 ];

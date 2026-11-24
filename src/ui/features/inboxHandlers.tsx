@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { hashSeed, Rng } from '../../core/rng';
-import { acceptSponsor } from '../../core/systems/sponsors';
+import { acceptSponsor, migrateSponsors, slotLabel } from '../../core/systems/sponsors';
 import { acceptIncoming, counterIncoming, exerciseOption, rejectIncoming } from '../../core/systems/transfers';
 import type { GameState } from '../../core/state';
 import type { InboxMessage } from '../../core/types';
@@ -8,24 +8,40 @@ import { registerInboxAction } from '../inboxActions';
 import { money, nav, store } from '../store';
 
 registerInboxAction('sponsor_choice', (s, m) => {
+  migrateSponsors(s);
   const ids = (m.action!.data as number[]) ?? [];
   const deals = s.sponsors.filter((d) => ids.includes(d.id));
+  const slots = [...new Set(deals.map((d) => d.slot ?? 'shirt'))];
+  const act = (id: number | null, slot?: string) => { acceptSponsor(s, m.id, id, slot); store.bump(); void store.persist(); };
   return (
     <div>
-      {deals.map((d) => (
-        <div class="item" key={d.id}>
-          <div class="grow">
-            <div class="name">{d.name}</div>
-            <div class="tiny dim">
-              {d.shape === 'safe' && `Fixed ${money(d.base)}${d.half ? ' for the rest of the season' : ' this season'}`}
-              {d.shape === 'performance' && `${money(d.base)} + ${money(d.perWin!)} per win + ${money(d.promoBonus!)} if promoted`}
-              {d.shape === 'long_term' && `${money(d.base)} a season for 3 seasons`}
-            </div>
+      {slots.map((slot) => {
+        const list = deals.filter((d) => (d.slot ?? 'shirt') === slot);
+        const signed = list.find((d) => d.status === 'active');
+        const open = list.some((d) => d.status === 'offered');
+        return (
+          <div class="spon-slot" key={slot}>
+            <div class="mail-sec-title">{slotLabel(slot)}</div>
+            {signed && <div class="small green">✓ Signed {signed.name}</div>}
+            {!signed && !open && <div class="tiny dim">Skipped</div>}
+            {open && list.map((d) => (
+              <div class="item" key={d.id}>
+                <div class="grow">
+                  <div class="name">{d.name}</div>
+                  <div class="tiny dim">
+                    {d.shape === 'safe' && `Fixed ${money(d.base)} a season, paid weekly`}
+                    {d.shape === 'performance' && `${money(d.base)} + ${money(d.perWin!)} per win + ${money(d.promoBonus!)} if promoted`}
+                    {d.shape === 'long_term' && `${money(d.base)} a season for 3 seasons`}
+                  </div>
+                </div>
+                <button class="btn small primary" onClick={() => act(d.id)}>Sign</button>
+              </div>
+            ))}
+            {open && <button class="linkbtn" onClick={() => act(null, slot)}>Skip this slot</button>}
           </div>
-          <button class="btn small primary" onClick={() => { acceptSponsor(s, m.id, d.id); store.bump(); void store.persist(); }}>Sign</button>
-        </div>
-      ))}
-      <button class="linkbtn" onClick={() => { acceptSponsor(s, m.id, null); store.bump(); }}>Decline all</button>
+        );
+      })}
+      {deals.some((d) => d.status === 'offered') && <button class="linkbtn" onClick={() => act(null)}>Decline all</button>}
     </div>
   );
 });

@@ -11,7 +11,7 @@ import { Card, Overlay } from '../components';
 import { registerOverlay } from '../overlays';
 import { money, nav, store, useStore } from '../store';
 import { registerClubSection } from './clubSections';
-import type { ArtKey } from '../cardArt';
+import { CardArt, type ArtKey } from '../cardArt';
 import { registerInboxAction } from '../inboxActions';
 import { registerPlayerAction } from '../playerExtras';
 import { registerSquadCard } from '../squadExtras';
@@ -64,39 +64,69 @@ function TrackRow({ s, t, onDone }: { s: GameState; t: Track; onDone: () => void
   );
 }
 
-function Facilities({ s }: { s: GameState }) {
+/** One branch on its own page: level, staff cap, every sub-facility with its next upgrade. */
+function BranchCard({ s, b }: { s: GameState; b: (typeof BRANCHES)[number] }) {
   const [, setV] = useState(0);
   const f = facState(s);
-  const cash = s.clubs[s.userClubId].cash;
-  const note = gradingNote(s);
+  const lvl = f.levels[b.key];
+  const tracks = TRACKS.filter((x) => x.branch === b.key);
+  const done = tracks.reduce((a, x) => a + trackLevel(s, x.key), 0);
   const lab = labInfo(s);
   const st = labState(s);
   return (
+    <Card art={b.key as ArtKey} title={<span>{b.label} <span class="gold">Lv {lvl}</span></span>} action={<span class="tiny dim">{done}/{tracks.length * MAX_TRACK}</span>}>
+      <div class="row" style={{ gap: 3, marginBottom: 6 }}>
+        {Array.from({ length: 10 }, (_, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 1, background: i < lvl ? 'var(--gold)' : 'var(--bg)' }} />)}
+      </div>
+      <div class="tiny dim">{b.desc} {BRANCH_STAFF[b.key]}{b.key !== 'stadium' ? ` Cap now ${lvl * 10 + 10}.` : ''} Cash {money(s.clubs[s.userClubId].cash)}.</div>
+      {b.key === 'stadium' && gradingNote(s) && <div class="tiny amber" style={{ marginTop: 6 }}>{gradingNote(s)}</div>}
+      {b.key === 'training' && lab.level > 0 && (
+        <div class="tiny" style={{ marginTop: 4 }}>Skills lab stock: {(['pos', 'stat', 'pers'] as const).map((k) => `${ITEM_LABEL[k]} ${st.stock[k]}/${lab.cap}`).join(' · ')}. New items every {lab.every} weeks. Use them from a player's page.</div>
+      )}
+      {tracks.map((x) => <TrackRow key={x.key} s={s} t={x} onDone={() => setV((v) => v + 1)} />)}
+    </Card>
+  );
+}
+
+/** The four branches as a 2x2 grid; a tap opens the branch page. */
+function Facilities({ s }: { s: GameState }) {
+  const f = facState(s);
+  const cash = s.clubs[s.userClubId].cash;
+  return (
     <div>
       <Card title={`Facilities · upkeep ${money(facilityUpkeep(s))}/wk`}>
-        <div class="tiny dim">Cash {money(cash)}. Every sub-facility can be built on its own, one level at a time. Prices follow your division: about what a club of this level earns in a season, spread over the five levels.</div>
-        {note && <div class="tiny amber" style={{ marginTop: 6 }}>{note}</div>}
+        <div class="tiny dim">Cash {money(cash)}. Tap a branch to see its five sub-facilities. Each can be built on its own, one level at a time, and prices follow your division.</div>
+        {gradingNote(s) && <div class="tiny amber" style={{ marginTop: 6 }}>{gradingNote(s)}</div>}
       </Card>
-      {BRANCHES.map((b) => {
-        const lvl = f.levels[b.key];
-        const tracks = TRACKS.filter((x) => x.branch === b.key);
-        const done = tracks.reduce((a, x) => a + trackLevel(s, x.key), 0);
-        return (
-          <Card key={b.key} art={b.key as ArtKey} title={<span>{b.label} <span class="gold">Lv {lvl}</span></span>} action={<span class="tiny dim">{done}/{tracks.length * MAX_TRACK}</span>}>
-            <div class="row" style={{ gap: 3, marginBottom: 6 }}>
-              {Array.from({ length: 10 }, (_, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 1, background: i < lvl ? 'var(--gold)' : 'var(--bg)' }} />)}
-            </div>
-            <div class="tiny dim">{b.desc} {BRANCH_STAFF[b.key]}{b.key !== 'stadium' ? ` Cap now ${lvl * 10 + 10}.` : ''}</div>
-            {b.key === 'training' && lab.level > 0 && (
-              <div class="tiny" style={{ marginTop: 4 }}>Skills lab stock: {(['pos', 'stat', 'pers'] as const).map((k) => `${ITEM_LABEL[k]} ${st.stock[k]}/${lab.cap}`).join(' · ')}. New items every {lab.every} weeks. Use them from a player's page.</div>
-            )}
-            {tracks.map((x) => <TrackRow key={x.key} s={s} t={x} onDone={() => setV((v) => v + 1)} />)}
-          </Card>
-        );
-      })}
+      <div class="fac-grid">
+        {BRANCHES.map((b) => {
+          const tracks = TRACKS.filter((x) => x.branch === b.key);
+          const done = tracks.reduce((a, x) => a + trackLevel(s, x.key), 0);
+          const busy = tracks.map((x) => building(s, x.key)).filter((x) => x);
+          const cheapest = tracks.map((x) => (building(s, x.key) ? null : nextUpgrade(s, x.key))).filter((u) => u).sort((x, y) => x!.cost - y!.cost)[0];
+          return (
+            <button key={b.key} class="fac-box" onClick={() => nav.push({ kind: 'custom', key: 'facility', data: b.key })}>
+              <div class="fac-box-art"><CardArt art={b.key as ArtKey} wide /><span class="fac-box-lv">Lv {f.levels[b.key]}</span></div>
+              <div class="fac-box-body">
+                <div class="fac-box-name">{b.label}</div>
+                <div class="fac-box-bar"><i style={{ width: `${(done / (tracks.length * MAX_TRACK)) * 100}%` }} /></div>
+                <div class="tiny dim">{done}/{tracks.length * MAX_TRACK} levels built</div>
+                {busy.length > 0 ? <div class="tiny amber">🏗 {busy.length} building</div> : cheapest ? <div class="tiny gold">Next from {money(costOf(s, cheapest))}</div> : <div class="tiny gold">★ Complete</div>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
+
+function FacilityPage({ branch }: { branch: string }) {
+  const s = useStore().state!;
+  const b = BRANCHES.find((x) => x.key === branch) ?? BRANCHES[0];
+  return <Overlay title={b.label} sub={`Facilities · upkeep ${money(facilityUpkeep(s))}/wk`}><BranchCard s={s} b={b} /></Overlay>;
+}
+registerOverlay('facility', (data) => <FacilityPage branch={data as string} />);
 
 function Academy({ s }: { s: GameState }) {
   const list = squadOf(s, s.userClubId).filter((p) => p.academy).sort((a, b) => b.pot - a.pot || b.ovr - a.ovr);

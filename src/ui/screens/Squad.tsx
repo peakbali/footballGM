@@ -1,12 +1,12 @@
 import { useState } from 'preact/hooks';
 import { LINE } from '../../core/data/positions';
-import { squadOf } from '../../core/state';
+import { squadOf, type GameState } from '../../core/state';
 import { Card, PlayerRow, ovrColor } from '../components';
 import { SwipePages } from '../swipe';
 import { ATTR_GROUPS, A, type AttrName } from '../../core/data/positions';
 import { money, useStore } from '../store';
 import type { ComponentChildren } from 'preact';
-import { squadExtras } from '../squadExtras';
+import { renderStaffPage, squadExtras } from '../squadExtras';
 import type { Player } from '../../core/types';
 import { PersonalityFace } from '../personalityFace';
 
@@ -21,29 +21,51 @@ const COLS: Record<View, [string, number][]> = {
   attributes: [['TEC', 28], ['MEN', 28], ['PHY', 28], ['GK', 28], ['POT', 30]],
 };
 
+const PAGES = ['formation', 'squad', 'staff'] as const;
+type Page = (typeof PAGES)[number];
+const PAGE_LABEL: Record<Page, string> = { formation: 'Formation', squad: 'Squad', staff: 'Staff' };
+// remembered while the game is open, so going to another tab and back keeps the sub-page
+let lastPage: Page = 'formation';
+let lastView: View = 'contract';
+
 export function SquadScreen() {
   const s = useStore().state!;
-  const [view, setView] = useState<View>('contract');
+  const [page, setPageState] = useState<Page>(lastPage);
+  const setPage = (p: Page) => { lastPage = p; setPageState(p); };
+  return (
+    <div>
+      <div class="seg" data-seg-bar>
+        {PAGES.map((k) => <button key={k} class={page === k ? 'on' : ''} onClick={() => setPage(k)}>{PAGE_LABEL[k]}</button>)}
+      </div>
+      <SwipePages keys={PAGES} value={page} onChange={setPage}>
+        {page === 'formation' && squadExtras(s)}
+        {page === 'squad' && <SquadList s={s} />}
+        {page === 'staff' && renderStaffPage(s)}
+      </SwipePages>
+    </div>
+  );
+}
+
+function SquadList({ s }: { s: GameState }) {
+  const [view, setViewState] = useState<View>(lastView);
+  const setView = (v: View) => { lastView = v; setViewState(v); };
   const squad = squadOf(s, s.userClubId).filter((p) => !p.academy);
   const sorted = [...squad].sort((a, b) => ORDER[LINE[a.pos]] - ORDER[LINE[b.pos]] || b.ovr - a.ovr);
   const avg = squad.length ? Math.round(squad.map((p) => p.ovr).sort((a, b) => b - a).slice(0, 11).reduce((x, y) => x + y, 0) / Math.min(11, squad.length)) : 0;
   return (
-    <div>
-      {squadExtras(s)}
-      <Card title={`Squad · ${squad.length} players · best XI ${avg}`}>
-        <div class="seg" data-seg-bar>
-          {VIEWS.map((k) => <button key={k} class={view === k ? 'on' : ''} onClick={() => setView(k)}>{VIEW_LABEL[k]}</button>)}
+    <Card title={`Squad · ${squad.length} players · best XI ${avg}`}>
+      <div class="seg" data-seg-bar>
+        {VIEWS.map((k) => <button key={k} class={view === k ? 'on' : ''} onClick={() => setView(k)}>{VIEW_LABEL[k]}</button>)}
+      </div>
+      <SwipePages keys={VIEWS} value={view} onChange={setView}>
+        <div class="sq-head">
+          <span class="grow" />
+          <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{COLS[view].map(([l, w]) => <span key={l} style={{ width: w }}>{l}</span>)}</div>
+          <span style={{ width: 25 }}>OVR</span>
         </div>
-        <SwipePages keys={VIEWS} value={view} onChange={setView}>
-          <div class="sq-head">
-            <span class="grow" />
-            <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{COLS[view].map(([l, w]) => <span key={l} style={{ width: w }}>{l}</span>)}</div>
-            <span style={{ width: 25 }}>OVR</span>
-          </div>
-          {sorted.map((p) => <SquadRow key={p.id} p={p} season={s.season} view={view} />)}
-        </SwipePages>
-      </Card>
-    </div>
+        {sorted.map((p) => <SquadRow key={p.id} p={p} season={s.season} view={view} />)}
+      </SwipePages>
+    </Card>
   );
 }
 

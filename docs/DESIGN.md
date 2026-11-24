@@ -617,7 +617,9 @@ attendance = min(capacity,
 
 Ticket price is set by the user within a range allowed by stadium tier.
 
-### 11.4 Sponsors **[Agreed + Proposal]**
+### 11.4 Sponsors **[Agreed + Proposal, slots in 13.2j]**
+
+> Since 13.2j the club has 3 to 6 sponsor slots at once, each with its own offers.
 
 - At the start of each season (and optionally at the half-season point) the commercial manager brings **2 to 4 offers**.
 - Offer shapes: **Safe** (fixed amount), **Performance** (lower base + bonus per win / for promotion), **Long-term** (2 to 3 seasons fixed, slightly lower per year).
@@ -753,6 +755,8 @@ All three lists have a second chip row with one sub-page per position (ANY plus 
 
 ### 13.2e Squad list sub-pages **[Agreed]**
 
+> Since 13.2j this list is the middle of the Squad tab's three sub-pages (Formation, Squad, Staff).
+
 The squad box on the Squad tab has no sort buttons any more. It has three swipeable sub-pages with chips (Contract, Form, Attributes), in the same swipe-anywhere style as the other pages. The left of every row is the same on all three: portrait, name, position tag, age (plus injury, ban and loan notes). The players are listed by position (keepers, defenders, midfielders, forwards), best OVR first within a position. The OVR badge stays fixed on the right of every row. Rows are compact (32 px portrait, 28 px OVR badge, 13 px name, narrow columns) so names such as "D. Henderson" show in full on a 360 px phone. A small header row names the columns. Tapping a row opens the player screen, which has the full attribute detail.
 
 | Sub-page | Columns |
@@ -765,7 +769,7 @@ The squad box on the Squad tab has no sort buttons any more. It has three swipea
 
 ### 13.2d Swipe between sub-pages **[Agreed]**
 
-Every screen with sub-pages (Transfers: Scouted, List, Free agents, Offers, Scouts, News; Club: Money, Staff, Facilities, Academy, Board, History; League: Table, Fixtures, Stats, History) can be swiped left and right to move to the next or previous sub-page, as well as tapped. The page slides in from the side (about 0.2 s, off with reduced motion) and follows the finger a little while dragging. The active chip scrolls into view in its bar. The swipe works from anywhere on the page area, including the empty space between and below the cards, not just on the cards. A swipe is only taken when it is clearly horizontal (vertical scrolling is untouched), it is ignored when it starts inside a horizontally scrollable row such as the chip bar, or within 24 px of the screen edge (the phone's own back gesture), and it stops at the first and last sub-page. Component: `src/ui/swipe.tsx`; browser check: `scripts/e2e-swipe.cjs`.
+Every screen with sub-pages (Transfers: Scouted, List, Free agents, Offers, Scouts, News; Squad: Formation, Squad, Staff; Club: Money, Facilities, Academy, Board, History; League: Table, Fixtures, Stats, History) can be swiped left and right to move to the next or previous sub-page, as well as tapped. The page slides in from the side (about 0.2 s, off with reduced motion) and follows the finger a little while dragging. The active chip scrolls into view in its bar. The swipe works from anywhere on the page area, including the empty space between and below the cards, not just on the cards. A swipe is only taken when it is clearly horizontal (vertical scrolling is untouched), it is ignored when it starts inside a horizontally scrollable row such as the chip bar, or within 24 px of the screen edge (the phone's own back gesture), and it stops at the first and last sub-page. Pagers can nest (the Squad list's Contract/Form/Attributes sit inside the Squad tab's Squad sub-page): the innermost pager under the finger moves first, and once it is on its first or last page the swipe passes to the pager around it, so swiping left from Attributes goes to Staff and swiping right from Contract goes to Formation. Component: `src/ui/swipe.tsx`; browser check: `scripts/e2e-swipe.cjs`.
 
 ### 13.3 Evolving stadium hub **[Agreed]**
 
@@ -1248,3 +1252,23 @@ Each stage ends with a playable build on device (Capacitor) and a balance pass u
 - **Mind coaching:** +6 to +15 personality and a small morale lift.
 
 **Contract reminders.** For the 18 best players in the first team, a decision popup arrives when 1 year, 6 months, 3 months and 1 month are left on a permanent contract. Choices: a 3-year deal at his asking wage (personality sets the ask, low morale adds 15%, high morale takes 5% off; an unhappy, difficult player refuses), 2 years at 15% less (accepted with a chance shown on the chip), wait for the next reminder, and transfer-list him (or, at 1 month, let him go). A newer reminder replaces an unanswered older one, at most two new reminders a week, and they do not hold back the other decision events. A contract first seen (new game, old save, new signing) counts from that moment, so nobody gets a pile of reminders at once.
+
+### 13.2j Facilities grid, sponsor slots, Staff on the Squad tab **[Agreed]**
+
+**Facilities grid.** The Club tab's Facilities page shows the four branches (Stadium, Training ground, Academy, Commercial) as a 2x2 grid of boxes. Each box has its pixel scene, the branch level badge, a progress bar of levels built (out of 25), and either what is being built or the cheapest next upgrade. Tapping a box opens the branch's full page (its five sub-facilities with build buttons) as an overlay; the back button returns to the grid.
+
+**Sponsor slots.** The club holds several sponsor deals at once, one per slot. Each slot pays a share of the division's sponsor money:
+
+| Slot | Share | Opens |
+|---|---|---|
+| Shirt sponsor | 0.70 | always |
+| Sleeve sponsor | 0.35 | always |
+| Training kit | 0.30 | always |
+| Stadium naming | 0.35 | Sponsorship office level 2 |
+| Official partner | 0.20 | Sponsorship office level 4 |
+| Digital partner | 0.15 | Sponsorship office level 5 |
+
+So 3 slots pay about 1.35x the old single shirt deal's base, and all 6 about 2.05x (before the facility sponsor bonus). Offers come as one inbox decision with 2 to 3 offers per empty slot (Safe, Performance, Long-term; no Long-term late in the season): sign one per slot, skip a slot, or decline all. Offers come at the start of the season, at mid-season for empty slots, and when a new slot opens. The Money page lists every slot (deal, empty, or locked with the office level needed) with the season total. Old saves: a season deal becomes the shirt and a half-season deal the sleeve.
+
+**Staff on the Squad tab.** The Squad tab has three swipeable sub-pages: Formation (pitch, formation chips, bench, academy link), Squad (the list with its Contract/Form/Attributes sub-pages) and Staff (hire and dismiss, moved from the Club tab). The tab remembers its sub-page while the game is open.
+
