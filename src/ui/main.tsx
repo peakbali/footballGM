@@ -6,6 +6,11 @@ import '@fontsource/inter/latin-800.css';
 import './styles.css';
 import '../core/systems/all';
 import './features';
+import { installAudio } from './audio';
+installAudio();
 import { App } from './App';
 
 render(<App />, document.getElementById('app')!);
+
+// dev-only handle for automated UI checks
+if (import.meta.env.DEV) (window as unknown as { __fgm: unknown }).__fgm = { store: (await import('./store')).store };

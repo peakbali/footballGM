@@ -5,6 +5,8 @@ import { Badge, Card, Form } from '../components';
 import { nav, store, useStore } from '../store';
 import { Stadium } from '../stadium';
 import { hubExtras } from '../hubExtras';
+import { sfx } from '../audio';
+import { openReelIfPending } from '../features/history';
 
 export function HubScreen() {
   const st = useStore();
@@ -100,7 +102,13 @@ export function HubScreen() {
 
       <button class="btn gold continue" disabled={st.busy} onClick={async () => {
         const r = await store.continueGame();
-        if (r?.userFixture) nav.push({ kind: 'match', fixtureId: r.userFixture.id });
+        const f = r?.userFixture;
+        if (f) {
+          const mine = f.home === club.id ? f.hg! - f.ag! : f.ag! - f.hg!;
+          sfx(mine > 0 ? 'win' : mine < 0 ? 'loss' : 'click');
+        }
+        if (r?.seasonEnded && openReelIfPending(s)) return;
+        if (f) nav.push({ kind: 'match', fixtureId: f.id });
         else if (r?.messages.some((m) => m.action && !m.resolved)) nav.push({ kind: 'inbox' });
       }}>
         {st.busy ? <span class="spinner">Playing...</span> : 'Continue ›'}

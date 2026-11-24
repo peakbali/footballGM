@@ -71,3 +71,23 @@ describe('club building', () => {
     expect(p.listed).toBe(true);
   });
 });
+
+import { boardState } from '../src/core/systems/board';
+import { seasons, records } from '../src/core/systems/chronicle';
+
+describe('board and history', () => {
+  it('sets goals, gives a verdict and records the season', () => {
+    const s = newGame(31, club);
+    expect(boardState(s).goals.length).toBeGreaterThanOrEqual(2);
+    while (!(s.ext.reelPending)) advanceWeek(s);
+    const b = boardState(s);
+    expect(b.last?.goals.every((g) => g.met !== undefined)).toBe(true);
+    const list = seasons(s);
+    expect(list).toHaveLength(1);
+    expect(list[0].table).toHaveLength(20);
+    expect(records(s).pts?.v).toBe(list[0].pts);
+    // the next season gets fresh goals
+    while (s.week !== 2) advanceWeek(s);
+    expect(boardState(s).season).toBe(s.season);
+  });
+});

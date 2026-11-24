@@ -8,4 +8,6 @@ import './contracts';
 import './scouting';
 import './transfers';
 import './aiTransfers';
+import './board';
+import './chronicle';
 export {};

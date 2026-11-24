@@ -6,4 +6,5 @@ import './transfersTab';
 import './clubTab';
 import './inboxHandlers';
 import './clubBuilding';
+import './history';
 export {};
