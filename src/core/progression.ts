@@ -17,6 +17,7 @@ export interface DevContext {
   playtime: number; // 0..1 share of minutes
   coach: number; // 1..100 relevant coach level
   facility: number; // 1..10 training facility level
+  bonus?: number; // extra growth factor (facility upgrades), e.g. 0.05 = +5%
 }
 
 export const DEFAULT_DEV: DevContext = { playtime: 0.5, coach: 30, facility: 2 };
@@ -40,7 +41,7 @@ export function developPlayer(rng: Rng, p: Player, age: number, ctx: DevContext,
   const play = 0.6 + clamp(ctx.playtime, 0, 1) * 0.6;
   const coach = 0.85 + (ctx.coach / 100) * 0.4;
   const fac = 0.9 + ((ctx.facility - 1) / 9) * 0.25;
-  let change = curve > 0 ? curve * play * coach * fac : curve / (0.6 + 0.4 * coach * fac);
+  let change = curve > 0 ? curve * play * coach * fac * (1 + (ctx.bonus ?? 0)) : curve / (0.6 + 0.4 * coach * fac);
   change *= fraction;
   const noiseSd = (p.dev === 'random' ? 3 : 1.2) * Math.sqrt(fraction);
   change += rng.normal(0, noiseSd);

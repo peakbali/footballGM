@@ -64,9 +64,10 @@ export function attendance(s: GameState, home: Club, away: Club, rng: Rng): numb
   return Math.round(clamp(att, 30, home.capacity));
 }
 
-export function ticketRange(c: Club): [number, number] {
+export function ticketRange(c: Club, s?: GameState): [number, number] {
   const t = ECONOMY[c.div].ticket;
-  return [Math.max(2, Math.round(t * 0.5)), Math.round(t * 2.2)];
+  const extra = c.user && s ? ((s.ext.ticketMax as number | undefined) ?? 0) : 0;
+  return [Math.max(2, Math.round(t * 0.5)), Math.round(t * (2.2 + extra * 2))];
 }
 
 export function prizeMoney(div: number, pos: number): number {

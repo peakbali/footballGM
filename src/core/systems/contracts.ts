@@ -110,7 +110,7 @@ registerSystem({
   name: 'contracts',
   weekly(s) {
     if (s.week === 30) {
-      const exp = squadOf(s, s.userClubId).filter((p) => p.contract?.type === 'permanent' && p.contract.endSeason === s.season);
+      const exp = squadOf(s, s.userClubId).filter((p) => !p.academy && p.contract?.type === 'permanent' && p.contract.endSeason === s.season);
       if (exp.length)
         addMessage(s, {
           cat: 'Squad',
@@ -123,6 +123,8 @@ registerSystem({
     // runs after the new season starts: user contracts that ended leave
     const gone: Player[] = [];
     for (const p of squadOf(s, s.userClubId)) {
+      // academy players are kept on rolling youth deals
+      if (p.academy && p.contract) p.contract.endSeason = Math.max(p.contract.endSeason, s.season + 1);
       if (p.contract?.type === 'permanent' && p.contract.endSeason < s.season) {
         gone.push(p);
         s.transfers.push({ season: s.season, week: 1, pid: p.id, name: `${p.first} ${p.last}`, from: s.userClubId, to: null, fee: 0, type: 'release' });

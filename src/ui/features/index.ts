@@ -5,4 +5,5 @@ import './squadFormation';
 import './transfersTab';
 import './clubTab';
 import './inboxHandlers';
+import './clubBuilding';
 export {};

@@ -77,6 +77,7 @@ export function advanceWeek(s: GameState): WeekResult {
     const full = f.div === userLeague.div;
     const hs = makeSide(home, idx.get(home.id) ?? []);
     const as = makeSide(away, idx.get(away.id) ?? []);
+    if (home.user) hs.morale += (s.ext.homeMorale as number | undefined) ?? 0;
     // serve bans for clubs playing this week
     for (const side of [idx.get(home.id) ?? [], idx.get(away.id) ?? []]) for (const p of side) if (p.ban > 0 && !hs.lineup.xi.includes(p) && !as.lineup.xi.includes(p)) p.ban--;
     const r = simulateMatch(rng, hs, as, f.id, s.season, full);
