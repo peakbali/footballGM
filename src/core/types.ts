@@ -198,6 +198,11 @@ export interface InboxMessage {
   /** Action the user must take; blocks Continue until resolved. */
   action?: { kind: string; ref?: number; data?: unknown };
   resolved?: boolean;
+  /** Who the message is from (portrait / icon in the inbox). Older messages have none and use their category. */
+  from?: { kind: 'board' | 'sponsor' | 'scout' | 'player' | 'club' | 'staff' | 'fans' | 'press'; pid?: number; club?: number };
+  /** Decision events: the choice made and what came of it (kept in the inbox history). */
+  pick?: string;
+  outcome?: string;
 }
 
 export interface NewsItem {

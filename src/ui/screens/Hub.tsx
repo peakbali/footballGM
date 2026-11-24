@@ -12,6 +12,8 @@ import { sfx } from '../audio';
 import { openReelIfPending } from '../features/history';
 import { cupLine } from '../features/cupView';
 import { CashChart } from '../features/clubTab';
+import { Avatar, KINDS, senderKind } from '../senderArt';
+import { pendingDecisions } from '../../core/systems/decisions';
 
 /**
  * Hub (DESIGN 13.2): everything on one phone screen, no scrolling.
@@ -111,10 +113,14 @@ export function HubScreen() {
           {list.length === 0 && <div class="dim small">No messages yet.</div>}
           {list.map((m) => {
             const decide = !!m.action && !m.resolved;
+            const k = KINDS[senderKind(m)];
             return (
-              <div class={`item inbox-item ${m.read && !decide ? '' : 'unread'}`} key={m.id} onClick={() => nav.push({ kind: 'inbox' })}>
-                <div class="grow"><div class="name">{m.title}</div><div class="tiny dim">{m.cat} · Wk {m.week}</div></div>
-                {decide && <span class="gold px">!</span>}
+              <div class={`mail hub-mail ${m.read && !decide ? '' : 'unread'}`} style={{ '--k': k.color } as never} key={m.id} onClick={() => { if (decide && m.action?.kind === 'decision') { store.hiddenUpTo = 0; store.bump(); } else nav.push({ kind: 'inbox' }); }}>
+                <Avatar s={s} m={m} size={30} />
+                <div class="mail-main">
+                  <div class="mail-title">{m.title}</div>
+                  <div class="mail-sub"><span class="mail-tag">{k.label}</span><span class="tiny dim">Wk {m.week}</span>{decide && <span class="mail-tag dec">DECIDE</span>}{!decide && m.pick && <span class="mail-tag done">✓ {m.pick}</span>}</div>
+                </div>
               </div>
             );
           })}
@@ -143,6 +149,8 @@ export function HubScreen() {
       </Card>
 
       <button class="btn gold continue" disabled={st.busy} onClick={async () => {
+        // an undecided popup decision pauses Continue: show it again instead of playing on
+        if (pendingDecisions(s).length) { st.hiddenUpTo = 0; store.bump(); return; }
         const r = await store.continueGame();
         const f = r?.userFixture;
         if (f) {
@@ -151,7 +159,7 @@ export function HubScreen() {
         }
         if (r?.seasonEnded && openReelIfPending(s)) return;
         if (f) nav.push({ kind: 'match', fixtureId: f.id, after: true });
-        else if (r?.messages.some((m) => m.action && !m.resolved)) nav.push({ kind: 'inbox' });
+        else if (r?.messages.some((m) => m.action && !m.resolved && m.action.kind !== 'decision')) nav.push({ kind: 'inbox' });
       }}>
         {st.busy ? <span class="spinner">Playing...</span> : 'Continue ›'}
       </button>
