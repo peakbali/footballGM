@@ -25,6 +25,9 @@ export function SettingsScreen() {
           <input type="range" min={0} max={1} step={0.1} value={s.settings.sfx} onInput={(e) => { s.settings.sfx = +(e.target as HTMLInputElement).value; store.bump(); }} onChange={() => void store.persist()} />
         </label>
       </Card>
+      <Card title="Club">
+        <button class="btn block" onClick={() => nav.push({ kind: 'custom', key: 'clubEdit' })}>Edit club name, colours and crest ›</button>
+      </Card>
       <Card title="Install">
         <InstallApp />
       </Card>

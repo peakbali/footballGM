@@ -82,7 +82,7 @@ const KNOWN_QUALITY: Record<string, number> = {
   'Birmingham City': 2, 'Wycombe Wanderers': 1.5, 'Bolton Wanderers': 1.5, 'Stockport County': 1.5, 'Luton Town': 2, 'Plymouth Argyle': 1,
 };
 
-function abbrev(name: string): string {
+export function abbrev(name: string): string {
   const words = name.replace(/[^A-Za-z ]/g, ' ').split(/\s+/).filter((w) => w && !['FC', 'AFC', 'and', 'of', 'the', 'Town', 'United', 'City'].includes(w));
   const w = words.length ? words : name.split(/\s+/);
   if (w.length >= 3) return (w[0][0] + w[1][0] + w[2][0]).toUpperCase();
@@ -90,7 +90,7 @@ function abbrev(name: string): string {
   return w[0].slice(0, 3).toUpperCase();
 }
 
-function shortName(name: string): string {
+export function shortName(name: string): string {
   if (name.length <= 14) return name;
   return name.replace(/ (Football Club|Town|United|City|Athletic|Rovers|Wanderers|Albion|Hotspur)$/, '').slice(0, 16);
 }

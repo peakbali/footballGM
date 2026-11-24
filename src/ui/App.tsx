@@ -34,15 +34,14 @@ export function App() {
   }, []);
 
   if (booting) return <div class="app"><div class="start"><div class="logo">FOOTBALL<br />GM</div><div class="spinner">Loading...</div></div></div>;
+  music('hub'); // one continuous loop everywhere (title screen, popups, match report, season reel)
   if (!st.state) {
-    music(null);
     return <div class="app"><StartScreen /></div>;
   }
 
   const s = st.state;
   const club = userClub(s);
   const top = nav.stack[nav.stack.length - 1];
-  music(top?.kind === 'match' ? 'match' : 'hub');
   return (
     <div class="app">
       <div class="topbar">
