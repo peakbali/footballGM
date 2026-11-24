@@ -27,7 +27,7 @@ export function SettingsScreen() {
         <button class="btn danger block" onClick={() => { if (confirm('Delete your career? This cannot be undone.')) void store.deleteSave(); }}>Delete career</button>
       </Card>
       <Card title="Credits">
-        <div class="small dim">Club names and league membership: Wikipedia (CC BY-SA 4.0). All players are generated unless you import your own data locally. Fonts: Silkscreen and Inter (OFL).</div>
+        <div class="small dim">Club names and league membership: Wikipedia (CC BY-SA 4.0). {s.ext.realData ? `Real players imported locally from ${(s.ext.realData as { source: string; players: number }).source} (${(s.ext.realData as { players: number }).players} players); everyone else is generated.` : 'All players are generated unless you import your own data locally.'} Fonts: Silkscreen and Inter (OFL).</div>
       </Card>
     </Overlay>
   );

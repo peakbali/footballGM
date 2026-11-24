@@ -13,7 +13,16 @@ let SQL: SqlJsStatic | null = null;
 async function sql(): Promise<SqlJsStatic> {
   if (SQL) return SQL;
   const wasmUrl = (await import('sql.js/dist/sql-wasm.wasm?url')).default;
-  SQL = await initSqlJs({ locateFile: () => wasmUrl } as unknown as Parameters<typeof initSqlJs>[0]);
+  // In the single-file build the wasm is an inlined data: URI; decode it ourselves so no fetch is needed.
+  const opts: Record<string, unknown> = { locateFile: () => wasmUrl };
+  if (wasmUrl.startsWith('data:')) {
+    const b64 = wasmUrl.slice(wasmUrl.indexOf(',') + 1);
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    opts.wasmBinary = bytes.buffer;
+  }
+  SQL = await initSqlJs(opts as unknown as Parameters<typeof initSqlJs>[0]);
   return SQL;
 }
 

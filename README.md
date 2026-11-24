@@ -34,4 +34,15 @@ npx cap open android
 
 ## Data
 
-Club names and league membership come from the 2025/26 Wikipedia season pages (CC BY-SA 4.0). Every player is generated. Real player data (EA FC) is never committed: see `scripts/import-eafc.ts` (stage 5) for the local-only import.
+Club names and league membership come from the 2025/26 Wikipedia season pages (CC BY-SA 4.0). Clubs abroad (LaLiga, Bundesliga, Serie A, Ligue 1, Liga Portugal, Eredivisie, Scottish Premiership) exist as squads in the transfer database only; no fixtures are played for them. By default every player is generated.
+
+### Real players (optional, local only)
+
+EA FC ratings are fine for a private build only, so they never go into git (`data/private/` and `*.csv` are ignored).
+
+1. Download an EA FC 26 player CSV with SoFIFA-style columns (for example from Kaggle) yourself.
+2. Put it in `data/private/`.
+3. Run `npm run import:eafc`. It writes `data/private/real-players.json`.
+4. Restart `npm run dev` (or rebuild) and start a new career. Clubs with 16 or more matched players get their real squads, everyone else stays generated. Settings → Credits shows what was imported.
+
+Delete `data/private/` before sharing a build with anyone.

@@ -307,7 +307,7 @@ function movePyramid(s: GameState, season: number, rng: Rng) {
   // Division 10: relegated clubs drop to the regional pool, replaced by the strongest nearby pool clubs
   const l10 = s.leagues[9];
   const l10def = LEAGUES.find((l) => l.key === l10.key)!;
-  const pool10 = s.clubs.filter((c) => c.div === 10 && !l10.clubIds.includes(c.id) && !newMembers[10].includes(c.id));
+  const pool10 = s.clubs.filter((c) => c.div === 10 && !c.country && !l10.clubIds.includes(c.id) && !newMembers[10].includes(c.id));
   pool10.sort((a, b) => dist(a, l10def) - dist(b, l10def));
   const cands = pool10.slice(0, 25).sort((a, b) => b.strength - a.strength).slice(0, 20 - newMembers[10].length);
   newMembers[10].push(...cands.map((c) => c.id));
@@ -334,7 +334,7 @@ function movePyramid(s: GameState, season: number, rng: Rng) {
     const relegatedIn = (down[d - 1] ?? []).map((id) => s.clubs[id]).filter((c) => !c.user);
     if (!relegatedIn.length) continue;
     const weakest = relegatedIn.reduce((a, b) => (a.strength < b.strength ? a : b));
-    const pool = s.clubs.filter((c) => c.div === d && !lg.clubIds.includes(c.id) && !c.user);
+    const pool = s.clubs.filter((c) => c.div === d && !c.country && !lg.clubIds.includes(c.id) && !c.user);
     const near = d >= 6 ? pool.sort((a, b) => dist(a, def) - dist(b, def)).slice(0, 25) : pool;
     if (!near.length) continue;
     const best = near.reduce((a, b) => (a.strength > b.strength ? a : b));
@@ -349,8 +349,8 @@ function movePyramid(s: GameState, season: number, rng: Rng) {
   // Off-chain virtual reshuffle between tiers (by strength)
   const inSim = new Set(s.leagues.flatMap((l) => l.clubIds));
   for (let d = 2; d <= 9; d++) {
-    const upper = s.clubs.filter((c) => c.div === d && !inSim.has(c.id)).sort((a, b) => a.strength - b.strength);
-    const lower = s.clubs.filter((c) => c.div === d + 1 && !inSim.has(c.id)).sort((a, b) => b.strength - a.strength);
+    const upper = s.clubs.filter((c) => c.div === d && !c.country && !inSim.has(c.id)).sort((a, b) => a.strength - b.strength);
+    const lower = s.clubs.filter((c) => c.div === d + 1 && !c.country && !inSim.has(c.id)).sort((a, b) => b.strength - a.strength);
     const n = Math.min(Math.ceil(upper.length * 0.08), lower.length);
     for (let i = 0; i < n; i++) {
       if (lower[i].strength <= upper[i].strength) break;
@@ -364,7 +364,7 @@ function movePyramid(s: GameState, season: number, rng: Rng) {
     }
   }
   // reputation drifts with division
-  for (const c of s.clubs) c.rep = clamp(Math.round(c.rep * 0.85 + (100 - c.div * 9) * 0.15), 1, 100);
+  for (const c of s.clubs) if (!c.country) c.rep = clamp(Math.round(c.rep * 0.85 + (100 - c.div * 9) * 0.15), 1, 100);
   void rng;
 }
 
@@ -394,7 +394,7 @@ export function maintainSquads(s: GameState, rng: Rng) {
       } else {
         const young = rng.chance(0.45);
         const a = young ? rng.int(17, 20) : randomAge(rng);
-        p = generatePlayer(rng, s.nextPlayerId++, { ovr: avg + quality - (young ? 7 : 3) + rng.normal(0, 3), pos: need, age: a, season: s.season, div: c.div, potBoost: young ? 3 : 0 });
+        p = generatePlayer(rng, s.nextPlayerId++, { ovr: avg + quality - (young ? 7 : 3) + rng.normal(0, 3), pos: need, age: a, season: s.season, div: c.div, potBoost: young ? 3 : 0, nat: c.country && rng.chance(0.65) ? c.country : undefined });
         s.players.set(p.id, p);
       }
       signContract(rng, p, c.id, c.div, s.season, roleForRank(squad.filter((q) => q.ovr > p.ovr).length));

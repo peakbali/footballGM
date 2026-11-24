@@ -107,6 +107,7 @@ export interface Club {
   gk: number;
   lastAttendance?: number;
   user?: boolean;
+  country?: string; // set for clubs abroad (players only, no fixtures)
 }
 
 export interface Fixture {
