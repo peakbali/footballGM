@@ -3,6 +3,7 @@ import { squadOf, type GameState } from '../state';
 import { registerSystem } from '../systems';
 import { INCOME_CATS, COST_CATS, type ClubSeasonRecord } from '../types';
 import { boardState } from './board';
+import { ROUND_NAMES, type CupState } from './cup';
 
 /** Club history, records and the data for the end-of-season reel (DESIGN 12.3). */
 
@@ -34,6 +35,7 @@ export interface UserSeason {
   topSale?: { name: string; fee: number };
   topSigning?: { name: string; fee: number };
   board?: { before: number; after: number; goals: { text: string; met: boolean }[]; cash: number; discount: number };
+  cup?: { text: string; reached: number; won: boolean };
   records: string[];
 }
 
@@ -44,6 +46,7 @@ export interface Records {
   sale?: { v: number; season: number; name: string };
   attendance?: { v: number; season: number };
   bestFinish?: { div: number; pos: number; season: number };
+  cup?: { reached: number; won: boolean; season: number };
   scorers: Record<number, { name: string; goals: number }>;
 }
 
@@ -100,6 +103,12 @@ export function recordSeason(s: GameState): UserSeason {
   const sales = tr.filter((x) => x.from === user.id && x.fee > 0).sort((a, b) => b.fee - a.fee);
   const buys = tr.filter((x) => x.to === user.id && x.fee > 0).sort((a, b) => b.fee - a.fee);
   const b = boardState(s).last;
+  const cupS = s.ext.cup as CupState | undefined;
+  let cup: UserSeason['cup'];
+  if (cupS && cupS.season === s.season) {
+    const reached = cupS.userWon ? ROUND_NAMES.length : cupS.userExit ?? (cupS.byes.includes(user.id) ? 1 : 0);
+    cup = { reached, won: !!cupS.userWon, text: cupS.userWon ? 'Winners!' : cupS.userExit != null ? `Out in the ${ROUND_NAMES[cupS.userExit].toLowerCase()}` : 'Did not take part' };
+  }
 
   const us: UserSeason = {
     season: s.season, div: rec.div, league: lg.name, pos: rec.pos, outcome: rec.outcome,
@@ -116,6 +125,7 @@ export function recordSeason(s: GameState): UserSeason {
     topSale: sales[0] && { name: sales[0].name, fee: sales[0].fee },
     topSigning: buys[0] && { name: buys[0].name, fee: buys[0].fee },
     board: b && b.season === s.season ? { before: b.before, after: b.after, goals: b.goals.map((g) => ({ text: g.text, met: !!g.met })), cash: b.cash, discount: b.discount } : undefined,
+    cup,
     records: [],
   };
 
@@ -129,6 +139,7 @@ export function recordSeason(s: GameState): UserSeason {
   if (buys[0] && (!R.signing || buys[0].fee > R.signing.v)) { nr(`Record signing: ${buys[0].name}`); R.signing = { v: buys[0].fee, season: s.season, name: buys[0].name }; }
   if (sales[0] && (!R.sale || sales[0].fee > R.sale.v)) { nr(`Record sale: ${sales[0].name}`); R.sale = { v: sales[0].fee, season: s.season, name: sales[0].name }; }
   if (better({ div: rec.div, pos: rec.pos }, R.bestFinish)) { if (R.bestFinish) nr(`Best finish ever: ${rec.pos}${rec.pos === 1 ? 'st' : rec.pos === 2 ? 'nd' : rec.pos === 3 ? 'rd' : 'th'} in division ${rec.div}`); R.bestFinish = { div: rec.div, pos: rec.pos, season: s.season }; }
+  if (cup && (!R.cup || cup.reached > R.cup.reached)) { if (R.cup || cup.won) nr(cup.won ? 'FA Cup winners for the first time!' : `Best FA Cup run: ${cup.text.replace('Out in the ', '')}`); R.cup = { reached: cup.reached, won: cup.won, season: s.season }; }
   const prevTop = topScorerAllTime(s);
   for (const p of squadOf(s, user.id)) {
     if (!p.stats.goals) continue;

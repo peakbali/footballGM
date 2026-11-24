@@ -121,6 +121,8 @@ export interface Fixture {
   full?: boolean;
   playoff?: 'semi' | 'final';
   pens?: string; // e.g. "4-3" if decided on penalties
+  cup?: string; // cup key (div is 0 for cup ties)
+  round?: number;
 }
 
 export interface MatchEvent {

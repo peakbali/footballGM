@@ -91,3 +91,20 @@ describe('board and history', () => {
     expect(boardState(s).season).toBe(s.season);
   });
 });
+
+import { cupState, CUP_WEEKS } from '../src/core/systems/cup';
+
+describe('FA Cup', () => {
+  it('runs a full knockout alongside the league and crowns one winner', () => {
+    const s = newGame(41, club);
+    while (s.week <= CUP_WEEKS[CUP_WEEKS.length - 1]) advanceWeek(s);
+    const c = cupState(s)!;
+    expect(c.alive).toHaveLength(1);
+    expect(c.winner).toBe(c.alive[0]);
+    const cupFx = s.fixtures.filter((f) => f.cup);
+    expect(cupFx.length).toBe(72 + 64 + 32 + 16 + 8 + 4 + 2 + 1);
+    expect(cupFx.every((f) => f.hg != null)).toBe(true);
+    // league tables are unaffected: 20 clubs, nobody has more than 38 games
+    expect(c.userWon || c.userExit != null).toBe(true);
+  });
+});

@@ -112,8 +112,8 @@ registerSystem({
     const sw = staffWageBill(s);
     if (sw) txn(s, 'staff', -sw);
     txn(s, 'upkeep', -upkeep(s));
-    const home = s.fixtures.find((f) => f.week === s.week && f.home === user.id && f.hg != null);
-    if (home && home.att) {
+    for (const home of s.fixtures.filter((f) => f.week === s.week && f.home === user.id && f.hg != null)) {
+      if (!home.att) continue;
       txn(s, 'gate', home.att * user.ticket);
       user.lastAttendance = home.att;
     }
