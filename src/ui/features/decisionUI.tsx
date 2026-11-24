@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import type { GameState } from '../../core/state';
 import type { InboxMessage } from '../../core/types';
 import { decisionChoices, pendingDecisions, resolveDecision, type Choice } from '../../core/systems/decisions';
@@ -19,11 +19,12 @@ export function ChoiceList({ s, m, onDone }: { s: GameState; m: InboxMessage; on
       {choices.map((ch, i) => (
         <button
           key={i}
+          data-nosfx
           class={`dchoice ${ch.disabled ? 'off' : ''}`}
           disabled={!!ch.disabled}
           onClick={() => {
             const out = resolveDecision(s, m.id, i);
-            sfx('click');
+            sfx('confirm');
             store.bump();
             void store.persist();
             onDone?.(out);
@@ -65,6 +66,16 @@ export function Outcome({ m }: { m: InboxMessage }) {
   );
 }
 
+/** A different sound for each kind of popup: offers chime like coins, contract reminders rustle paper, the board is lower. */
+function popupSound(m: InboxMessage) {
+  const type = String((m.action?.data as { type?: string } | undefined)?.type ?? '');
+  if (type.startsWith('contract')) return 'contract' as const;
+  const k = senderKind(m);
+  if (/offer|bid|loan|sponsor|sell|buy/.test(type) || k === 'sponsor' || k === 'finance' || k === 'transfer' || k === 'club') return 'offer' as const;
+  if (k === 'board') return 'board' as const;
+  return 'pop' as const;
+}
+
 /** The popup: the oldest undecided decision, over everything but a match report. */
 export function DecisionPopup() {
   const st = useStore();
@@ -73,6 +84,8 @@ export function DecisionPopup() {
   const [result, setResult] = useState<{ title: string; pick: string; outcome: string; id: number } | null>(null);
   const pend = pendingDecisions(s).filter((m) => m.id > st.hiddenUpTo);
   const m = pend[0];
+  const shown = !!m && !top && !st.busy;
+  useEffect(() => { if (shown) sfx(popupSound(m)); }, [shown ? m.id : 0]);
   if (top || st.busy) return null; // any overlay (a player page opened from the offer, a match) hides it; it returns when that closes
   if (result && (!m || m.id !== result.id)) {
     const k = KINDS.player;

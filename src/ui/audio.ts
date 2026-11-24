@@ -1,17 +1,39 @@
 import { store } from './store';
 
 /**
- * Tiny Web Audio chiptune engine (DESIGN 13.5): hub loop, match-day loop, goal sting,
- * promotion fanfare and UI clicks. No audio files, so the build stays small.
+ * Web Audio sound engine (DESIGN 13.5). Everything is synthesised in the browser, so there are no audio files,
+ * it works offline and the build stays small.
+ *
+ * Music is a generated lo-fi jazz loop: electric piano chords (7ths, 9ths, 13ths) with a lazy swing, a soft
+ * upright-style bass, brushed drums, a sparse vibraphone melody, vinyl crackle, and everything through a
+ * low-pass filter and a small room reverb. Chords, fills and melody notes vary from bar to bar, so it does not
+ * sound like a short loop. 'hub' is slow and mellow; 'match' is a little brighter and busier.
+ *
+ * Effects are short and soft, tuned to the same jazzy palette (see `Sfx`).
  */
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let musicGain: GainNode | null = null;
+let musicIn: GainNode | null = null; // music instruments play into this: low-pass then musicGain
+let lowpass: BiquadFilterNode | null = null;
 let sfxGain: GainNode | null = null;
+let reverb: ConvolverNode | null = null;
+let musicVerb: GainNode | null = null;
+let sfxVerb: GainNode | null = null;
 
 function settings() {
   return store.state?.settings ?? { muted: false, music: 0.6, sfx: 0.8 };
+}
+
+function impulse(c: AudioContext, secs: number) {
+  const len = Math.floor(c.sampleRate * secs);
+  const buf = c.createBuffer(2, len, c.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  }
+  return buf;
 }
 
 function ensure(): AudioContext | null {
@@ -19,13 +41,39 @@ function ensure(): AudioContext | null {
   const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;
   if (!ctx) {
-    ctx = new AC();
-    master = ctx.createGain();
-    musicGain = ctx.createGain();
-    sfxGain = ctx.createGain();
+    const c = new AC();
+    ctx = c;
+    master = c.createGain();
+    master.connect(c.destination);
+    reverb = c.createConvolver();
+    reverb.buffer = impulse(c, 1.8);
+    reverb.connect(master);
+
+    musicGain = c.createGain();
     musicGain.connect(master);
+    lowpass = c.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.value = 2600;
+    lowpass.Q.value = 0.5;
+    lowpass.connect(musicGain);
+    musicIn = c.createGain();
+    musicIn.connect(lowpass);
+    musicVerb = c.createGain();
+    musicVerb.gain.value = 0.35;
+    musicIn.connect(musicVerb).connect(reverb);
+    // a slow wobble on the filter, like a worn tape
+    const lfo = c.createOscillator();
+    const depth = c.createGain();
+    lfo.frequency.value = 0.13;
+    depth.gain.value = 500;
+    lfo.connect(depth).connect(lowpass.frequency);
+    lfo.start();
+
+    sfxGain = c.createGain();
     sfxGain.connect(master);
-    master.connect(ctx.destination);
+    sfxVerb = c.createGain();
+    sfxVerb.gain.value = 0.2;
+    sfxGain.connect(sfxVerb).connect(reverb);
   }
   applyVolumes();
   return ctx;
@@ -34,141 +82,321 @@ function ensure(): AudioContext | null {
 export function applyVolumes() {
   if (!ctx || !master) return;
   const st = settings();
-  master.gain.value = st.muted ? 0 : 0.5;
-  musicGain!.gain.value = st.music * 0.35;
+  master.gain.value = st.muted ? 0 : 0.55;
+  musicGain!.gain.value = st.music * 0.8;
+  musicVerb!.gain.value = st.music * 0.18;
   sfxGain!.gain.value = st.sfx * 0.6;
 }
 
-type Wave = OscillatorType | 'noise';
-let noiseBuf: AudioBuffer | null = null;
-
-function tone(dest: AudioNode, t: number, freq: number, dur: number, wave: Wave, vol = 0.3, slide?: number) {
-  const c = ctx!;
-  const g = c.createGain();
-  g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(vol, t + 0.008);
-  g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
-  g.connect(dest);
-  if (wave === 'noise') {
-    if (!noiseBuf) {
-      noiseBuf = c.createBuffer(1, c.sampleRate * 0.5, c.sampleRate);
-      const d = noiseBuf.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    }
-    const src = c.createBufferSource();
-    src.buffer = noiseBuf;
-    const hp = c.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = freq;
-    src.connect(hp).connect(g);
-    src.start(t);
-    src.stop(t + dur + 0.02);
-    return;
-  }
-  const o = c.createOscillator();
-  o.type = wave;
-  o.frequency.setValueAtTime(freq, t);
-  if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
-  o.connect(g);
-  o.start(t);
-  o.stop(t + dur + 0.02);
-}
-
 const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
+const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+const pick = <T>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
 
-// ---------- music: step sequencer with lookahead scheduling
-
-interface Track {
-  bpm: number;
-  steps: number; // 16th notes per loop
-  lead: (number | null)[];
-  bass: (number | null)[];
-  hats?: boolean;
-  kick?: number[];
+let noiseBuf: AudioBuffer | null = null;
+function noise(c: AudioContext) {
+  if (!noiseBuf) {
+    noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
 }
 
-// A minor / C major feel. null = rest. Patterns are 32 sixteenths (2 bars).
-const HUB: Track = {
-  bpm: 92,
-  steps: 32,
-  lead: [69, null, 72, null, 76, null, 72, null, 74, null, 71, null, 67, null, null, null, 69, null, 72, null, 76, null, 79, null, 77, null, 76, null, 72, null, null, null],
-  bass: [45, null, null, null, 45, null, null, null, 43, null, null, null, 43, null, null, null, 41, null, null, null, 41, null, null, null, 40, null, null, null, 40, null, 43, null],
+/** Gain envelope: quick attack, exponential decay to silence at t + dur. */
+function env(dest: AudioNode, t: number, vol: number, dur: number, attack = 0.006) {
+  const g = ctx!.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + attack);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(dur, attack + 0.01));
+  g.connect(dest);
+  return g;
+}
+
+function osc(dest: AudioNode, t: number, type: OscillatorType, freq: number, dur: number, detune = 0, slideTo?: number) {
+  const o = ctx!.createOscillator();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  o.detune.value = detune;
+  o.connect(dest);
+  o.start(t);
+  o.stop(t + dur + 0.05);
+}
+
+function noiseHit(dest: AudioNode, t: number, dur: number, vol: number, type: BiquadFilterType, freq: number, q = 0.8, sweepTo?: number) {
+  const c = ctx!;
+  const src = c.createBufferSource();
+  src.buffer = noise(c);
+  src.loop = true;
+  const f = c.createBiquadFilter();
+  f.type = type;
+  f.frequency.setValueAtTime(freq, t);
+  if (sweepTo) f.frequency.exponentialRampToValueAtTime(sweepTo, t + dur);
+  f.Q.value = q;
+  const g = env(dest, t, vol, dur, Math.min(0.01, dur / 4));
+  src.connect(f).connect(g);
+  const off = Math.random() * 0.5;
+  src.start(t, off);
+  src.stop(t + dur + 0.05);
+}
+
+// ---------- instruments
+
+/** Electric piano (Rhodes-like): two soft sines, a little detuned, plus a short bell-like tine on the attack. */
+function epiano(dest: AudioNode, t: number, n: number, dur: number, vel = 0.12) {
+  const f = midi(n);
+  const g = env(dest, t, vel, dur, 0.008);
+  osc(g, t, 'sine', f, dur, -4);
+  osc(g, t, 'sine', f, dur, 5);
+  const g2 = env(dest, t, vel * 0.25, Math.min(dur, 0.9), 0.005);
+  osc(g2, t, 'sine', f * 2, Math.min(dur, 0.9));
+  const g3 = env(dest, t, vel * 0.12, 0.18, 0.002);
+  osc(g3, t, 'sine', f * 7, 0.18);
+}
+
+/** Vibraphone-ish lead: sine with a soft tremolo. */
+function vibes(dest: AudioNode, t: number, n: number, dur: number, vel = 0.07) {
+  const c = ctx!;
+  const g = env(dest, t, vel, dur, 0.004);
+  const trem = c.createGain();
+  trem.gain.value = 0.75;
+  const lfo = c.createOscillator();
+  const d = c.createGain();
+  lfo.frequency.value = 5.2;
+  d.gain.value = 0.25;
+  lfo.connect(d).connect(trem.gain);
+  lfo.start(t);
+  lfo.stop(t + dur + 0.05);
+  trem.connect(g);
+  osc(trem, t, 'sine', midi(n), dur);
+  const g2 = env(dest, t, vel * 0.2, 0.4, 0.003);
+  osc(g2, t, 'sine', midi(n) * 4, 0.4);
+}
+
+/** Upright-style bass: sine plus a filtered triangle, short pluck. */
+function bass(dest: AudioNode, t: number, n: number, dur: number, vel = 0.34) {
+  const c = ctx!;
+  const f = c.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.value = 700;
+  const g = env(dest, t, vel, dur, 0.01);
+  f.connect(g);
+  osc(f, t, 'triangle', midi(n), dur);
+  osc(g, t, 'sine', midi(n), dur);
+}
+
+function kick(dest: AudioNode, t: number, vel = 0.5) {
+  const g = env(dest, t, vel, 0.22, 0.003);
+  osc(g, t, 'sine', 120, 0.22, 0, 42);
+}
+const snare = (dest: AudioNode, t: number, vel = 0.1) => { noiseHit(dest, t, 0.16, vel, 'bandpass', 2200, 0.7); noiseHit(dest, t, 0.05, vel * 0.6, 'bandpass', 900, 1.2); };
+const hat = (dest: AudioNode, t: number, vel = 0.035) => noiseHit(dest, t, 0.045, vel, 'highpass', 7500, 0.6);
+const brush = (dest: AudioNode, t: number, dur: number, vel = 0.025) => noiseHit(dest, t, dur, vel, 'bandpass', 5000, 0.5);
+
+// ---------- music
+
+interface Chord { root: number; notes: number[] }
+interface Style {
+  bpm: number;
+  swing: number; // where the off-beat eighth falls inside the beat (0.5 straight, 0.66 triplet swing)
+  progressions: Chord[][];
+  scale: number[]; // melody notes
+  busy: number; // 0..1 how much the drums and melody play
+}
+
+// F major: ii-V-I-vi and IV-iii-ii-V, voiced as rootless 9ths/13ths in the middle of the keyboard
+const HUB: Style = {
+  bpm: 74,
+  swing: 0.62,
+  busy: 0.45,
+  progressions: [
+    [{ root: 43, notes: [58, 62, 65, 69] }, { root: 36, notes: [58, 62, 64, 69] }, { root: 41, notes: [57, 60, 64, 67] }, { root: 38, notes: [53, 57, 60, 64] }],
+    [{ root: 46, notes: [57, 62, 65, 69] }, { root: 45, notes: [55, 60, 64, 67] }, { root: 43, notes: [53, 58, 62, 65] }, { root: 36, notes: [58, 62, 64, 67] }],
+    [{ root: 41, notes: [57, 60, 64, 67] }, { root: 39, notes: [55, 58, 62, 65] }, { root: 38, notes: [53, 57, 60, 64] }, { root: 43, notes: [53, 58, 62, 65] }],
+  ],
+  scale: [65, 67, 69, 72, 74, 76, 77, 79],
 };
-const MATCH: Track = {
-  bpm: 128,
-  steps: 32,
-  lead: [76, null, 76, 79, null, 76, 74, null, 72, null, 74, null, 76, null, null, null, 76, null, 76, 79, null, 81, 79, null, 77, null, 76, null, 74, null, 72, null],
-  bass: [45, null, 57, null, 45, null, 57, null, 48, null, 60, null, 48, null, 60, null, 41, null, 53, null, 41, null, 53, null, 43, null, 55, null, 43, null, 55, null],
-  hats: true,
-  kick: [0, 8, 16, 24],
+// A minor: i-iv-VII-III and a ii-V turnaround, a bit quicker and with more drums
+const MATCH: Style = {
+  bpm: 88,
+  swing: 0.6,
+  busy: 0.8,
+  progressions: [
+    [{ root: 45, notes: [55, 59, 60, 64] }, { root: 38, notes: [53, 57, 60, 64] }, { root: 43, notes: [53, 57, 59, 64] }, { root: 36, notes: [52, 55, 59, 62] }],
+    [{ root: 41, notes: [52, 57, 60, 64] }, { root: 40, notes: [56, 59, 62, 65] }, { root: 45, notes: [55, 59, 60, 64] }, { root: 45, notes: [55, 60, 62, 64] }],
+  ],
+  scale: [69, 72, 74, 76, 79, 81, 84],
 };
 
-let current: Track | null = null;
-let currentName: string | null = null;
-let step = 0;
-let nextTime = 0;
+let style: Style | null = null;
+let currentName: 'hub' | 'match' | null = null;
 let timer: number | null = null;
+let beatTime = 0;
+let beat = 0; // beats since start
+let prog: Chord[] = [];
+let crackle: AudioBufferSourceNode | null = null;
 
-function schedule() {
-  if (!ctx || !current || !musicGain) return;
-  const spb = 60 / current.bpm / 4;
-  while (nextTime < ctx.currentTime + 0.15) {
-    const i = step % current.steps;
-    const l = current.lead[i];
-    const b = current.bass[i];
-    if (l != null) tone(musicGain, nextTime, midi(l), spb * 1.8, 'square', 0.12);
-    if (b != null) tone(musicGain, nextTime, midi(b), spb * 3.5, 'triangle', 0.3);
-    if (current.hats && i % 2 === 1) tone(musicGain, nextTime, 7000, 0.04, 'noise', 0.06);
-    if (current.kick?.includes(i)) tone(musicGain, nextTime, 140, 0.12, 'sine', 0.5, 45);
-    nextTime += spb;
-    step++;
+function startCrackle(c: AudioContext) {
+  if (crackle) return;
+  const len = c.sampleRate * 4;
+  const buf = c.createBuffer(1, len, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    d[i] = (Math.random() * 2 - 1) * 0.012; // hiss
+    if (Math.random() < 0.0004) d[i] += (Math.random() < 0.5 ? -1 : 1) * rnd(0.2, 0.6); // pops
+  }
+  crackle = c.createBufferSource();
+  crackle.buffer = buf;
+  crackle.loop = true;
+  const f = c.createBiquadFilter();
+  f.type = 'highpass';
+  f.frequency.value = 900;
+  const g = c.createGain();
+  g.gain.value = 0.5;
+  crackle.connect(f).connect(g).connect(musicGain!);
+  crackle.start();
+}
+function stopCrackle() {
+  try { crackle?.stop(); } catch { /* already stopped */ }
+  crackle = null;
+}
+
+function scheduleBeat(t: number) {
+  const st = style!;
+  const dest = musicIn!;
+  const b = beat % 4; // beat in the bar
+  const bar = Math.floor(beat / 4);
+  if (bar % 4 === 0 && b === 0) prog = pick(st.progressions);
+  const chord = prog[bar % 4];
+  const next = prog[(bar + 1) % 4];
+  const spb = 60 / st.bpm;
+  const off = t + spb * st.swing; // the swung "and"
+  const h = () => rnd(-0.008, 0.008); // humanise
+
+  // electric piano: long chord on 1, sometimes a lighter push on the "and" of 2 or 4
+  if (b === 0) chord.notes.forEach((n, i) => epiano(dest, t + i * 0.012 + h(), n, spb * 3.6, rnd(0.07, 0.09)));
+  if ((b === 1 || b === 3) && Math.random() < 0.35) {
+    const target = b === 3 ? next : chord;
+    target.notes.forEach((n, i) => epiano(dest, off + i * 0.01 + h(), n, spb * 1.4, rnd(0.04, 0.055)));
+  }
+
+  // bass: root on 1, fifth or octave on 3, an approach note into the next chord on 4
+  if (b === 0) bass(dest, t + h(), chord.root, spb * 1.8);
+  if (b === 2) bass(dest, t + h(), chord.root + pick([7, 7, 12, 10]), spb * 1.6, 0.28);
+  if (b === 3 && Math.random() < 0.5) bass(dest, off + h(), next.root + pick([-1, 1, 2]), spb * 0.5, 0.22);
+
+  // drums: lazy kick, rim/snare on 2 and 4, swung hats
+  if (b === 0) kick(dest, t + h(), 0.45);
+  if (b === 2 && Math.random() < 0.5 + st.busy * 0.3) kick(dest, t + h(), 0.32);
+  if (b === 1 && Math.random() < st.busy * 0.4) kick(dest, off + h(), 0.25);
+  if (b === 1 || b === 3) snare(dest, t + h(), st.busy > 0.6 ? 0.1 : 0.075);
+  hat(dest, t + h(), b % 2 ? 0.03 : 0.04);
+  if (Math.random() < 0.4 + st.busy * 0.5) hat(dest, off + h(), 0.022);
+  if (st.busy < 0.6) brush(dest, t, spb * 0.9, 0.018);
+
+  // vibes melody: sparse notes, more on the second half of every 2 bars
+  const want = (bar % 2 === 1 ? 0.45 : 0.2) * (0.6 + st.busy * 0.5);
+  if (Math.random() < want) {
+    const tones = st.scale.filter((n) => chord.notes.some((c) => (n - c) % 12 === 0) || Math.random() < 0.4);
+    const n = pick(tones.length ? tones : st.scale);
+    vibes(dest, (Math.random() < 0.5 ? t : off) + h(), n, spb * rnd(0.8, 1.6));
+    if (Math.random() < 0.3) vibes(dest, off + spb * 0.5 + h(), pick(st.scale), spb * 0.8, 0.05);
+  }
+}
+
+function tick() {
+  if (!ctx || !style) return;
+  while (beatTime < ctx.currentTime + 0.25) {
+    scheduleBeat(beatTime);
+    beatTime += 60 / style.bpm;
+    beat++;
   }
 }
 
 /** Switch the background loop ('hub', 'match' or null to stop). */
 export function music(name: 'hub' | 'match' | null) {
-  if (name === currentName) return;
+  if (name === currentName && (timer != null || !name)) return;
   currentName = name;
   if (timer != null) {
     clearInterval(timer);
     timer = null;
   }
-  current = name === 'hub' ? HUB : name === 'match' ? MATCH : null;
-  if (!current) return;
+  style = name === 'hub' ? HUB : name === 'match' ? MATCH : null;
+  if (!style) { stopCrackle(); return; }
   const c = ensure();
   if (!c || c.state !== 'running') return; // starts on the first user gesture
-  step = 0;
-  nextTime = c.currentTime + 0.05;
-  timer = window.setInterval(schedule, 50);
+  beat = 0;
+  prog = pick(style.progressions);
+  beatTime = c.currentTime + 0.1;
+  startCrackle(c);
+  timer = window.setInterval(tick, 60);
 }
 
 // ---------- effects
 
-export type Sfx = 'click' | 'swipe' | 'goal' | 'win' | 'loss' | 'fanfare' | 'coin' | 'build';
+export type Sfx =
+  | 'click' | 'tap' | 'confirm' | 'swipe' | 'page'
+  | 'pop' | 'offer' | 'contract' | 'board' | 'achieve'
+  | 'goal' | 'win' | 'loss' | 'fanfare' | 'coin' | 'cash' | 'build'
+  | 'reveal' | 'stamp' | 'tick' | 'sparkle' | 'rain' | 'sad' | 'rise';
+
+let lastTick = 0;
 
 export function sfx(name: Sfx) {
   const c = ensure();
-  if (!c || c.state !== 'running' || settings().muted || !sfxGain) return;
+  if (!c || c.state !== 'running' || settings().muted || !sfxGain || settings().sfx <= 0) return;
   const t = c.currentTime + 0.01;
   const d = sfxGain;
-  const seq = (notes: number[], len: number, wave: Wave = 'square', vol = 0.25) => notes.forEach((n, i) => tone(d, t + i * len, midi(n), len * 1.6, wave, vol));
+  const ep = (notes: number[], gap: number, dur = 0.6, vel = 0.14) => notes.forEach((n, i) => epiano(d, t + i * gap, n, dur, vel));
   switch (name) {
-    case 'click': tone(d, t, 1200, 0.03, 'square', 0.08); break;
-    case 'swipe': tone(d, t, 500, 0.08, 'triangle', 0.15, 900); break;
-    case 'coin': seq([83, 88], 0.07); break;
-    case 'build': seq([60, 64, 67], 0.06, 'triangle', 0.3); break;
-    case 'goal': seq([72, 76, 79, 84, 79, 84], 0.08); tone(d, t, 4000, 0.6, 'noise', 0.12); break;
-    case 'win': seq([72, 76, 79, 84], 0.1); break;
-    case 'loss': seq([67, 63, 60], 0.16, 'triangle', 0.3); break;
+    case 'click': { const g = env(d, t, 0.06, 0.035, 0.002); osc(g, t, 'sine', 1500, 0.035, 0, 1100); noiseHit(d, t, 0.02, 0.02, 'highpass', 5000); break; }
+    case 'tap': { const g = env(d, t, 0.045, 0.03, 0.002); osc(g, t, 'sine', 1100, 0.03, 0, 850); break; }
+    case 'confirm': ep([72, 79], 0.05, 0.4, 0.12); break;
+    case 'swipe': noiseHit(d, t, 0.18, 0.05, 'bandpass', 600, 1.2, 2400); break;
+    case 'page': noiseHit(d, t, 0.32, 0.07, 'bandpass', 500, 1, 3000); epiano(d, t + 0.12, pick([76, 79, 81]), 0.5, 0.06); break;
+    case 'pop': ep([67, 74, 79], 0.06, 0.7, 0.12); break;
+    case 'offer': ep([79, 84, 88], 0.05, 0.5, 0.11); [0, 0.07, 0.14].forEach((k) => { const g = env(d, t + 0.18 + k, 0.05, 0.12, 0.002); osc(g, t + 0.18 + k, 'sine', 2600 + k * 4000, 0.12); }); break;
+    case 'contract': noiseHit(d, t, 0.09, 0.08, 'bandpass', 3200, 1.5); noiseHit(d, t + 0.1, 0.12, 0.07, 'bandpass', 2600, 1.5); ep([64, 71], 0.08, 0.6, 0.1); break;
+    case 'board': ep([57, 60, 64], 0.04, 0.9, 0.1); bass(d, t, 45, 0.6, 0.2); break;
+    case 'achieve': ep([72, 76, 79, 83, 86], 0.07, 1.2, 0.12); [0.35, 0.45, 0.55].forEach((k, i) => vibes(d, t + k, [91, 95, 98][i], 0.6, 0.06)); break;
+    case 'coin': ep([83, 88], 0.07, 0.3, 0.1); break;
+    case 'cash': for (let i = 0; i < 7; i++) { const tt = t + i * 0.055 + rnd(0, 0.02); const g = env(d, tt, 0.05, 0.15, 0.002); osc(g, tt, 'sine', rnd(2400, 4200), 0.15); } ep([72, 79, 84], 0.04, 0.8, 0.09); break;
+    case 'build': kick(d, t, 0.3); noiseHit(d, t + 0.12, 0.08, 0.06, 'bandpass', 1500); kick(d, t + 0.24, 0.25); ep([60, 64, 67, 72], 0.06, 0.6, 0.1); break;
+    case 'goal': ep([72, 76, 79, 84], 0.06, 0.9, 0.14); noiseHit(d, t, 1.2, 0.06, 'bandpass', 1500, 0.4); break;
+    case 'win': ep([67, 72, 76, 79], 0.07, 0.9, 0.13); break;
+    case 'loss': ep([69, 65, 62], 0.14, 0.9, 0.12); break;
+    case 'sad': ep([57, 60, 64], 0.02, 1.6, 0.1); ep([65, 62, 59], 0.3, 1.2, 0.08); bass(d, t, 38, 1.4, 0.2); break;
     case 'fanfare': {
-      seq([67, 67, 67, 72, 76, 79, 76, 79, 84], 0.12, 'square', 0.22);
-      [48, 55, 60, 64].forEach((n, i) => tone(d, t + i * 0.36, midi(n), 0.5, 'triangle', 0.3));
+      // a bright horn-ish line (filtered saw) over a rising chord, with a cymbal swell
+      const f = c.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 2400;
+      f.connect(d);
+      [67, 72, 76, 79, 84].forEach((n, i) => { const tt = t + i * 0.11; const g = env(f, tt, 0.08, i === 4 ? 1.1 : 0.22, 0.02); osc(g, tt, 'sawtooth', midi(n), i === 4 ? 1.1 : 0.22); osc(g, tt, 'sawtooth', midi(n), i === 4 ? 1.1 : 0.22, 8); });
+      ep([60, 64, 67, 71, 74], 0.015, 1.6, 0.1);
+      noiseHit(d, t, 1.4, 0.05, 'highpass', 6000, 0.3);
+      kick(d, t + 0.44, 0.35);
       break;
     }
+    case 'reveal': noiseHit(d, t, 0.5, 0.04, 'bandpass', 800, 0.8, 4000); ep([60, 67, 71, 74], 0.03, 1.1, 0.08); break;
+    case 'stamp': kick(d, t, 0.55); noiseHit(d, t, 0.09, 0.12, 'bandpass', 700, 0.8); break;
+    case 'tick': {
+      if (c.currentTime - lastTick < 0.065) return;
+      lastTick = c.currentTime;
+      const g = env(d, t, 0.025, 0.02, 0.001);
+      osc(g, t, 'sine', 2200, 0.02);
+      break;
+    }
+    case 'sparkle': for (let i = 0; i < 6; i++) vibes(d, t + i * 0.08 + rnd(0, 0.03), pick([84, 86, 88, 91, 93, 96]), 0.5, 0.045); break;
+    case 'rain': noiseHit(d, t, 2.6, 0.05, 'lowpass', 1400, 0.3); for (let i = 0; i < 10; i++) { const tt = t + rnd(0, 2); const g = env(d, tt, 0.02, 0.05, 0.002); osc(g, tt, 'sine', rnd(1800, 3500), 0.05); } break;
+    case 'rise': noiseHit(d, t, 0.6, 0.04, 'bandpass', 400, 0.8, 3000); ep([65, 69, 72, 76], 0.08, 1, 0.1); break;
   }
 }
 
-/** Browsers only allow audio after a gesture: unlock on the first tap and add click sounds. */
+// elements that count as buttons for the tap sound
+const TAPPABLE = 'button, a, .item, .chip, .bench-p, .slot, .sq-sort, .fac-box, .reel-dots span, label, svg g[style*="pointer"]';
+
+/** Browsers only allow audio after a gesture: unlock on the first tap, add tap sounds, and pause when hidden. */
 export function installAudio() {
   if (typeof document === 'undefined') return;
   const unlock = () => {
@@ -177,14 +405,20 @@ export function installAudio() {
       void c.resume().then(() => {
         const n = currentName;
         currentName = null;
-        if (n) music(n as 'hub' | 'match');
+        if (n) music(n);
       });
     }
   };
   document.addEventListener('pointerdown', unlock, { capture: true });
   document.addEventListener('click', (e) => {
-    const el = e.target as HTMLElement | null;
-    if (el?.closest('button')) sfx('click');
+    const el = (e.target as HTMLElement | null)?.closest?.(TAPPABLE) as HTMLElement | null;
+    if (!el || el.closest('[data-nosfx]') || (el as HTMLButtonElement).disabled) return;
+    sfx(el.tagName === 'BUTTON' || el.classList.contains('chip') ? 'click' : 'tap');
   }, { capture: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.visibilityState === 'hidden') void ctx.suspend();
+    else void ctx.resume().then(() => { if (style) beatTime = Math.max(beatTime, ctx!.currentTime + 0.1); });
+  });
   store.subscribe(applyVolumes);
 }
