@@ -52,7 +52,7 @@ export function HubScreen() {
   // decisions first, then newest messages; the card shows as many as fit
   const decisions = s.inbox.filter((m) => m.action && !m.resolved).reverse();
   const rest = s.inbox.filter((m) => !(m.action && !m.resolved)).reverse();
-  const list = [...decisions, ...rest].slice(0, 5);
+  const list = [...decisions, ...rest].slice(0, 40); // the card scrolls
   const unread = s.inbox.filter((m) => !m.read).length;
 
   let lastTag: { cls: string; txt: string } | null = null;
@@ -95,7 +95,33 @@ export function HubScreen() {
         </div>
       </div>
 
-      <Card title={`${lg.short} · ${ordinal(pos + 1)}`} art="scoreboard" action={<button class="linkbtn" onClick={() => nav.setTab('league')}>Full table</button>}>
+      <Card title="Money" art="money" action={<button class="linkbtn" onClick={() => nav.setTab('club')}>Details</button>}>
+        <div class="money-row">
+          <div><div class="tiny dim">Cash</div><b class={`px big ${club.cash < 0 ? 'red' : 'gold'}`}>{money(club.cash)}</b></div>
+          <div><div class="tiny dim">By 30 June</div><b class={`px big ${pr.end < 0 ? 'red' : 'green'}`}>{money(pr.end)}</b></div>
+          <div class="spark"><CashChart s={s} /></div>
+        </div>
+      </Card>
+
+      <Card cls="inbox-card" title={`Inbox${unread ? ` · ${unread} new` : ''}`} art="staff" action={<button class="linkbtn" onClick={() => nav.push({ kind: 'inbox' })}>All</button>}>
+        <div class="inbox-list">
+          {reelUnseen && (
+            <button class="btn gold block reel-btn" onClick={() => nav.push({ kind: 'custom', key: 'reel', data: pendingReel })}>★ Season review</button>
+          )}
+          {list.length === 0 && <div class="dim small">No messages yet.</div>}
+          {list.map((m) => {
+            const decide = !!m.action && !m.resolved;
+            return (
+              <div class={`item inbox-item ${m.read && !decide ? '' : 'unread'}`} key={m.id} onClick={() => nav.push({ kind: 'inbox' })}>
+                <div class="grow"><div class="name">{m.title}</div><div class="tiny dim">{m.cat} · Wk {m.week}</div></div>
+                {decide && <span class="gold px">!</span>}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      <Card cls="table-card" title={`${lg.short} · ${ordinal(pos + 1)}`} art="scoreboard" action={<button class="linkbtn" onClick={() => nav.setTab('league')}>Full table</button>}>
         <table class="tbl compact">
           <tbody>
             {around.map((r) => {
@@ -114,32 +140,6 @@ export function HubScreen() {
           </tbody>
         </table>
         {cup && <div class="tiny dim cupline" onClick={() => nav.push({ kind: 'custom', key: 'cup' })}>🏆 FA Cup: <span class="gold">{cup}</span> ›</div>}
-      </Card>
-
-      <Card title="Money" art="money" action={<button class="linkbtn" onClick={() => nav.setTab('club')}>Details</button>}>
-        <div class="money-row">
-          <div><div class="tiny dim">Cash</div><b class={`px big ${club.cash < 0 ? 'red' : 'gold'}`}>{money(club.cash)}</b></div>
-          <div><div class="tiny dim">By 30 June</div><b class={`px big ${pr.end < 0 ? 'red' : 'green'}`}>{money(pr.end)}</b></div>
-          <div class="spark"><CashChart s={s} /></div>
-        </div>
-      </Card>
-
-      <Card title={`Inbox${unread ? ` · ${unread} new` : ''}`} art="staff" action={<button class="linkbtn" onClick={() => nav.push({ kind: 'inbox' })}>All</button>}>
-        <div class="inbox-list">
-          {reelUnseen && (
-            <button class="btn gold block reel-btn" onClick={() => nav.push({ kind: 'custom', key: 'reel', data: pendingReel })}>★ Season review</button>
-          )}
-          {list.length === 0 && <div class="dim small">No messages yet.</div>}
-          {list.map((m) => {
-            const decide = !!m.action && !m.resolved;
-            return (
-              <div class={`item inbox-item ${m.read && !decide ? '' : 'unread'}`} key={m.id} onClick={() => nav.push({ kind: 'inbox' })}>
-                <div class="grow"><div class="name">{m.title}</div><div class="tiny dim">{m.cat} · Wk {m.week}</div></div>
-                {decide && <span class="gold px">!</span>}
-              </div>
-            );
-          })}
-        </div>
       </Card>
 
       <button class="btn gold continue" disabled={st.busy} onClick={async () => {

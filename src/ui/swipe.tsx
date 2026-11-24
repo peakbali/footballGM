@@ -32,9 +32,10 @@ export function SwipePages<K extends string>({ keys, value, onChange, children }
 
   // keep the active chip in view
   useEffect(() => {
-    const bar = root.current?.parentElement?.querySelector('[data-seg-bar]') as HTMLElement | null;
-    const on = bar?.querySelector('.on') as HTMLElement | null;
-    if (bar && on) bar.scrollTo({ left: on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
+    root.current?.parentElement?.querySelectorAll<HTMLElement>('[data-seg-bar]').forEach((bar) => {
+      const on = bar.querySelector('.on') as HTMLElement | null;
+      if (on) bar.scrollTo({ left: on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
+    });
   }, [value]);
 
   useEffect(() => {

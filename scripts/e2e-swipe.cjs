@@ -30,16 +30,32 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
 
   await gotoTab('Transfers');
   const on = () => active('.chips[data-seg-bar] .chip.on');
+  const posOn = async () => (await p.locator('.chips[data-seg-bar]').nth(1).locator('.chip.on').textContent()).trim().split(' ')[0];
+  const posBar = () => p.evaluate(() => document.querySelectorAll('.chips[data-seg-bar]').length);
   expect('transfers starts on Scouted', (await on()).toLowerCase(), 'scouted');
+  expect('position bar shown for lists', await posBar(), 2);
+  expect('starts on ANY', await posOn(), 'ANY');
   await swipe(300, 500, 60, 500);
-  expect('swipe left -> next (★ List)', await on(), '★ List');
-  await swipe(300, 500, 60, 500);
-  expect('swipe left -> Free agents', (await on()).toLowerCase(), 'free agents');
+  expect('swipe left -> next position, same segment', [(await on()).toLowerCase(), (await posOn()) !== 'ANY'].join(), 'scouted,true');
   await swipe(60, 500, 300, 500);
-  expect('swipe right -> back to ★ List', await on(), '★ List');
+  expect('swipe right -> back to ANY', await posOn(), 'ANY');
+  // walk through every Scouted position page, the next swipe lands on ★ List / ANY
+  for (let i = 0; i < 20 && (await on()).toLowerCase() === 'scouted'; i++) await swipe(300, 500, 60, 500);
+  expect('swipe left past last position -> ★ List', await on(), '★ List');
+  expect('...on its ANY page', await posOn(), 'ANY');
   await swipe(60, 500, 300, 500);
-  await swipe(60, 500, 300, 500);
-  expect('swipe right at first page stays', (await on()).toLowerCase(), 'scouted');
+  expect('swipe right from ANY -> previous segment', (await on()).toLowerCase(), 'scouted');
+  for (let i = 0; i < 3 && (await on()) !== 'Free agents'; i++) { await p.waitForTimeout(400); await p.tap('.chips[data-seg-bar] .chip:has-text("Free agents")'); await p.waitForTimeout(400); }
+  await p.tap('.chips[data-seg-bar] >> nth=1 >> .chip:has-text("ST")'); await p.waitForTimeout(400);
+  expect('tap a position chip', await posOn(), 'ST');
+  expect('free agent table has sort header', await p.locator('.sq-sort').count() >= 5, true);
+  await p.tap('.sq-sort:has-text("Age")'); await p.waitForTimeout(300);
+  const ages = await p.$$eval('.item.sq-item .sq-c:nth-child(1)', (els) => els.slice(0, 8).map((e) => +e.textContent));
+  expect('sorted by age ascending', ages.every((v, i) => i === 0 || ages[i - 1] <= v), true);
+  await p.tap('.sq-sort:has-text("Age")'); await p.waitForTimeout(300);
+  const ages2 = await p.$$eval('.item.sq-item .sq-c:nth-child(1)', (els) => els.slice(0, 8).map((e) => +e.textContent));
+  expect('tap again flips to descending', ages2.every((v, i) => i === 0 || ages2[i - 1] >= v), true);
+  await p.tap('.chips[data-seg-bar] .chip:has-text("Scouted")'); await p.waitForTimeout(400);
   await swipe(200, 600, 210, 300);
   expect('vertical drag does not change page', (await on()).toLowerCase(), 'scouted');
   await swipe(300, await p.evaluate(() => Math.round(document.querySelector('.chips[data-seg-bar]').getBoundingClientRect().top + 10)), 60, 0 + (await p.evaluate(() => Math.round(document.querySelector('.chips[data-seg-bar]').getBoundingClientRect().top + 10))));

@@ -13,6 +13,7 @@ import { setTransfersScreen } from '../tabs';
 import { Stepper, niceStep } from './widgets';
 import { Portrait } from '../portrait';
 import { RoleTag } from './clubTab';
+import { PlayerTable, useSort } from './playerTable';
 
 export function KnownRow({ s, p }: { s: GameState; p: Player }) {
   const k = knowledge(s, p);
@@ -86,23 +87,6 @@ function Scouts({ s }: { s: GameState }) {
   );
 }
 
-function FreeAgents({ s }: { s: GameState }) {
-  const [pos, setPos] = useState('ANY');
-  const userDiv = s.clubs[s.userClubId].div;
-  const list = [...s.players.values()]
-    .filter((p) => p.clubId == null && !p.retired && (pos === 'ANY' || p.pos === pos))
-    .filter((p) => askingWage(s, p, s.userClubId) < 1e9)
-    .sort((a, b) => b.ovr - a.ovr)
-    .slice(0, 40);
-  return (
-    <Card title="Free agents · sign any time">
-      <div class="chips">{['ANY', ...POSITIONS].map((x) => <button key={x} class={`chip ${pos === x ? 'on' : ''}`} onClick={() => setPos(x)}>{x}</button>)}</div>
-      {list.map((p) => <KnownRow key={p.id} s={s} p={p} />)}
-      <div class="tiny dim">Showing the best 40 by your staff's judgement. Division {userDiv} wages apply.</div>
-    </Card>
-  );
-}
-
 function Market({ s }: { s: GameState }) {
   const list = s.transfers.filter((t) => t.season >= s.season - 1).slice(-60).reverse();
   const userDiv = s.clubs[s.userClubId].div;
@@ -129,39 +113,70 @@ function Market({ s }: { s: GameState }) {
 }
 
 const SEGS = ['scouted', 'shortlist', 'free', 'offers', 'scouts', 'news'] as const;
+type Seg = (typeof SEGS)[number];
+const LIST_SEGS: readonly Seg[] = ['scouted', 'shortlist', 'free'];
+/** One swipe page per segment, and for the player lists one per position inside it. */
+const posKeys = (seg: Seg, fp: Position[]): string[] => (seg === 'scouted' ? ['ANY', ...fp] : ['ANY', ...POSITIONS]);
+const pageKey = (seg: Seg, pos: string) => (LIST_SEGS.includes(seg) ? `${seg}:${pos}` : seg);
+
+function listFor(s: GameState, seg: Seg, fp: Position[]): Player[] {
+  if (seg === 'scouted') return s.scouting.shortlist.map((id) => s.players.get(id)).filter((p): p is Player => !!p && p.clubId !== s.userClubId && isInterested(s, p) && fp.includes(p.pos));
+  if (seg === 'shortlist') return s.scouting.starred.map((id) => s.players.get(id)).filter((p): p is Player => !!p);
+  return [...s.players.values()].filter((p) => p.clubId == null && !p.retired && askingWage(s, p, s.userClubId) < 1e9);
+}
+const LIST_TITLE: Record<string, string> = { scouted: 'Scout recommendations', shortlist: 'Your shortlist', free: 'Free agents · sign any time' };
+const LIST_EMPTY: Record<string, string> = {
+  scouted: 'Your scouts deliver a shortlist every two weeks. Set their targets under Scouts.',
+  shortlist: 'Star players to keep an eye on them.',
+  free: 'No free agents here.',
+};
+
 function TransfersTab() {
   const s = useStore().state!;
   const fp = formationPositions(s);
-  const [seg, setSeg] = useState<(typeof SEGS)[number]>('scouted');
+  const [seg, setSeg] = useState<Seg>('scouted');
+  const [pos, setPos] = useState('ANY');
+  const [sort, pick] = useSort();
   const w = isWindowOpen(s.week);
   const incoming = s.inbox.filter((m) => m.action?.kind === 'offer_in' && !m.resolved).length;
+  const isList = LIST_SEGS.includes(seg);
+  const positions = posKeys(seg, fp);
+  const curPos = positions.includes(pos) ? pos : 'ANY';
+  // flat page list so a swipe past the last position moves on to the next segment
+  const keys = SEGS.flatMap((x) => (LIST_SEGS.includes(x) ? posKeys(x, fp).map((p) => pageKey(x, p)) : [x]));
+  const value = pageKey(seg, curPos);
+  const go = (k: string) => {
+    const [sg, ps] = k.split(':') as [Seg, string | undefined];
+    setSeg(sg);
+    if (ps) setPos(ps);
+  };
+  const segBtn = (k: Seg, l: string) => <button key={k} class={`chip ${seg === k ? 'on' : ''}`} onClick={() => { setSeg(k); if (!posKeys(k, fp).includes(pos)) setPos('ANY'); }}>{l}</button>;
+  let all: Player[] = [];
+  if (isList) all = listFor(s, seg, fp);
+  const list = all.filter((p) => curPos === 'ANY' || p.pos === curPos);
   return (
     <div>
       <div class={`card small ${w ? 'green' : 'dim'}`} style={{ padding: 8 }}>
         {w ? `${w === 'summer' ? 'Summer' : 'January'} window open${w === 'summer' && s.week <= CAL.summerWindowEnd ? ` · closes week ${CAL.summerWindowEnd}` : w === 'winter' ? ` · closes week ${CAL.winterWindow[1]}` : ''}` : 'Window closed: free agents and loans only'}
       </div>
       <div class="chips" data-seg-bar>
-        {([['scouted', 'Scouted'], ['shortlist', '★ List'], ['free', 'Free agents'], ['offers', `Offers${incoming ? ` (${incoming})` : ''}`], ['scouts', 'Scouts'], ['news', 'News']] as const).map(([k, l]) => (
-          <button key={k} class={`chip ${seg === k ? 'on' : ''}`} onClick={() => setSeg(k)}>{l}</button>
-        ))}
+        {segBtn('scouted', 'Scouted')}{segBtn('shortlist', '★ List')}{segBtn('free', 'Free agents')}{segBtn('offers', `Offers${incoming ? ` (${incoming})` : ''}`)}{segBtn('scouts', 'Scouts')}{segBtn('news', 'News')}
       </div>
-      <SwipePages keys={SEGS} value={seg} onChange={setSeg}>
-      {seg === 'scouted' && (
-        <Card title="Scout recommendations">
-          {s.scouting.shortlist.filter((id) => s.players.has(id) && s.players.get(id)!.clubId !== s.userClubId && isInterested(s, s.players.get(id)!) && fp.includes(s.players.get(id)!.pos)).map((id) => <KnownRow key={id} s={s} p={s.players.get(id)!} />)}
-          {s.scouting.shortlist.length === 0 && <div class="empty">Your scouts deliver a shortlist every two weeks. Set their targets under Scouts.</div>}
-        </Card>
+      {isList && (
+        <div class="chips" data-seg-bar>
+          {positions.map((x) => <button key={x} class={`chip ${curPos === x ? 'on' : ''}`} onClick={() => setPos(x)}>{x}{x !== 'ANY' && all.some((p) => p.pos === x) ? <span class="dim"> {all.filter((p) => p.pos === x).length}</span> : ''}</button>)}
+        </div>
       )}
-      {seg === 'shortlist' && (
-        <Card title="Your shortlist">
-          {s.scouting.starred.filter((id) => s.players.has(id)).map((id) => <KnownRow key={id} s={s} p={s.players.get(id)!} />)}
-          {s.scouting.starred.length === 0 && <div class="empty">Star players to keep an eye on them.</div>}
-        </Card>
-      )}
-      {seg === 'free' && <FreeAgents s={s} />}
-      {seg === 'offers' && <Offers s={s} />}
-      {seg === 'scouts' && <Scouts s={s} />}
-      {seg === 'news' && <Market s={s} />}
+      <SwipePages keys={keys} value={value} onChange={go}>
+        {isList && (
+          <Card title={LIST_TITLE[seg]}>
+            {all.length === 0 ? <div class="empty">{LIST_EMPTY[seg]}</div> : <PlayerTable s={s} players={list} sort={sort} onSort={pick} />}
+            {seg === 'free' && all.length > 0 && <div class="tiny dim">Best 40 shown. Division {s.clubs[s.userClubId].div} wages apply.</div>}
+          </Card>
+        )}
+        {seg === 'offers' && <Offers s={s} />}
+        {seg === 'scouts' && <Scouts s={s} />}
+        {seg === 'news' && <Market s={s} />}
       </SwipePages>
     </div>
   );
