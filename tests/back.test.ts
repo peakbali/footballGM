@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBackController, type WindowLike } from '../src/ui/backNav';
+import { createBackController, installBackNav, type WindowLike } from '../src/ui/backNav';
 
 /**
  * A browser history that behaves like Chrome's: entries added without a user gesture are skipped
@@ -175,5 +175,75 @@ describe('history guard', () => {
     ui.tapOnly();
     expect(b.entries.length).toBe(2);
     expect(b.entries.every((e) => e.gesture)).toBe(true);
+  });
+});
+
+describe('defensive behaviour', () => {
+  const MAIN_TABS = ['squad', 'transfers', 'club', 'league'];
+
+  it('registers only activation events (never a touch pointerdown) and re-arms on page show', () => {
+    const types: string[] = [];
+    const doc: string[] = [];
+    const win = {
+      history: { state: null, pushState() {}, go() {} },
+      addEventListener: (type: string) => { types.push(type); },
+      document: { visibilityState: 'visible', addEventListener: (type: string) => { doc.push(type); } },
+    };
+    installBackNav(win as never, { depth: () => 0, closeTop() {}, active: () => true }, () => {});
+    expect(types).not.toContain('pointerdown');
+    expect(types).toEqual(expect.arrayContaining(['popstate', 'pointerup', 'click', 'keydown', 'pageshow']));
+    expect(doc).toContain('visibilitychange');
+  });
+
+  for (const tab of MAIN_TABS) {
+    it(`${tab}: back reaches the hub even when the browser skipped every guard entry`, async () => {
+      const { b, ui, model, ctl } = setup();
+      ui.tapOnly();
+      // entries pushed outside any gesture (e.g. after an await) are skipped by Chrome
+      model.tab = tab;
+      ctl.sync();
+      expect(b.entries.some((e) => !e.gesture)).toBe(true);
+      await b.back(); // lands on the page's first entry, skipping the unguarded ones
+      expect(model.tab).toBe('hub');
+      expect(b.idx).toBeGreaterThanOrEqual(1); // the guard was pushed again
+      await b.back();
+      expect(model.tab).toBe('hub');
+      expect(b.idx).toBeGreaterThanOrEqual(1);
+    });
+
+    it(`${tab}: overlay on top, skipped entries, still one level per back`, async () => {
+      const { b, ui, model, ctl } = setup();
+      ui.tapOnly();
+      model.tab = tab; ctl.sync(); // gesture-less
+      model.stack.push('player'); ctl.sync(); // gesture-less
+      await b.back();
+      expect(model.stack).toEqual([]);
+      expect(model.tab).toBe(tab);
+      await b.back();
+      expect(model.tab).toBe('hub');
+      expect(b.idx).toBeGreaterThanOrEqual(1);
+    });
+  }
+
+  it('arming from a touch pointerdown (no activation) would be skipped; arming on pointerup is not', async () => {
+    const b = new FakeBrowser();
+    const model = { stack: [] as string[], tab: 'hub' };
+    const ctl = createBackController(b, { depth: () => model.stack.length + (model.tab !== 'hub' ? 1 : 0), closeTop: () => { model.tab = 'hub'; ctl.sync(); }, active: () => true });
+    ctl.arm(); // pointerdown on a phone: no activation yet
+    expect(b.entries[1].gesture).toBe(false);
+    const c2 = setup();
+    c2.b.tap(() => c2.ctl.arm()); // pointerup / click
+    expect(c2.b.entries[1].gesture).toBe(true);
+  });
+
+  it('resume() after bfcache or app resume restores the guard entry', async () => {
+    const { b, ui, model, ctl } = setup();
+    ui.tapOnly();
+    ui.tab('club');
+    b.idx = 0; // the browser restored the page on its first entry
+    ctl.resume();
+    expect(b.idx).toBeGreaterThanOrEqual(1);
+    await b.back();
+    expect(model.tab).toBe('hub');
   });
 });
