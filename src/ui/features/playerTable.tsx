@@ -4,12 +4,11 @@ import type { Player } from '../../core/types';
 import { Badge, PlayerRow } from '../components';
 import { money } from '../store';
 import { knowledge } from '../playerExtras';
-import { personalityLabel } from '../screens/Player';
+import { PersonalityFace } from '../personalityFace';
 
 /** Spreadsheet-style player list: sortable columns Age, POT, Value, Pers, with the OVR badge on the right. */
 export type SortKey = 'ovr' | 'age' | 'pot' | 'value' | 'pers';
 const COLS: [SortKey, string, number][] = [['age', 'Age', 30], ['pot', 'POT', 36], ['value', 'Value', 46], ['pers', 'Pers', 40]];
-const SHORT: Record<string, string> = { Volatile: 'Vol', Demanding: 'Dem', Balanced: 'Bal', Professional: 'Pro', 'Model Pro': 'Model' };
 
 /** Personality is only known once scouts can read the player (his POT is visible), or for your own players. */
 const persOf = (s: GameState, p: Player): number | null => (p.clubId === s.userClubId || knowledge(s, p).pot != null ? p.personality : null);
@@ -67,13 +66,13 @@ export function PlayerTable({ s, players, sort, onSort, limit = 40 }: { s: GameS
                 <span class="sq-c" style={{ width: 30 }}>{s.season - p.birthYear}</span>
                 <span class="sq-c" style={{ width: 36 }}>{k.pot ?? '?'}</span>
                 <span class="sq-c" style={{ width: 46 }}>{money(p.value)}</span>
-                <span class="sq-c" style={{ width: 40, fontSize: 10 }}>{pers == null ? '?' : SHORT[personalityLabel(pers)]}</span>
+                <span class="sq-c" style={{ width: 40 }}><PersonalityFace v={pers} size={18} /></span>
               </div>
             }
           />
         );
       })}
-      <div class="tiny dim" style={{ marginTop: 6 }}>Tap a column to sort, tap again to flip. Pers: Vol volatile, Dem demanding, Bal balanced, Pro professional, Model model pro. "?" until a scout can read the player.</div>
+      <div class="tiny dim" style={{ marginTop: 6 }}>Tap a column to sort, tap again to flip. Pers: dark green big smile = model pro, green smile = professional, yellow = balanced, orange sad = demanding, red angry = volatile (sorted best first). "?" until a scout can read the player.</div>
     </div>
   );
 }

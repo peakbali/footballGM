@@ -8,6 +8,7 @@ import { money, useStore } from '../store';
 import type { ComponentChildren } from 'preact';
 import { squadExtras } from '../squadExtras';
 import type { Player } from '../../core/types';
+import { PersonalityFace } from '../personalityFace';
 
 const ORDER = { GK: 0, DEF: 1, MID: 2, ATT: 3 };
 
@@ -82,7 +83,7 @@ export function SquadRow({ p, season, view }: { p: Player; season: number; view?
       p={p}
       compact={!!view}
       sub={<>
-        {season - p.birthYear}y
+        {season - p.birthYear}y <PersonalityFace v={p.personality} size={12} />
         {p.injury > 0 && <span class="red"> ✚{p.injury}w</span>}
         {p.ban > 0 && <span class="red"> ■ban</span>}
         {p.listed && <span class="amber"> listed</span>}
