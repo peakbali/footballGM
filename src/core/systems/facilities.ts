@@ -109,7 +109,9 @@ const DEFS: Record<Branch, Record<number, Def[]>> = {
   },
 };
 
-const BASE_COST: Record<Branch, number> = { stadium: 5000, training: 4000, academy: 3000, commercial: 3000 };
+// DESIGN 11.5: about £10k for level 2 up to ~£80m for level 10; build time 4 to 52 weeks
+const BASE_COST: Record<Branch, number> = { stadium: 10000, training: 10000, academy: 8000, commercial: 8000 };
+const WEEKS = [0, 0, 4, 6, 8, 12, 16, 20, 26, 36, 52];
 
 function slug(t: string) {
   return t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -121,8 +123,8 @@ for (const b of BRANCHES) {
     const level = Number(lvlStr);
     for (const [name, desc, eff, extraWeeks] of defs) {
       const seated = name.includes('seated') ? 1.4 : 1;
-      const cost = roundMoney(BASE_COST[b.key] * Math.pow(2.6, level - 2) * seated);
-      UPGRADES.push({ id: `${b.key}-${level}-${slug(name)}`, branch: b.key, level, name, desc, cost, weeks: 2 + level + (extraWeeks ?? 0), upkeep: Math.max(1, Math.round(cost * 0.0015)), eff });
+      const cost = roundMoney(BASE_COST[b.key] * Math.pow(3.1, level - 2) * seated);
+      UPGRADES.push({ id: `${b.key}-${level}-${slug(name)}`, branch: b.key, level, name, desc, cost, weeks: WEEKS[level] + Math.round((extraWeeks ?? 0) / 3), upkeep: Math.max(1, Math.round(cost * 0.003)), eff });
     }
   }
 }
