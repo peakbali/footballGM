@@ -8,6 +8,7 @@ import { clamp, type Rng } from '../rng';
 import { invalidateSquads, squadOf, type GameState } from '../state';
 import { hooks, registerSystem } from '../systems';
 import type { Player, SquadRole, StaffRole } from '../types';
+import { bumpStat } from './stats';
 import { dirtyPlayers } from './dirty';
 import { effects, facState } from './facilities';
 import { staffLevel } from './staff';
@@ -212,6 +213,7 @@ export function academyIntake(s: GameState, rng: Rng): Player[] {
 }
 
 export function promoteFromAcademy(s: GameState, p: Player) {
+  bumpStat(s, 'grads');
   p.academy = false;
   const user = s.clubs[s.userClubId];
   if (p.contract) {

@@ -5,6 +5,7 @@ import { clamp } from '../rng';
 import { invalidateSquads, squadOf, type GameState } from '../state';
 import { registerSystem } from '../systems';
 import type { Clauses, Player, SquadRole } from '../types';
+import { bumpStat } from './stats';
 import { txn } from './finance';
 
 export const SQUAD_MAX = 30;
@@ -98,6 +99,7 @@ export function releasePlayer(s: GameState, p: Player) {
   const cost = releaseCost(s, p);
   txn(s, 'other_out', -cost);
   s.transfers.push({ season: s.season, week: s.week, pid: p.id, name: `${p.first} ${p.last}`, from: p.clubId, to: null, fee: 0, type: 'release' });
+  if (p.clubId === s.userClubId) bumpStat(s, 'releases');
   p.clubId = null;
   p.contract = null;
   p.listed = false;

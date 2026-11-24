@@ -2,12 +2,12 @@ import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import { diff, restore, snapshot, TABLES, markAllDirty, type Snapshot } from './serialize';
 import type { GameState } from '../core/state';
 import { idbGet, idbPut, idbDelete } from './idb';
+import { clearInfo, slotKey, writeInfo } from './slots';
 
 /**
  * Save slot backed by SQLite (sql.js). Each table has an id, a few indexed columns and the row
  * JSON. The database file is persisted to IndexedDB (works in browsers and Capacitor WebViews).
  */
-const SLOT_KEY = 'slot1.sqlite';
 let SQL: SqlJsStatic | null = null;
 
 async function sql(): Promise<SqlJsStatic> {
@@ -42,33 +42,36 @@ CREATE TABLE IF NOT EXISTS news (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 export class SqliteSave {
   private db: Database;
   private last?: Snapshot;
-  private constructor(db: Database) {
+  readonly slot: number;
+  private constructor(db: Database, slot: number) {
+    this.slot = slot;
     this.db = db;
     db.exec(SCHEMA);
   }
 
-  static async create(): Promise<SqliteSave> {
+  static async create(slot = 1): Promise<SqliteSave> {
     const S = await sql();
-    return new SqliteSave(new S.Database());
+    return new SqliteSave(new S.Database(), slot);
   }
 
-  static async load(): Promise<{ store: SqliteSave; state: GameState } | null> {
-    const bytes = await idbGet<Uint8Array>(SLOT_KEY);
+  static async load(slot = 1): Promise<{ store: SqliteSave; state: GameState } | null> {
+    const bytes = await idbGet<Uint8Array>(slotKey(slot));
     if (!bytes) return null;
     const S = await sql();
-    const store = new SqliteSave(new S.Database(bytes));
+    const store = new SqliteSave(new S.Database(bytes), slot);
     const snap = store.readAll();
     if (!snap.meta.get('state')) return null;
     store.last = snap;
     return { store, state: restore(snap) };
   }
 
-  static async exists(): Promise<boolean> {
-    return !!(await idbGet<Uint8Array>(SLOT_KEY));
+  static async exists(slot = 1): Promise<boolean> {
+    return !!(await idbGet<Uint8Array>(slotKey(slot)));
   }
 
-  static async wipe(): Promise<void> {
-    await idbDelete(SLOT_KEY);
+  static async wipe(slot = 1): Promise<void> {
+    await idbDelete(slotKey(slot));
+    await clearInfo(slot);
     markAllDirty();
   }
 
@@ -117,7 +120,8 @@ export class SqliteSave {
     }
     this.last = snap;
     const bytes = this.db.export();
-    await idbPut(SLOT_KEY, bytes);
+    await idbPut(slotKey(this.slot), bytes);
+    await writeInfo(this.slot, s);
     return { rows, bytes: bytes.length };
   }
 }

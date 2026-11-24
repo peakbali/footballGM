@@ -6,6 +6,9 @@ import { newGame as createWorld } from '../core/world';
 import { SqliteSave } from '../storage/sqliteStore';
 import { markAllDirty } from '../storage/serialize';
 import type { RealData } from '../core/realData';
+import { lastSlot, listSlots, infoOf, type SlotInfo } from '../storage/slots';
+import { loadUnlocked, saveUnlocked, type Unlocked } from '../storage/achievementStore';
+import { newlyEarned } from '../core/achievements';
 
 // Real player data exists only in local builds (npm run import:eafc); otherwise this is empty.
 const REAL_FILES = import.meta.glob('../../data/private/real-players.json', { import: 'default' });
@@ -30,6 +33,9 @@ class Store {
   hiddenUpTo = 0;
   lastResult: WeekResult | null = null;
   saving: Promise<unknown> | null = null;
+  /** achievements earned so far (all slots) and the ones waiting to be announced */
+  unlocked: Unlocked = {};
+  toasts: string[] = [];
   private listeners = new Set<Listener>();
 
   subscribe(l: Listener) {
@@ -41,8 +47,12 @@ class Store {
     for (const l of this.listeners) l();
   }
 
-  async load(): Promise<boolean> {
-    const r = await SqliteSave.load();
+  /** Loads a slot; without a number, the one played last. */
+  async load(slot?: number): Promise<boolean> {
+    this.unlocked = await loadUnlocked();
+    const n = slot ?? (await lastSlot());
+    if (!n) return false;
+    const r = await SqliteSave.load(n);
     if (!r) return false;
     this.state = r.state;
     this.save = r.store;
@@ -50,15 +60,23 @@ class Store {
     return true;
   }
 
-  async newGame(clubName: string, seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0) {
+  /** Info for the slot cards. A save from before slots existed is read once to fill in its card. */
+  slots(): Promise<(SlotInfo | null)[]> {
+    return listSlots(async (n) => {
+      const r = await SqliteSave.load(n);
+      return r ? infoOf(r.state) : null;
+    });
+  }
+
+  async newGame(clubName: string, slot = 1, seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0) {
     this.busy = true;
     this.bump();
     await new Promise((r) => setTimeout(r, 30));
     const real = await loadRealData();
     const s = createWorld(seed, clubName, { real });
-    await SqliteSave.wipe();
+    await SqliteSave.wipe(slot);
     markAllDirty();
-    this.save = await SqliteSave.create();
+    this.save = await SqliteSave.create(slot);
     this.state = s;
     this.busy = false;
     await this.persist();
@@ -70,12 +88,26 @@ class Store {
     const run = async () => {
       try {
         await this.save!.save(this.state!);
+        await this.earn();
       } catch (e) {
         console.error('save failed', e);
       }
     };
     this.saving = (this.saving ?? Promise.resolve()).then(run);
     await this.saving;
+  }
+
+  /** Checks achievements against the current game; new ones are stored globally and queued for the popup. */
+  async earn() {
+    if (!this.state) return;
+    const have = new Set(Object.keys(this.unlocked));
+    const fresh = newlyEarned(this.state, have);
+    if (!fresh.length) return;
+    const now = Date.now();
+    for (const id of fresh) this.unlocked[id] = now;
+    this.toasts.push(...fresh);
+    await saveUnlocked(this.unlocked);
+    this.bump();
   }
 
   /** Advance week by week until something needs the user. */
@@ -102,11 +134,19 @@ class Store {
   async quit() {
     await this.saving;
     this.state = null;
+    this.hiddenUpTo = 0;
+    this.toasts = [];
+    nav.tab = 'hub';
+    nav.stack = [];
     this.bump();
   }
 
-  async deleteSave() {
-    await SqliteSave.wipe();
+  async deleteSave(slot = this.save?.slot ?? 1) {
+    await SqliteSave.wipe(slot);
+    if (this.save?.slot !== slot) return;
+    this.toasts = [];
+    nav.tab = 'hub';
+    nav.stack = [];
     this.state = null;
     this.save = null;
     this.bump();

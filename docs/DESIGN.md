@@ -268,7 +268,7 @@ Free agents and loans are allowed **any time**.
 3. Tap **Continue**. The game advances week by week and **stops at events**: offers received, contract expiring, scout report ready, facility finished, window opening/closing, board message, end of season.
    When the week includes your match, its report opens with a second **Continue** button in the same bottom-right spot, which takes you back to the hub.
 4. Inbox batches minor items (results of other leagues, small news).
-5. **Autosave every week**, single save slot.
+5. **Autosave every week** into the active save slot (5 slots, see 13.2h; this replaces the original single slot).
 
 No quick-season mode. Fast, but the player still makes the decisions.
 
@@ -1216,3 +1216,9 @@ Each stage ends with a playable build on device (Capacitor) and a balance pass u
 ### 13.2g Season reel and offer portraits **[Agreed]**
 - The end-of-season reel gives every page its own mood: a sunburst and confetti (or rain after relegation) result page, an LED scoreboard with counting numbers, a spotlight "stars" page with portraits (tap to open the player), a money page with animated income/cost bars and falling coins, a board verdict with a dial and stamped goals, a blueprint-style history page, a gold hall of records, and a sunrise next-season page. All pixel art, CSS-only particles, skippable by swipe, tap on the dots or Next, and reduced-motion safe.
 - Any inbox message about a player (rival bid, swap, loan request, wants to leave, plus old offers, loan options and transfer requests) shows his portrait, with the rival club badge on its corner. Tapping it opens his page from the inbox, hub and popup. The decision popup hides while any page is open over it and returns when it closes; back pops one level as usual.
+
+### 13.2h Save slots and achievements **[Agreed]**
+- **Slots:** 5 save slots, each its own SQLite file in IndexedDB (`slot1.sqlite` .. `slot5.sqlite`). The title screen lists every slot as a card (club, division, season/week, last played) with Continue, and an empty slot is a "New career" button. Delete is two taps ("Sure?"). A small `slots.meta` record holds the card info so listing never opens a database; the app resumes the slot played last. A save from before slots existed already is slot 1: its card info is filled in the first time the list is shown, so nothing is lost. Settings shows the active slot and has "Switch slot / title screen" and "Delete this career".
+- **Achievements:** exactly 100, in 8 categories (career, league, matches, FA Cup, transfers, finance, club, squad) and 4 tiers (26 bronze, 30 silver, 28 gold, 16 platinum for the very hard ones), 4 of them hidden until earned. They never depend on which club you pick: they are milestones such as seasons played, promotions and titles, win streaks, transfers, cash, facilities, academy graduates and squad quality. Every achievement is a counter that reaches a goal, which gives the progress bars.
+- **Global, not per slot:** unlocked achievements are one record (`achievements.v1`) shared by all slots, so a second career does not start from zero and nothing is lost when a slot is deleted. Progress bars show the career you are currently playing. A career-wide counter set (streaks, buys and sells, academy graduates) is kept in `s.ext.stats` by the `stats` system.
+- **Popup:** checked after every save. A banner slides in from the top for about 4 seconds (queued one after another, "+N" when several are waiting, tap to open the page). It never covers or delays a match report: it waits while a match is open or the game is advancing. Achievements are opened from Settings.
