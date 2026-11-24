@@ -3,12 +3,10 @@ import type { GameState } from '../../core/state';
 import { ordinal } from '../../core/season';
 import { approvalLabel, boardState, goalStatus, predictedFinish } from '../../core/systems/board';
 import { records, seasons, topScorerAllTime, type UserSeason } from '../../core/systems/chronicle';
-import { facState } from '../../core/systems/facilities';
 import { ROUND_NAMES } from '../../core/systems/cup';
 import { Badge, Card, Overlay } from '../components';
 import { money, nav, store, useStore } from '../store';
 import { registerClubSection } from './clubSections';
-import { registerHubCard } from '../hubExtras';
 import { registerOverlay } from '../overlays';
 import { sfx } from '../audio';
 
@@ -334,15 +332,3 @@ function HistorySection({ s }: { s: GameState }) {
 registerClubSection('board', 'Board', (s) => <BoardSection s={s} />);
 registerClubSection('history', 'History', (s) => <HistorySection s={s} />);
 
-registerHubCard((s) => {
-  const b = boardState(s);
-  const pending = s.ext.reelPending as number | undefined;
-  const unseen = pending != null && s.ext.reelSeen !== pending;
-  return (
-    <Card title={`Board · ${approvalLabel(b.approval)}`} action={<button class="linkbtn" onClick={() => { nav.setTab('club'); }}>Goals</button>}>
-      <Meter value={b.approval} />
-      {unseen && <button class="btn gold block" style={{ marginTop: 10 }} onClick={() => nav.push({ kind: 'custom', key: 'reel', data: pending })}>★ Season review</button>}
-      {!unseen && facState(s) && null}
-    </Card>
-  );
-});

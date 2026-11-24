@@ -130,7 +130,7 @@ export function Stadium() {
   L.push(<rect key="flag" class="flag" x={W - 5} y={PITCH_Y - 22} width={5} height={3} fill={c.colors[0]} />);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} shape-rendering="crispEdges" class={matchWeek ? 'matchday' : ''}>
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges" class={matchWeek ? 'matchday' : ''}>
       {L}
     </svg>
   );

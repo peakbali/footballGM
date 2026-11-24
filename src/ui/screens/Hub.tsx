@@ -1,13 +1,22 @@
 import { computeTable, nextFixture } from '../../core/league';
 import { CAL, userClub, weekDate } from '../../core/state';
 import { ordinal } from '../../core/season';
-import { Badge, Card, Form } from '../components';
-import { nav, store, useStore } from '../store';
+import { projection } from '../../core/systems/finance';
+import { Badge, Card, Form, Hex } from '../components';
+import { autoPick, unitRatings } from '../../core/selection';
+import { effectiveOvr } from '../../core/ratings';
+import { squadOf } from '../../core/state';
+import { nav, money, store, useStore } from '../store';
 import { Stadium } from '../stadium';
-import { hubExtras } from '../hubExtras';
 import { sfx } from '../audio';
 import { openReelIfPending } from '../features/history';
+import { cupLine } from '../features/cupView';
+import { CashChart } from '../features/clubTab';
 
+/**
+ * Hub (DESIGN 13.2): everything on one phone screen, no scrolling.
+ * Top to bottom: next match over the pixel stadium, league table, money, inbox. Continue sits bottom right.
+ */
 export function HubScreen() {
   const st = useStore();
   const s = st.state!;
@@ -17,87 +26,120 @@ export function HubScreen() {
   const pos = table.findIndex((r) => r.clubId === club.id);
   const nf = nextFixture(s, club.id);
   const last = s.fixtures.filter((f) => f.hg != null && (f.home === club.id || f.away === club.id)).sort((a, b) => b.week - a.week)[0];
-  const unread = s.inbox.filter((m) => !m.read).length;
-  const pending = s.inbox.filter((m) => m.action && !m.resolved);
-  const around = table.slice(Math.max(0, Math.min(pos - 2, table.length - 5)), Math.max(0, Math.min(pos - 2, table.length - 5)) + 5);
+  const pr = projection(s);
+  // starting XI OVR: average effective rating of the auto-picked XI, and where it ranks in the league
+  const xiAvg = (clubId: number) => {
+    const c = s.clubs[clubId];
+    const lu = autoPick(squadOf(s, clubId), c.formation);
+    const v = lu.xi.map((p, i) => (p ? effectiveOvr(p, lu.slots[i].pos) : 0));
+    return { avg: v.reduce((a, b) => a + b, 0) / (v.length || 1), lu };
+  };
+  const mine = xiAvg(club.id);
+  const xi = Math.round(mine.avg);
+  const xiRank = 1 + lg.clubIds.filter((id) => id !== club.id && xiAvg(id).avg > mine.avg).length;
+  const units = unitRatings(mine.lu);
+  const cup = cupLine(s);
+  const from = Math.max(0, Math.min(pos - 2, table.length - 5));
+  const around = table.slice(from, from + 5);
+  const pendingReel = s.ext.reelPending as number | undefined;
+  const reelUnseen = pendingReel != null && s.ext.reelSeen !== pendingReel;
 
   const phase = s.week < CAL.firstRoundWeek ? 'Pre-season' : s.week <= CAL.firstRoundWeek + CAL.rounds - 1 ? 'League season' : s.week <= CAL.playoffFinalWeek ? 'Playoffs' : 'Off-season';
+  const oppId = nf ? (nf.home === club.id ? nf.away : nf.home) : null;
+  const opp = oppId != null ? s.clubs[oppId] : null;
+  const home = nf?.home === club.id;
+
+  // decisions first, then newest messages; the card shows as many as fit
+  const decisions = s.inbox.filter((m) => m.action && !m.resolved).reverse();
+  const rest = s.inbox.filter((m) => !(m.action && !m.resolved)).reverse();
+  const list = [...decisions, ...rest].slice(0, 5);
+  const unread = s.inbox.filter((m) => !m.read).length;
+
+  let lastTag: { cls: string; txt: string } | null = null;
+  if (last) {
+    const mine = last.home === club.id ? last.hg! - last.ag! : last.ag! - last.hg!;
+    lastTag = { cls: mine > 0 ? 'W' : mine < 0 ? 'L' : 'D', txt: `${s.clubs[last.home].abbrev} ${last.hg}-${last.ag} ${s.clubs[last.away].abbrev}` };
+  }
 
   return (
-    <div>
-      <div class="hub-hero">
+    <div class="hub">
+      <div class="hub-hero" style={{ borderColor: club.colors[0] === '#ffffff' ? 'var(--gold)' : club.colors[0] }}>
         <Stadium />
-        <div class="over between">
-          <span class="px small" style={{ textShadow: '2px 2px 0 #000' }}>{club.stadium}</span>
-          <span class="px small gold" style={{ textShadow: '2px 2px 0 #000' }}>{ordinal(pos + 1)}</span>
+        <div class="shade" />
+        <div class="fix">
+          <div class="xi" title="Starting XI OVR">
+            <div class="px tiny gold">STARTING XI</div>
+            <Hex value={xi} size={78} label={`Starting XI OVR ${xi}`} />
+            <div class="px tiny dim">{ordinal(xiRank)} of {lg.clubIds.length}</div>
+            <div class="units px">
+              <span>A <b>{Math.round(units.att)}</b></span><span>M <b>{Math.round(units.mid)}</b></span><span>D <b>{Math.round(units.def)}</b></span><span>G <b>{Math.round(units.gk)}</b></span>
+            </div>
+          </div>
+          <div class="nm">
+            <div class="px tiny dim">{nf ? `NEXT · WK ${nf.week} · ${weekDate(s.season, nf.week)}` : phase.toUpperCase()}</div>
+            {nf && opp ? (
+              <div class="vs" onClick={() => nav.push({ kind: 'club', id: opp.id })}>
+                <Badge club={opp} size={40} />
+                <div class="oppname">{home ? 'vs' : 'at'} {opp.name}</div>
+              </div>
+            ) : (
+              <div class="small dim" style={{ marginTop: 6 }}>No match scheduled. {phase === 'Off-season' ? 'The new season starts in July.' : ''}</div>
+            )}
+            <div class="chips-row">
+              {nf && <span class="tag">{home ? 'HOME' : 'AWAY'}</span>}
+              {nf?.playoff && <span class="tag gold">PLAYOFF {nf.playoff}</span>}
+              {opp && <span class="tag">{ordinal(table.findIndex((r) => r.clubId === opp.id) + 1)}</span>}
+              {lastTag && <span class={`tag last ${lastTag.cls}`} onClick={() => nav.push({ kind: 'match', fixtureId: last!.id })}>{lastTag.cls} {lastTag.txt}</span>}
+            </div>
+          </div>
         </div>
       </div>
 
-      {pending.length > 0 && (
-        <Card title="Needs your decision">
-          {pending.slice(0, 3).map((m) => (
-            <div class="item" key={m.id} onClick={() => nav.push({ kind: 'inbox' })}>
-              <div class="grow"><div class="name">{m.title}</div><div class="tiny dim">{m.cat}</div></div>
-              <span class="gold">!</span>
-            </div>
-          ))}
-        </Card>
-      )}
-
-      {last && (
-        <Card title="Last result" action={<button class="linkbtn" onClick={() => nav.push({ kind: 'match', fixtureId: last.id })}>Report</button>}>
-          <div class="bigscore" onClick={() => nav.push({ kind: 'match', fixtureId: last.id })}>
-            <div class="side"><Badge club={s.clubs[last.home]} size={34} />{s.clubs[last.home].short}</div>
-            <div class="score">{last.hg}-{last.ag}</div>
-            <div class="side"><Badge club={s.clubs[last.away]} size={34} />{s.clubs[last.away].short}</div>
-          </div>
-          {last.pens && <div class="tiny dim" style={{ textAlign: 'center' }}>Penalties {last.pens}</div>}
-        </Card>
-      )}
-
-      <Card title={nf ? `Next match · Wk ${nf.week}` : phase}>
-        {nf ? (
-          <div class="row" onClick={() => nav.push({ kind: 'club', id: nf.home === club.id ? nf.away : nf.home })}>
-            <Badge club={s.clubs[nf.home === club.id ? nf.away : nf.home]} size={36} />
-            <div class="grow">
-              <div class="name">{s.clubs[nf.home === club.id ? nf.away : nf.home].name}</div>
-              <div class="tiny dim">{nf.home === club.id ? 'Home' : 'Away'} · {weekDate(s.season, nf.week)}{nf.playoff ? ` · Playoff ${nf.playoff}` : ''}</div>
-            </div>
-            <span class="tiny dim">{ordinal(table.findIndex((r) => r.clubId === (nf.home === club.id ? nf.away : nf.home)) + 1)}</span>
-          </div>
-        ) : (
-          <div class="dim small">No match scheduled. {phase === 'Off-season' ? 'The new season starts in July.' : ''}</div>
-        )}
-      </Card>
-
-      <Card title={lg.short} action={<button class="linkbtn" onClick={() => nav.setTab('league')}>Table</button>}>
-        <table class="tbl">
+      <Card title={`${lg.short} · ${ordinal(pos + 1)}`} art="scoreboard" action={<button class="linkbtn" onClick={() => nav.setTab('league')}>Full table</button>}>
+        <table class="tbl compact">
           <tbody>
             {around.map((r) => {
               const i = table.indexOf(r);
               return (
-                <tr key={r.clubId} class={r.clubId === club.id ? 'me' : ''}>
+                <tr key={r.clubId} class={r.clubId === club.id ? 'me' : i < 2 ? 'up' : i < 6 ? 'po' : i >= table.length - 3 ? 'dn' : ''}>
                   <td class="l dim" style={{ width: 22 }}>{i + 1}</td>
                   <td class="l club">{s.clubs[r.clubId].short}</td>
                   <td><Form form={r.form} /></td>
                   <td class="dim">{r.p}</td>
+                  <td class="dim">{r.gf - r.ga > 0 ? '+' : ''}{r.gf - r.ga}</td>
                   <td><b>{r.pts}</b></td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+        {cup && <div class="tiny dim cupline" onClick={() => nav.push({ kind: 'custom', key: 'cup' })}>🏆 FA Cup: <span class="gold">{cup}</span> ›</div>}
       </Card>
 
-      {hubExtras(s)}
+      <Card title="Money" art="money" action={<button class="linkbtn" onClick={() => nav.setTab('club')}>Details</button>}>
+        <div class="money-row">
+          <div><div class="tiny dim">Cash</div><b class={`px big ${club.cash < 0 ? 'red' : 'gold'}`}>{money(club.cash)}</b></div>
+          <div><div class="tiny dim">By 30 June</div><b class={`px big ${pr.end < 0 ? 'red' : 'green'}`}>{money(pr.end)}</b></div>
+          <div class="spark"><CashChart s={s} /></div>
+        </div>
+      </Card>
 
-      <Card title={`Inbox${unread ? ` · ${unread} new` : ''}`} action={<button class="linkbtn" onClick={() => nav.push({ kind: 'inbox' })}>All</button>}>
-        {s.inbox.length === 0 && <div class="dim small">No messages yet.</div>}
-        {s.inbox.slice(-4).reverse().map((m) => (
-          <div class={`item inbox-item ${m.read ? '' : 'unread'}`} key={m.id} onClick={() => nav.push({ kind: 'inbox' })}>
-            <div class="grow"><div class="name">{m.title}</div><div class="tiny dim">{m.cat} · Wk {m.week}</div></div>
-          </div>
-        ))}
+      <Card title={`Inbox${unread ? ` · ${unread} new` : ''}`} art="staff" action={<button class="linkbtn" onClick={() => nav.push({ kind: 'inbox' })}>All</button>}>
+        <div class="inbox-list">
+          {reelUnseen && (
+            <button class="btn gold block reel-btn" onClick={() => nav.push({ kind: 'custom', key: 'reel', data: pendingReel })}>★ Season review</button>
+          )}
+          {list.length === 0 && <div class="dim small">No messages yet.</div>}
+          {list.map((m) => {
+            const decide = !!m.action && !m.resolved;
+            return (
+              <div class={`item inbox-item ${m.read && !decide ? '' : 'unread'}`} key={m.id} onClick={() => nav.push({ kind: 'inbox' })}>
+                <div class="grow"><div class="name">{m.title}</div><div class="tiny dim">{m.cat} · Wk {m.week}</div></div>
+                {decide && <span class="gold px">!</span>}
+              </div>
+            );
+          })}
+        </div>
       </Card>
 
       <button class="btn gold continue" disabled={st.busy} onClick={async () => {
