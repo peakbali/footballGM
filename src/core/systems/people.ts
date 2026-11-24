@@ -21,7 +21,7 @@ const COACH_FOR: Record<string, StaffRole> = { GK: 'coach_gk', DEF: 'coach_def',
 
 export function clubGamesPlayed(s: GameState, clubId: number): number {
   let n = 0;
-  for (const f of s.fixtures) if (f.hg != null && !f.playoff && (f.home === clubId || f.away === clubId)) n++;
+  for (const f of s.fixtures) if (f.hg != null && !f.playoff && !f.cup && (f.home === clubId || f.away === clubId)) n++;
   return n;
 }
 

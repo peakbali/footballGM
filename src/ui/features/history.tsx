@@ -4,6 +4,7 @@ import { ordinal } from '../../core/season';
 import { approvalLabel, boardState, goalStatus, predictedFinish } from '../../core/systems/board';
 import { records, seasons, topScorerAllTime, type UserSeason } from '../../core/systems/chronicle';
 import { facState } from '../../core/systems/facilities';
+import { ROUND_NAMES } from '../../core/systems/cup';
 import { Badge, Card, Overlay } from '../components';
 import { money, nav, store, useStore } from '../store';
 import { registerClubSection } from './clubSections';
@@ -112,6 +113,7 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
             <div><b>{u.bestAtt.toLocaleString()}</b><span>best crowd</span></div>
           </div>
           {u.bigWin && <div class="small" style={{ marginTop: 14 }}>Biggest win: <b class="gold">{u.bigWin.text}</b></div>}
+          {u.cup && <div class="small" style={{ marginTop: 6 }}>FA Cup: <b class={u.cup.won ? 'gold' : ''}>{u.cup.text}</b></div>}
         </div>
       );
     case 2: {
@@ -189,6 +191,7 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
             {R.attendance && <><span>Best crowd</span><span>{R.attendance.v.toLocaleString()}</span></>}
             {R.signing && <><span>Record signing</span><span>{R.signing.name}, {money(R.signing.v)}</span></>}
             {R.sale && <><span>Record sale</span><span>{R.sale.name}, {money(R.sale.v)}</span></>}
+            {R.cup && <><span>Best FA Cup run</span><span>{R.cup.won ? `Winners (${R.cup.season})` : `${ROUND_NAMES[R.cup.reached] ?? 'Entry'} (${R.cup.season})`}</span></>}
           </div>
         </div>
       );

@@ -40,7 +40,7 @@ export function App() {
   const s = st.state;
   const club = userClub(s);
   const top = nav.stack[nav.stack.length - 1];
-  music(top?.kind === 'match' ? 'match' : 'hub');
+  music(top?.kind === 'match' || (top?.kind === 'custom' && top.key === 'watch') ? 'match' : 'hub');
   return (
     <div class="app">
       <div class="topbar">

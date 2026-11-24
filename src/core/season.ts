@@ -74,7 +74,8 @@ export function advanceWeek(s: GameState): WeekResult {
   for (const f of weekFixtures) {
     const home = s.clubs[f.home];
     const away = s.clubs[f.away];
-    const full = f.div === userLeague.div;
+    const userTie = f.home === s.userClubId || f.away === s.userClubId;
+    const full = f.div === userLeague.div || (!!f.cup && userTie);
     const hs = makeSide(home, idx.get(home.id) ?? []);
     const as = makeSide(away, idx.get(away.id) ?? []);
     if (home.user) hs.morale += (s.ext.homeMorale as number | undefined) ?? 0;
@@ -84,7 +85,7 @@ export function advanceWeek(s: GameState): WeekResult {
     f.hg = r.hg;
     f.ag = r.ag;
     f.full = full;
-    if (f.playoff && r.hg === r.ag) {
+    if ((f.playoff || f.cup) && r.hg === r.ag) {
       const so = shootout(rng);
       f.pens = so.score;
     }
@@ -94,8 +95,8 @@ export function advanceWeek(s: GameState): WeekResult {
       s.reports.set(f.id, r.report);
     }
     f.att = attendanceFor(s, home, away, rng);
-    if (f.home === s.userClubId || f.away === s.userClubId) {
-      res.userFixture = f;
+    if (userTie) {
+      if (!res.userFixture || !f.cup) res.userFixture = f;
       res.stop = true;
     }
   }
