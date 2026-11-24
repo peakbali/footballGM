@@ -1,3 +1,4 @@
+import { foreignLeagueName } from '../../core/world';
 import { LINE } from '../../core/data/positions';
 import { squadOf } from '../../core/state';
 import { computeTable } from '../../core/league';
@@ -16,13 +17,13 @@ export function ClubViewScreen({ id }: { id: number }) {
   const squad = squadOf(s, id).sort((a, b) => ORDER[LINE[a.pos]] - ORDER[LINE[b.pos]] || b.ovr - a.ovr);
   const hist = s.history.filter((h) => h.clubId === id).sort((a, b) => b.season - a.season).slice(0, 6);
   return (
-    <Overlay title={c.name} sub={lg ? `${ordinal(pos)} in ${lg.short}` : `Regional league · division ${c.div}`}>
+    <Overlay title={c.name} sub={lg ? `${ordinal(pos)} in ${lg.short}` : c.country ? `${foreignLeagueName(c)} · abroad (no fixtures)` : `Regional league · division ${c.div}`}>
       <Card>
         <div class="row">
           <Badge club={c} size={56} />
           <div class="kv grow">
             <span>Ground</span><span>{c.stadium} ({c.capacity.toLocaleString()})</span>
-            <span>Division</span><span>{c.div}</span>
+            <span>{c.country ? 'Level' : 'Division'}</span><span>{c.country ? `like division ${c.div}` : c.div}</span>
             <span>Strength</span><span>{c.strength.toFixed(1)}</span>
             <span>Approach</span><span>{c.ai}</span>
             {c.user && <><span>Cash</span><span>{money(c.cash)}</span></>}

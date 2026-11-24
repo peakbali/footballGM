@@ -4,6 +4,19 @@ import { advanceWeek, type WeekResult } from '../core/season';
 import { newGame as createWorld } from '../core/world';
 import { SqliteSave } from '../storage/sqliteStore';
 import { markAllDirty } from '../storage/serialize';
+import type { RealData } from '../core/realData';
+
+// Real player data exists only in local builds (npm run import:eafc); otherwise this is empty.
+const REAL_FILES = import.meta.glob('../../data/private/real-players.json', { import: 'default' });
+async function loadRealData(): Promise<RealData | undefined> {
+  const f = Object.values(REAL_FILES)[0];
+  if (!f) return undefined;
+  try {
+    return (await f()) as RealData;
+  } catch {
+    return undefined;
+  }
+}
 
 type Listener = () => void;
 
@@ -38,7 +51,8 @@ class Store {
     this.busy = true;
     this.bump();
     await new Promise((r) => setTimeout(r, 30));
-    const s = createWorld(seed, clubName);
+    const real = await loadRealData();
+    const s = createWorld(seed, clubName, { real });
     await SqliteSave.wipe();
     markAllDirty();
     this.save = await SqliteSave.create();

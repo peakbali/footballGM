@@ -25,7 +25,7 @@ export function KnownRow({ s, p }: { s: GameState; p: Player }) {
         </div>
       </div>
       <div style={{ textAlign: 'right' }} class="tiny">
-        {club ? <div class="row" style={{ gap: 4, justifyContent: 'flex-end' }}><Badge club={club} size={14} /><span class="dim">D{club.div}</span></div> : <div class="green">Free</div>}
+        {club ? <div class="row" style={{ gap: 4, justifyContent: 'flex-end' }}><Badge club={club} size={14} /><span class="dim">{club.country ?? `D${club.div}`}</span></div> : <div class="green">Free</div>}
         <div class="dim">{money(p.value)}</div>
       </div>
     </div>

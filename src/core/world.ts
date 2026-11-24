@@ -8,6 +8,9 @@ import { buildSquadIndex, SAVE_VERSION, START_SEASON, type GameState, type SimLe
 import type { AiType, Club, Player } from './types';
 import { POSITIONS } from './data/positions';
 import { runInitSystems } from './systems';
+import { FOREIGN, FOREIGN_COLORS } from './data/foreign';
+import { randomName } from './generate';
+import { applyRealPlayers, type RealData } from './realData';
 
 export interface ClubDef {
   name: string;
@@ -125,8 +128,57 @@ export function makeClub(id: number, def: ClubDef, rng: Rng): Club {
   };
 }
 
+/** Division whose average is closest to a foreign league's level (for wages and values). */
+function equivDiv(ovr: number): number {
+  let best = 1;
+  for (let d = 1; d <= 10; d++) if (Math.abs(DIV_AVG_OVR[d] - ovr) < Math.abs(DIV_AVG_OVR[best] - ovr)) best = d;
+  return best;
+}
+
+/** Clubs abroad: squads only, no fixtures (DESIGN 3.1). */
+function addForeign(s: GameState, rng: Rng) {
+  for (const fl of FOREIGN) {
+    for (const entry of fl.clubs.split(';')) {
+      const [name, qs] = entry.split(':');
+      const q = Number(qs);
+      const ovr = fl.avg + q * 0.8;
+      const div = equivDiv(ovr);
+      const eco = ECONOMY[div];
+      const h = hashString(name);
+      const colors = FOREIGN_COLORS[name] ?? [PALETTE[h % PALETTE.length], '#ffffff'];
+      const town = name.replace(/^(1\. FC|FC|SC|AC|RB|VfB|VfL|TSG|AS|OGC|RC|SL|CD|UD|CA|AZ|NEC|PEC|NAC) /, '').split(' ')[0];
+      const c: Club = {
+        id: s.clubs.length, name, short: shortName(name), abbrev: abbrev(name), colors,
+        stadium: `${fl.suffix[0]}${town}${fl.suffix[1]}`,
+        capacity: Math.round((eco.capacity * rng.range(0.6, 1.5)) / 500) * 500,
+        seats: 0, rep: clamp(Math.round(ovr + 10 + rng.normal(0, 3)), 1, 100),
+        ai: rng.pick(['buyer', 'developer', 'seller', 'seller'] as const),
+        cash: Math.round(eco.startCash * rng.range(0.6, 1.5)), ticket: eco.ticket,
+        formation: rng.pick(['4-3-3', '4-2-3-1', '4-4-2', '3-5-2']),
+        div, leagueKey: fl.key, lat: 45, lon: 5, strength: ovr, att: 0, mid: 0, def: 0, gk: 0,
+        country: fl.country,
+      };
+      c.seats = c.capacity;
+      s.clubs.push(c);
+      for (const p of generateSquad(rng, () => s.nextPlayerId++, c.id, div, ovr - DIV_AVG_OVR[div], s.season, 24)) {
+        if (rng.chance(0.65)) {
+          p.nat = fl.country;
+          const n = randomName(rng, fl.country);
+          p.first = n.first;
+          p.last = n.last;
+        }
+        s.players.set(p.id, p);
+      }
+    }
+  }
+}
+
+export function foreignLeagueName(c: Club): string | null {
+  return c.country ? FOREIGN.find((f) => f.key === c.leagueKey)?.name ?? c.country : null;
+}
+
 /** Create a new world. `userClubName` must be a club in a division 9 league. */
-export function newGame(seed: number, userClubName: string): GameState {
+export function newGame(seed: number, userClubName: string, opts: { real?: RealData } = {}): GameState {
   const rng = new Rng(seed);
   const defs = clubDefs();
   const userDef = defs.find((d) => d.name === userClubName);
@@ -163,6 +215,11 @@ export function newGame(seed: number, userClubName: string): GameState {
     const size = c.div <= 4 ? 24 : 21 + rng.int(0, 2);
     for (const p of generateSquad(rng, nextId, c.id, c.div, q, season, size)) s.players.set(p.id, p);
   }
+  addForeign(s, rng);
+  if (opts.real) {
+    const r = applyRealPlayers(s, opts.real, rng);
+    s.ext.realData = { source: opts.real.source, clubs: r.clubs, players: r.players };
+  }
   // Free agents (spread across levels)
   for (let i = 0; i < 400; i++) {
     const div = rng.int(3, 10);
@@ -181,7 +238,7 @@ export function newGame(seed: number, userClubName: string): GameState {
     members.sort((a, b) => (b.user ? 1 : 0) - (a.user ? 1 : 0) || b.strength - a.strength);
     members = members.slice(0, 20);
     if (members.length < 20) {
-      const pool = s.clubs.filter((c) => c.div === div && !members.includes(c));
+      const pool = s.clubs.filter((c) => c.div === div && !c.country && !members.includes(c));
       pool.sort((a, b) => dist(a, def) - dist(b, def));
       const near = pool.slice(0, 12).sort((a, b) => b.strength - a.strength);
       members.push(...near.slice(0, 20 - members.length));
