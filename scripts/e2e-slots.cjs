@@ -19,14 +19,14 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   await p.tap('text=Switch slot'); await p.waitForSelector('.slot.used');
   expect('slot 1 now used, 4 empty', [await p.locator('.slot.used').count(), await p.locator('.slot.empty').count()], [1, 4]);
   expect('slot card shows the club', (await p.locator('.slot.used').textContent()).includes('Fenhurst United'), true);
-  await start('Crowmere Corinthians'); await toTitle();
-  expect('second career lands in slot 2', [await p.locator('.slot.used').count(), (await p.locator('.slot.used >> nth=1').textContent()).includes('Crowmere Corinthians')], [2, true]);
+  await start('Lower Shipmore United'); await toTitle();
+  expect('second career lands in slot 2', [await p.locator('.slot.used').count(), (await p.locator('.slot.used >> nth=1').textContent()).includes('Lower Shipmore United')], [2, true]);
   // keep playing slot 1 and check it is untouched by slot 2
   await p.tap('.slot.used >> nth=0 >> .slot-main'); await p.waitForSelector('button.continue');
-  expect('slot 1 loads its own club', (await p.textContent('.topbar .title')).includes('Fenhurst United'), true);
+  expect('slot 1 loads its own club', (await p.textContent('.topbar .title')).includes('Fenhurst'), true);
   await p.tap('button.continue'); await p.waitForTimeout(1200);
   await p.reload(); await p.waitForSelector('button.continue', { timeout: 20000 });
-  expect('reload resumes the slot played last', (await p.textContent('.topbar .title')).includes('Fenhurst United'), true);
+  expect('reload resumes the slot played last', (await p.textContent('.topbar .title')).includes('Fenhurst'), true);
   // legacy save: no slot info record, listing rebuilds it
   await toTitle();
   await p.evaluate(() => new Promise((res) => { const r = indexedDB.open('footballgm'); r.onsuccess = () => { const tx = r.result.transaction('saves', 'readwrite'); tx.objectStore('saves').delete('slots.meta'); tx.objectStore('saves').delete('slots.last'); tx.oncomplete = () => res(); }; }));

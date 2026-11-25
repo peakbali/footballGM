@@ -64,21 +64,16 @@ export function nearest<T extends { lat: number; lon: number }>(items: T[], lat:
 }
 
 const PALETTE = ['#c8102e', '#003399', '#ffd200', '#1b5e20', '#ffffff', '#111111', '#6a1b9a', '#ff6f00', '#00838f', '#7b1e3c', '#87ceeb', '#e65100', '#2e7d32', '#0d47a1', '#b71c1c', '#f5f5f5'];
-const KNOWN_COLORS: Record<string, [string, string]> = {
-  'Belwell Harriers': ['#ef0107', '#ffffff'], 'Walwood Colliery': ['#670e36', '#95bfe5'], 'Woldmere Athletic': ['#da291c', '#000000'], 'Ottwick Swifts': ['#e30613', '#ffffff'],
-  'Falstow FC': ['#0057b8', '#ffffff'], 'Whitham Olympic': ['#6c1d45', '#99d6ea'], 'Quenham Olympic': ['#034694', '#ffffff'], 'Ashbridge United': ['#1b458f', '#c4122e'],
-  'Dunbridge Town': ['#003399', '#ffffff'], 'AFC Ulstead': ['#ffffff', '#000000'], 'Rushstead Dynamos': ['#ffffff', '#1d428a'], 'Coldwood FC': ['#c8102e', '#f6eb61'],
-  'Oakbridge Victoria': ['#6cabdd', '#ffffff'], 'Woldbury Colliery': ['#da291c', '#fbe122'], 'Lindfield Rovers': ['#241f20', '#ffffff'], 'Ormwell Sports': ['#dd0000', '#ffffff'],
-  'Ashmouth Celtic': ['#eb172b', '#ffffff'], 'Ludham Victoria': ['#ffffff', '#132257'], 'Ramston Rangers': ['#7a263a', '#1bb1e7'], 'Ulwood Sports': ['#fdb913', '#231f20'],
-};
+/** No hand-picked kits: every club's colours come from its name (no real club's colours are copied). */
+const KNOWN_COLORS: Record<string, [string, string]> = {};
 
 /** Relative strength offsets for well-known clubs at the start (OVR points vs division average). */
 const KNOWN_QUALITY: Record<string, number> = {
-  'Oakbridge Victoria': 5, 'Belwell Harriers': 5, 'Coldwood FC': 5, 'Quenham Olympic': 4, 'Woldbury Colliery': 3, 'Ludham Victoria': 3, 'Lindfield Rovers': 3, 'Walwood Colliery': 2.5,
-  'Ormwell Sports': 1, 'Falstow FC': 1, 'Ashbridge United': 0.5, 'Ottwick Swifts': 0, 'AFC Ulstead': 0, 'Woldmere Athletic': 0, 'Dunbridge Town': -0.5, 'Ramston Rangers': 0,
-  'Ulwood Sports': -1.5, 'Rushstead Dynamos': -2, 'Whitham Olympic': -3, 'Ashmouth Celtic': -2.5,
-  'Kesgate Corinthians': 3, 'AFC Scardale': 3, 'Gilby Town': 2.5, 'AFC Wexmere': 2, 'Carrcliffe Sports': 1.5, 'Langwell Villa': 1, 'Rushby Rangers': 1.5,
-  'Calmore FC': 2, 'Vercott Wanderers': 1.5, 'Falmere Town': 1.5, 'Kesthorpe Villa': 1.5, 'Paddale Town': 2, 'Belford FC': 1,
+  'Oakhaven City': 5, 'Northport United': 5, 'Greywater Rovers': 5, 'Blackmere Wanderers': 4, 'Ironport United': 3, 'Elmhaven Wanderers': 3, 'Brackwater Town': 3, 'Kingsmouth City': 2.5,
+  'Coldmere Athletic': 1, 'Westbridge Albion': 1, 'Castlebury City': 0.5, 'Ashcombe Rovers': 0, 'Fenmouth Town': 0, 'Redminster Athletic': 0, 'Easthaven County': -0.5, 'Larkford Albion': 0,
+  'Dunholt County': -1.5, 'Saltbridge United': -2, 'Havenford United': -3, 'Stanmouth Rovers': -2.5,
+  'Stoneport Albion': 3, 'Hollowmere Wanderers': 3, 'Wellmouth Rangers': 2.5, 'Thornhaven Albion': 2, 'Marshbury Town': 1.5, 'Holmwater FC': 1, 'Ravenmoor Athletic': 1.5,
+  'Eastmoor United': 2, 'Ockborough FC': 1.5, 'Branstead Town': 1.5, 'Brookworth City': 1.5, 'Hagport United': 2, 'AFC Lamfield': 1,
 };
 
 export function abbrev(name: string): string {
@@ -91,7 +86,7 @@ export function abbrev(name: string): string {
 
 export function shortName(name: string): string {
   if (name.length <= 14) return name;
-  return name.replace(/ (Football Club|Town|United|City|Athletic|Rovers|Wanderers|Albion|Hotspur)$/, '').slice(0, 16);
+  return name.replace(/^AFC /, '').replace(/ (Football Club|FC|Town|United|City|Athletic|Rovers|Wanderers|Albion|County|Borough|Rangers|Harriers|Sports|Corinthians|Colliery|Celtic|Swifts|Victoria|Dynamos|Olympic)$/, '').slice(0, 16).trim();
 }
 
 const STADIUM_SUFFIX = ['Park', 'Road', 'Lane', 'Ground', 'Meadow', 'Field', 'Stadium', 'Arena'];
@@ -102,7 +97,7 @@ export function makeClub(id: number, def: ClubDef, rng: Rng): Club {
   const h = hashString(def.name);
   const colors = KNOWN_COLORS[def.name] ?? [PALETTE[h % PALETTE.length], PALETTE[(h >>> 8) % PALETTE.length] === PALETTE[h % PALETTE.length] ? '#ffffff' : PALETTE[(h >>> 8) % PALETTE.length]];
   const capacity = def.capacity ?? Math.round(eco.capacity * rng.range(0.5, 1.4) / 50) * 50;
-  const town = def.name.split(' ')[0];
+  const town = shortName(def.name).split(' ').pop()!;
   const ai: AiType = rng.pick(['buyer', 'developer', 'seller', 'seller', 'developer'] as const);
   return {
     id,
