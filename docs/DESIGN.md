@@ -1443,3 +1443,7 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 
 ### 13.5b Whistle, hum and boo for match results **[Agreed]**
 - Win: fans whistling (a two-note wolf whistle plus two shorter whistles, pure sine tones with a little vibrato) over a soft happy murmur. Draw: a neutral, level "hmm". Loss: a real low boo with a sagging pitch, calmer and shorter than a stadium boo. No musical notes on top, and no noise, as in 13.5a.
+
+### 13.5c Recorded result sounds from Khen **[Agreed]**
+- Win: a police whistle (0.56 s). Draw: a man's thinking "hmm" (1.7 s). Loss: a disappointed crowd (2.6 s). Khen supplied all three; each is trimmed, mono, peak-normalized and played at about -27 LUFS so the three sit at the same level (src/ui/sfx, src/ui/sfxClips.ts).
+- Web build only. They are third-party clips, so the Google Play build (`__CLIPS__` false) leaves them out and keeps the synthesized sounds of 13.5b until Khen confirms the rights. The synth also plays if a clip has not decoded yet.

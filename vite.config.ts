@@ -10,7 +10,11 @@ export default defineConfig(({ mode }) => {
   const outDir = mode === 'single' ? 'dist-single' : mode === 'play' ? 'dist-play' : 'dist';
   return {
   base: './',
-  define: { __REAL_WORLD__: JSON.stringify(mode !== 'play' && process.env.VITE_WORLD !== 'fictional') },
+  define: {
+    __REAL_WORLD__: JSON.stringify(mode !== 'play' && process.env.VITE_WORLD !== 'fictional'),
+    // Khen's recorded result clips stay out of the Play build until their rights are confirmed (DESIGN 13.5c)
+    __CLIPS__: JSON.stringify(mode !== 'play'),
+  },
   plugins: [
     preact(),
     ...(mode === 'single' ? [viteSingleFile()] : []),

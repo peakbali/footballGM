@@ -53,7 +53,7 @@ function ensure(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;
-  if (!ctx) buildGraph(new AC());
+  if (!ctx) { buildGraph(new AC()); void loadClips(ctx!); }
   applyVolumes();
   return ctx;
 }
@@ -404,6 +404,36 @@ function hmm(d: AudioNode, t: number) {
   }
 }
 
+// Recorded result clips (DESIGN 13.5c). Web build only: the Play build compiles __CLIPS__ to false, so the
+// dynamic import below is dropped and the mp3s never ship there. Until a clip has decoded, the synth plays.
+declare const __CLIPS__: boolean | undefined;
+const CLIPS_ON = typeof __CLIPS__ === 'undefined' || __CLIPS__;
+/** playback level of the -3 dBFS clips, matched by loudness (about -27 LUFS each) */
+const CLIP_GAIN = { cheer: 0.25, hmm: 0.5, boo: 0.53 } as const;
+type ClipName = keyof typeof CLIP_GAIN;
+const clips: Partial<Record<ClipName, AudioBuffer>> = {};
+let clipsLoading: Promise<void> | null = null;
+
+function loadClips(c: BaseAudioContext): Promise<void> {
+  if (!CLIPS_ON) return Promise.resolve();
+  return (clipsLoading ??= import('./sfxClips').then(({ CLIP_URLS }) => Promise.all(
+    (Object.keys(CLIP_URLS) as ClipName[]).map((k) => fetch(CLIP_URLS[k]).then((r) => r.arrayBuffer()).then((b) => c.decodeAudioData(b)).then((buf) => { clips[k] = buf; })),
+  )).then(() => undefined).catch(() => { clipsLoading = null; }));
+}
+
+/** Play a decoded clip; false when it is not ready (the caller falls back to the synth). */
+function playClip(c: BaseAudioContext, d: AudioNode, name: ClipName, t: number): boolean {
+  const buf = clips[name];
+  if (!buf) { void loadClips(c); return false; }
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const g = c.createGain();
+  g.gain.value = CLIP_GAIN[name];
+  src.connect(g).connect(d);
+  src.start(t);
+  return true;
+}
+
 let lastTick = 0;
 
 /** Lower the music a little under a popup or reel sound, then bring it back. Never stops it. */
@@ -467,9 +497,9 @@ export function sfx(name: Sfx) {
     case 'sparkle': for (let i = 0; i < 6; i++) vibes(d, t + i * 0.08 + rnd(0, 0.03), pick([84, 86, 88, 91, 93, 96]), 0.5, 0.045); break;
     case 'rain': for (let i = 0; i < 10; i++) { const tt = t + rnd(0, 2); const g = env(d, tt, 0.02, 0.05, 0.002); osc(g, tt, 'sine', rnd(1800, 3500), 0.05); } break;
     case 'rise': ep([65, 69, 72, 76], 0.08, 1, 0.1); break;
-    case 'cheer': cheer(crowdBus(c, d), t); break;
-    case 'boo': boo(crowdBus(c, d), t); break;
-    case 'hmm': hmm(crowdBus(c, d), t); break;
+    case 'cheer': if (!playClip(c, d, 'cheer', t)) cheer(crowdBus(c, d), t); break;
+    case 'boo': if (!playClip(c, d, 'boo', t)) boo(crowdBus(c, d), t); break;
+    case 'hmm': if (!playClip(c, d, 'hmm', t)) hmm(crowdBus(c, d), t); break;
   }
 }
 
@@ -508,6 +538,7 @@ export function installAudio() {
  * It builds a separate graph on an OfflineAudioContext and puts the live one back afterwards.
  */
 export async function renderPreview(what: 'music' | Sfx, secs: number, rate = 44100): Promise<AudioBuffer> {
+  if (what === 'cheer' || what === 'boo' || what === 'hmm') await loadClips(ctx ?? new OfflineAudioContext(1, 1, rate));
   const saved = { ctx, master, musicGain, musicIn, lowpass, sfxGain, reverb, musicVerb, sfxVerb, style, beat, beatTime, prog, lastMusic };
   const oc = new OfflineAudioContext(2, Math.ceil(secs * rate), rate);
   buildGraph(oc);
