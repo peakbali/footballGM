@@ -1376,3 +1376,9 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
   tapped, like the Transfers lists. The first tap sorts high to low (Exp: soonest first), and a second tap flips it.
   "Pos" at the left puts the list back in position order, which is the default. "-" values always go last. The sort
   is remembered per sub-page while the game is open.
+
+### 13.2r Key attributes on the player page **[Agreed]**
+
+- In the Technical, Mental and Physical (and Goalkeeping) cards, attributes that count for the player's natural
+  position are highlighted from the OVR weights in 4.3. Key attributes (weight 3) get a gold bar and bold gold name.
+  Important ones (weight 2) get a softer gold bar and a light gold name. A small legend under the cards explains it.
