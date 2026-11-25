@@ -16,8 +16,55 @@ export function available(p: Player): boolean {
 /** Order slots so scarce positions are filled first. */
 const SLOT_ORDER: Position[] = ['GK', 'CB', 'ST', 'LB', 'RB', 'LWB', 'RWB', 'DM', 'AM', 'LW', 'RW', 'LM', 'RM', 'CM'];
 
-/** Auto-pick: best effective OVR per slot (morale aware), honouring locked players. */
-export function autoPick(squad: Player[], formation: string, benchSize = 7): Lineup {
+/**
+ * Assignment problem (Hungarian algorithm): rows are slots, columns are players (cols >= rows), maximise the
+ * total score. Returns the column picked for each row. O(rows^2 * cols), a few microseconds for 11 x 30.
+ */
+export function bestAssignment(score: number[][]): number[] {
+  const n = score.length;
+  const m = score[0]?.length ?? 0;
+  if (!n || m < n) return [];
+  const INF = 1e18;
+  const u = new Array(n + 1).fill(0), v = new Array(m + 1).fill(0), p = new Array(m + 1).fill(0), way = new Array(m + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    p[0] = i;
+    let j0 = 0;
+    const minv = new Array(m + 1).fill(INF);
+    const used = new Array(m + 1).fill(false);
+    do {
+      used[j0] = true;
+      const i0 = p[j0];
+      let delta = INF, j1 = 0;
+      for (let j = 1; j <= m; j++) {
+        if (used[j]) continue;
+        const cur = -score[i0 - 1][j - 1] - u[i0] - v[j];
+        if (cur < minv[j]) { minv[j] = cur; way[j] = j0; }
+        if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+      }
+      for (let j = 0; j <= m; j++) {
+        if (used[j]) { u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
+      }
+      j0 = j1;
+    } while (p[j0] !== 0);
+    do { const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; } while (j0);
+  }
+  const res = new Array(n).fill(-1);
+  for (let j = 1; j <= m; j++) if (p[j]) res[p[j] - 1] = j - 1;
+  return res;
+}
+
+/** Team OVR of a lineup: the average effective rating of the starting XI in their slots. */
+export function teamOvr(l: Lineup): number {
+  const v = l.xi.map((p, i) => (p ? effectiveOvr(p, l.slots[i].pos) : 0));
+  return v.reduce((a, b) => a + b, 0) / (v.length || 1);
+}
+
+/**
+ * Auto-pick the XI (morale aware), honouring locked players.
+ * `optimal` (the user's club, DESIGN 13.2l) solves the whole XI at once for the highest total rating; otherwise a
+ * quick greedy pass fills scarce positions first (AI clubs, unchanged so league balance stays the same).
+ */
+export function autoPick(squad: Player[], formation: string, benchSize = 7, optimal = false): Lineup {
   const slots = FORMATIONS[formation] ?? FORMATIONS['4-4-2'];
   const pool = squad.filter((p) => available(p) && !p.academy);
   // fall back to academy players if not enough
@@ -26,7 +73,10 @@ export function autoPick(squad: Player[], formation: string, benchSize = 7): Lin
   const xi: (Player | null)[] = new Array(slots.length).fill(null);
   const order = slots.map((s, i) => i).sort((a, b) => SLOT_ORDER.indexOf(slots[a].pos) - SLOT_ORDER.indexOf(slots[b].pos));
   const score = (p: Player, pos: Position) => effectiveOvr(p, pos) * (0.97 + p.morale / 1500) + (p.locked ? 1000 : 0);
-  for (const i of order) {
+  if (optimal && pool.length >= slots.length) {
+    const pick = bestAssignment(slots.map((sl) => pool.map((p) => score(p, sl.pos))));
+    pick.forEach((j, i) => { xi[i] = pool[j]; used.add(pool[j].id); });
+  } else for (const i of order) {
     const pos = slots[i].pos;
     let best: Player | null = null;
     let bestScore = -1;
@@ -89,7 +139,7 @@ export function unitRatings(l: Lineup): UnitRatings {
 
 /** Recompute cached club ratings (used by bulk sim and AI). */
 export function refreshClubRatings(club: Club, squad: Player[]): void {
-  const lu = autoPick(squad, club.formation);
+  const lu = autoPick(squad, club.formation, 7, !!club.user);
   const u = unitRatings(lu);
   club.att = u.att;
   club.mid = u.mid;

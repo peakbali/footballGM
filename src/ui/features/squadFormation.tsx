@@ -1,5 +1,5 @@
 import { FORMATION_NAMES } from '../../core/data/formations';
-import { autoPick } from '../../core/selection';
+import { autoPick, teamOvr } from '../../core/selection';
 import { squadOf, userClub, type GameState } from '../../core/state';
 import { seniorCount, SQUAD_MAX, SQUAD_MIN } from '../../core/systems/contracts';
 import { userWageBill } from '../../core/systems/finance';
@@ -31,11 +31,27 @@ function rowLayout(ys: number[]) {
   };
 }
 
+let note = ''; // last "best XI" result, shown under the button for a few seconds
+let noteAt = 0;
+
 function Lineup({ s }: { s: GameState }) {
   const club = userClub(s);
   const squad = squadOf(s, s.userClubId);
-  const lu = autoPick(squad, club.formation);
+  const lu = autoPick(squad, club.formation, 7, true);
   const n = seniorCount(s);
+  const ovr = teamOvr(lu);
+  const locks = squad.filter((p) => p.locked);
+  // the formation that gives the highest team OVR with this squad
+  const bestF = FORMATION_NAMES.map((f) => ({ f, v: teamOvr(autoPick(squad, f, 7, true)) })).sort((a, b) => b.v - a.v)[0];
+  const pickBest = () => {
+    const before = ovr;
+    for (const p of locks) p.locked = false;
+    const after = teamOvr(autoPick(squad, club.formation, 7, true));
+    noteAt = Date.now();
+    note = `Best XI picked: team OVR ${Math.round(after)}${Math.round(after) !== Math.round(before) ? ` (was ${Math.round(before)})` : ''}${locks.length ? `, ${locks.length} lock${locks.length === 1 ? '' : 's'} cleared` : ''}.`;
+    store.bump();
+    void store.persist();
+  };
   const rows = rowLayout(lu.slots.map((x) => x.y));
   return (
     <Card title={`Formation · ${club.formation}`} action={<span class="tiny dim">{n}/{SQUAD_MAX} senior · wages {money(userWageBill(s))}/wk</span>}>
@@ -44,6 +60,16 @@ function Lineup({ s }: { s: GameState }) {
           <button key={f} class={`chip ${f === club.formation ? 'on' : ''}`} onClick={() => { club.formation = f; store.bump(); }}>{f}</button>
         ))}
       </div>
+      <div class="xi-bar">
+        <span class="small">Team OVR <b style={{ color: ovrColor(ovr) }}>{Math.round(ovr)}</b></span>
+        <button class="btn small gold" onClick={pickBest}>⚡ Pick best XI</button>
+      </div>
+      {note && Date.now() - noteAt < 8000 && <div class="tiny green" style={{ marginBottom: 4 }}>{note}</div>}
+      {bestF && bestF.f !== club.formation && Math.round(bestF.v) > Math.round(ovr) && (
+        <div class="tiny dim" style={{ marginBottom: 6 }}>
+          {bestF.f} would give team OVR {Math.round(bestF.v)}. <button class="linkbtn" onClick={() => { club.formation = bestF.f; note = ''; store.bump(); void store.persist(); }}>Switch to {bestF.f}</button>
+        </div>
+      )}
       <svg viewBox="0 0 100 112" class="pitch" style={{ width: '100%', background: '#1d7a48', borderRadius: 4, border: '2px solid var(--line)' }}>
         {[...Array(7)].map((_, i) => <rect key={i} x={0} y={i * 16} width={100} height={8} fill="#208651" />)}
         <rect x="4" y="3" width="92" height="106" fill="none" stroke="#e8ecff" stroke-width="0.6" opacity="0.7" />
