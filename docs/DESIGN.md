@@ -1317,3 +1317,12 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
   - the inbox: a smaller, quiet version on resolved decisions
 - **Match result sounds:** when Continue plays your match, the crowd reacts. A win gets cheers (open "ah" voices rising, applause and whistles), a loss gets boos (low "oo" voices sliding down), and a draw gets a doubtful "hmm" murmur (closed-mouth voices that dip and lift). All are synthesised from voices only: sawtooth voices through vowel formant filters and a low-pass, with no noise bed and no noise claps. Khen found the first version noisy and loud, so on 2026-11-25 these were removed and the peaks lowered to about -15 dB (from -11). The music keeps playing underneath.
 
+
+### 13.2o Squad progress sub-page and transfer-bid results **[Agreed]**
+
+- The Squad list has a fourth sub-page, **Progress**, between Contract and Form. Columns: OVR at the end of each of the
+  last two seasons (headed like 23/24 and 24/25, read from the player's career log), the change since last season as a
+  green ▲ or red ▼ chip (0 when unchanged), POT in gold, then the current OVR hexagon. Missing history shows "-".
+- Incoming transfer bids in the inbox (Accept / Ask for more) end with the same big Success / Failed stamp as contract
+  talks. The answered card stays in place until the inbox is closed, and the result stays on the message afterwards.
+  The sell decision popup words its outcomes so they also get a Success or Failed stamp.

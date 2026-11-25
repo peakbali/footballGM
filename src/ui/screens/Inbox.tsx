@@ -20,11 +20,15 @@ export function InboxScreen() {
   const kinds = ['All', ...new Set(s.inbox.map((m) => senderKind(m)))];
   const list = s.inbox.filter((m) => cat === 'All' || senderKind(m) === cat).slice().reverse();
   const needs = (m: InboxMessage) => !!m.action && !m.resolved;
-  const pending = list.filter(needs);
-  const rest = list.filter((m) => !needs(m));
+  // cards answered during this visit stay in place so their Success / Failed stamp is seen
+  const [answering] = useState(() => new Set(s.inbox.filter(needs).map((m) => m.id)));
+  const keep = (m: InboxMessage) => needs(m) || answering.has(m.id);
+  const pending = list.filter(keep);
+  const rest = list.filter((m) => !keep(m));
+  const toDecide = pending.filter(needs).length;
   const unread = s.inbox.filter((m) => !m.read).length;
   return (
-    <Overlay title="Inbox" sub={`${unread} unread${pending.length ? ` · ${pending.length} to decide` : ''}`}>
+    <Overlay title="Inbox" sub={`${unread} unread${toDecide ? ` · ${toDecide} to decide` : ''}`}>
       <div class="chips">
         {kinds.map((c) => {
           const k = c === 'All' ? null : KINDS[c as keyof typeof KINDS];
@@ -67,15 +71,15 @@ export function InboxScreen() {
                   <span class="mail-tag">{k.label}</span>
                   {!m.read && <span class="mail-tag new">NEW</span>}
                   {dec && <span class="mail-tag dec">DECISION</span>}
-                  {dec && m.pick && <span class="mail-tag done">✓ {m.pick}</span>}
+                  {m.pick && <span class="mail-tag done">✓ {m.pick}</span>}
                 </div>
                 {isOpen ? (
                   <div class="mail-open">
                     <div class="small dim" style={{ whiteSpace: 'pre-line' }}>{m.body}</div>
-                    {dec && <Outcome m={m} />}
+                    {m.pick && <Outcome m={m} />}
                   </div>
                 ) : (
-                  <div class="mail-snip">{dec && m.outcome ? m.outcome : m.body}</div>
+                  <div class="mail-snip">{m.pick && m.outcome ? m.outcome : m.body}</div>
                 )}
               </div>
             </div>

@@ -221,9 +221,9 @@ register({
     const starter = squadOf(s, s.userClubId).filter((q) => !q.academy).sort(byOvr).slice(0, 11).includes(p);
     const ask = Math.round(o.fee * 1.3);
     return [
-      { label: 'Sell', chips: [good(`+${fmt(o.fee)}`), starter ? bad('Loses a starter') : meh('Squad player')], apply: (s2) => { const err = acceptIncoming(s2, o.id); return err ?? `${p.last} leaves for ${fmt(o.fee)}.`; } },
+      { label: 'Sell', chips: [good(`+${fmt(o.fee)}`), starter ? bad('Loses a starter') : meh('Squad player')], apply: (s2) => { const err = acceptIncoming(s2, o.id); return err ? `Deal failed: ${err}` : `Sold. ${p.last} leaves for ${fmt(o.fee)}.`; } },
       { label: `Ask ${fmt(ask)}`, chips: [good(`+${fmt(ask)}`), meh('Maybe 50-85% they agree'), bad('They may walk away')], apply: (s2, rng) => {
-        if (counterIncoming(s2, rng, o.id, ask) === 'accepted') { const err = acceptIncoming(s2, o.id); return err ?? `They agree to ${fmt(ask)}. ${p.last} has gone.`; }
+        if (counterIncoming(s2, rng, o.id, ask) === 'accepted') { const err = acceptIncoming(s2, o.id); return err ? `Deal failed: ${err}` : `Sold. They agreed to ${fmt(ask)} and ${p.last} has gone.`; }
         return `They walk away at ${fmt(ask)}. ${p.last} stays.`;
       } },
       { label: 'Refuse', chips: [meh(`${p.last} stays`), bad(`Morale −${p.personality < 40 ? 12 : 4}`)], apply: (s2) => { rejectIncoming(s2, o.id); return `${p.last} stays, a little restless.`; } },
@@ -390,7 +390,7 @@ register({
     const o = s.offers.find((x) => x.id === c.offerId);
     if (!p || !o || o.status !== 'pending') return gone();
     return [
-      { label: 'Let him go on loan', chips: [good(`Saves ${c.amount}% of his wage`), good('Gets match minutes'), meh('Back at the end of the loan')], apply: (s2) => { const err = acceptIncoming(s2, o.id); if (!err) mood(p, 8); return err ?? `${p.last} heads out on loan.`; } },
+      { label: 'Let him go on loan', chips: [good(`Saves ${c.amount}% of his wage`), good('Gets match minutes'), meh('Back at the end of the loan')], apply: (s2) => { const err = acceptIncoming(s2, o.id); if (!err) mood(p, 8); return err ? `Deal failed: ${err}` : `Deal done. ${p.last} heads out on loan.`; } },
       { label: 'Keep him', chips: [meh('Stays in the squad'), bad('Morale −3')], apply: (s2) => { rejectIncoming(s2, o.id); mood(p, -3); return `${p.last} stays, hoping for more minutes.`; } },
     ];
   },
