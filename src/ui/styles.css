@@ -263,6 +263,11 @@ table.tbl.compact { font-size: 12px; }
 .sq-c, .sq-cols > span { display: inline-block; }
 .sq-c { font-size: 11px; text-align: right; white-space: nowrap; }
 .sq-c.dim, .sq-c .dim { color: var(--dim); }
+/* progress sub-page: past-season headers in a smaller size so 23/24 24/25 do not run together */
+.sq-head .sq-yr { font-size: 8px; letter-spacing: 0; }
+.sq-delta { display: inline-block; padding: 1px 3px; border-radius: 3px; font-size: 10px; line-height: 1.2; }
+.sq-delta.up { background: #2fbf71; color: #06210f; }
+.sq-delta.down { background: #e5383b; color: #fff; }
 /* contract sub-page: a line between wage, expiry and value */
 .sq-cols.lined { align-self: stretch; align-items: center; }
 .sq-cols.lined > span { box-sizing: border-box; border-left: 1px solid var(--line); padding: 0 3px; align-self: stretch; display: inline-flex; align-items: center; justify-content: flex-end; }

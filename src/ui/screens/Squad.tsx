@@ -12,11 +12,12 @@ import { PersonalityFace } from '../personalityFace';
 
 const ORDER = { GK: 0, DEF: 1, MID: 2, ATT: 3 };
 
-const VIEWS = ['contract', 'form', 'attributes'] as const;
+const VIEWS = ['contract', 'progress', 'form', 'attributes'] as const;
 type View = (typeof VIEWS)[number];
-const VIEW_LABEL: Record<View, string> = { contract: 'Contract', form: 'Form', attributes: 'Attributes' };
+const VIEW_LABEL: Record<View, string> = { contract: 'Contract', progress: 'Progress', form: 'Form', attributes: 'Attributes' };
 const COLS: Record<View, [string, number][]> = {
   contract: [['Wage', 40], ['Exp', 40], ['Value', 44]],
+  progress: [['-2', 38], ['-1', 38], ['+/-', 32], ['POT', 30]],
   form: [['App', 24], ['G', 20], ['A', 20], ['Avg', 28], ['CS', 22]],
   attributes: [['TEC', 28], ['MEN', 28], ['PHY', 28], ['GK', 28], ['POT', 30]],
 };
@@ -60,7 +61,7 @@ function SquadList({ s }: { s: GameState }) {
       <SwipePages keys={VIEWS} value={view} onChange={setView}>
         <div class="sq-head">
           <span class="grow" />
-          <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{COLS[view].map(([l, w]) => <span key={l} style={{ width: w }}>{l}</span>)}</div>
+          <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{COLS[view].map(([l, w]) => <span key={l} class={l.startsWith('-') && l.length === 2 ? 'sq-yr' : ''} style={{ width: w }}>{colLabel(l, s.season)}</span>)}</div>
           <span style={{ width: 25 }}>OVR</span>
         </div>
         {sorted.map((p) => <SquadRow key={p.id} p={p} season={s.season} view={view} />)}
@@ -78,6 +79,16 @@ function Cell({ w, children, cls }: { w: number; children: ComponentChildren; cl
   return <span class={`sq-c ${cls ?? ''}`} style={{ width: w }}>{children}</span>;
 }
 
+/** "-1" / "-2" header = that many seasons ago, written like 25/26. */
+const seasonTag = (y: number) => `${String(y).slice(2)}/${String(y + 1).slice(2)}`;
+const colLabel = (l: string, season: number) => (l === '-1' || l === '-2' ? seasonTag(season + Number(l)) : l);
+
+/** OVR at the end of a past season, from the career log (last entry if he moved mid-season). */
+const ovrAt = (p: Player, season: number) => {
+  for (let i = p.career.length - 1; i >= 0; i--) if (p.career[i].s === season) return p.career[i].ovr;
+  return undefined;
+};
+
 function viewCells(p: Player, view: View, season: number) {
   const cols = COLS[view];
   const st = p.stats;
@@ -85,6 +96,16 @@ function viewCells(p: Player, view: View, season: number) {
   let vals: ComponentChildren[] = [];
   if (view === 'contract') {
     vals = [ct ? money(ct.wage) : '-', ct ? `Jun ${String(ct.endSeason + 1).slice(2)}` : '-', money(p.value)];
+  } else if (view === 'progress') {
+    const o2 = ovrAt(p, season - 2);
+    const o1 = ovrAt(p, season - 1);
+    const d = o1 == null ? null : p.ovr - o1;
+    vals = [
+      o2 == null ? <span class="dim">-</span> : <span style={{ color: ovrColor(o2) }}>{o2}</span>,
+      o1 == null ? <span class="dim">-</span> : <span style={{ color: ovrColor(o1) }}>{o1}</span>,
+      d == null ? <span class="dim">-</span> : d === 0 ? <span class="dim">0</span> : <b class={`sq-delta ${d > 0 ? 'up' : 'down'}`}>{d > 0 ? `▲${d}` : `▼${-d}`}</b>,
+      <b class="gold">{p.pot}</b>,
+    ];
   } else if (view === 'form') {
     vals = [st.apps, st.goals, st.assists, st.apps ? (st.ratingSum / st.apps).toFixed(1) : '-', p.pos === 'GK' || LINE[p.pos] === 'DEF' ? st.cs : '-'];
   } else {
@@ -96,7 +117,6 @@ function viewCells(p: Player, view: View, season: number) {
     });
     vals.push(<b class="gold">{p.pot}</b>);
   }
-  void season;
   return cols.map(([l, w], i) => <Cell key={l} w={w}>{vals[i]}</Cell>);
 }
 
