@@ -1431,6 +1431,15 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 ### 13.2z Pixel art for every facility upgrade **[Agreed]**
 - Each upgrade row on the Stadium, Training ground, Academy and Commercial pages has its own small pixel picture (src/ui/facilityArt.tsx, 32x20 grid) next to the name, with the current level's name under it. The picture grows with the level, for example floodlight masts that light up, then LED lights, concourse and roof lights and finally a light show; stands gain tiers, a roof and a bowl; shirts fill the shop rail; coin stacks grow in the sponsorship office. Not-built upgrades are shown dimmed.
 
+### 13.2za Four-week pre-season **[Agreed]**
+- Weeks 1 to 4 of every season are pre-season: no matches, just business (src/core/systems/preseason.ts). Continue stops when pre-season starts (after the last off-season week) and after each pre-season week, and the button reads "Pre-season week N ›". After week 4 it reads "Start the season ›" and plays on to the opening match in week 6.
+- Each week brings one update in a pixel window (and the inbox):
+  1. Welcome back: the board's new targets, sponsor offers waiting, staff in the last year of contract.
+  2. Transfer targets: the top of the scouts' shortlist with OVR/POT, bids for your players, and the squad size.
+  3. Staff market: the staff pool is refreshed, and any candidate 5+ levels better than yours is listed.
+  4. Ready for kick-off: the opening match, the squad strength rank, injuries and contracts ending this season.
+- The Hub shows a PRE-SEASON N/4 chip. The window has an "Inbox · N to decide" button when decisions are waiting.
+
 ### 13.3a Hall of Fame **[Agreed]**
 - Club > History has a "Hall of Fame" button at the top. The page has a narrow one-column list of the 12 categories on the left (all the same size) and the selected ranking on the right (swipe also works). It ranks the top 10 of everyone who has played for your club: appearances, goals (with goals per game), assists, clean sheets (keepers), longest serving, highest OVR, best season (average rating, 8+ apps), goals in a season, trophies (league titles and cups while he was at the club), highest wage, record signings and record sales. Each row shows the years at the club and where he is now (at the club / now at X / free agent / retired); tapping opens the player while he is still in the database.
 - Ledger: src/core/systems/hof.ts, stored in the save (ext.hof), synced weekly after the weekly systems so a player's last games before a transfer or retirement count. Players who left or retired keep their records.

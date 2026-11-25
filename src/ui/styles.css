@@ -680,3 +680,16 @@ tr.me .pw-bar i { background: var(--gold, #ffcc4d); }
 .wel-go { font-family: var(--px); animation: pulse 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .welcome, .wel-crest, .wel-tile, .wel-go { animation: none !important; } }
 .topbar .help-btn { font-family: var(--px); font-size: 12px; color: var(--gold); width: 24px; height: 24px; padding: 0; border: 2px solid var(--line); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; }
+
+/* pre-season weekly update (DESIGN 13.2za) */
+.pre-head { position: relative; padding: 40px 14px 14px; text-align: center; background: repeating-linear-gradient(90deg, #22874a 0 24px, #1f7a43 24px 48px); border-bottom: 3px solid #070b18; }
+.pre-ribbon { top: 10px; }
+.pre-pips { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+.pre-pips i { width: 26px; height: 8px; background: #0b3d22; border: 2px solid #070b18; }
+.pre-pips i.on { background: var(--gold); }
+.pre-ico { font-size: 34px; line-height: 1; margin: 4px 0 8px; animation: pop .45s .1s ease-out both; }
+.pre-body { padding-top: 14px; gap: 4px; }
+.pre-gap { height: 6px; }
+.pre-li { font-size: 13px; }
+.pre-li i { border-color: var(--gold); background: transparent; }
+.pre-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }

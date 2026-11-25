@@ -13,7 +13,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   const expect = (name, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : `(got ${JSON.stringify(got)}, want ${JSON.stringify(want)})`); if (!ok) failed++; };
   const week = async () => (await p.textContent('.topbar .sub')).match(/Wk (\d+)/)[1];
   const w0 = await week();
-  await p.tap('button.continue'); await p.waitForTimeout(1500);
+  await p.tap('button.continue'); await p.waitForTimeout(1500); if (await p.$('.pre-win')) { await p.click('.pre-win .wel-go'); await p.waitForTimeout(400); }
   expect('popup appears after Continue (pre-season decision)', await p.locator('.dpop').count(), 1);
   const w1 = await week();
   expect('popup shows 2+ choices with consequence chips', (await p.locator('.dchoice').count()) >= 2 && (await p.locator('.dchoice .dchip').count()) >= 2, true);
@@ -25,7 +25,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   } else console.log('SKIP player tap (first decision is not about a player)');
   await p.tap('.later'); await p.waitForTimeout(400);
   expect('Decide later hides the popup', await p.locator('.dpop').count(), 0);
-  await p.tap('button.continue'); await p.waitForTimeout(600);
+  await p.tap('button.continue'); await p.waitForTimeout(600); if (await p.$('.pre-win')) { await p.click('.pre-win .wel-go'); await p.waitForTimeout(400); }
   expect('Continue with an open decision shows the popup instead of playing on', [await p.locator('.dpop').count(), await week()], [1, w1]);
   await p.tap('.dchoice >> nth=0'); await p.waitForTimeout(500);
   expect('picking a choice shows the outcome stamp', (await p.locator('.dpop .rstamp .rstamp-text').textContent()).length > 5, true);
