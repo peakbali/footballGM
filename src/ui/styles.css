@@ -619,3 +619,6 @@ table.tbl.compact { font-size: 12px; }
 .fac-cash { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
 .fac-cash span { font-size: 10px; color: var(--dim); }
 .fac-cash .money { font-size: 15px; }
+.pw-bar { height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; }
+.pw-bar i { display: block; height: 100%; background: var(--green, #3fbf6f); }
+tr.me .pw-bar i { background: var(--gold, #ffcc4d); }

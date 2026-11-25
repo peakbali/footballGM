@@ -1,12 +1,13 @@
 import { SwipePages } from '../swipe';
 import { useState } from 'preact/hooks';
 import { computeTable } from '../../core/league';
+import { autoPick, teamOvr } from '../../core/selection';
 import { CAL, buildSquadIndex } from '../../core/state';
 import { Badge, Card, Form } from '../components';
 import { nav, useStore } from '../store';
 import type { Fixture } from '../../core/types';
 
-const SEGS = ['table', 'fixtures', 'stats', 'history'] as const;
+const SEGS = ['table', 'power', 'fixtures', 'stats', 'history'] as const;
 export function LeagueScreen() {
   const st = useStore();
   const s = st.state!;
@@ -31,6 +32,7 @@ export function LeagueScreen() {
       </div>
       <SwipePages keys={SEGS} value={seg} onChange={setSeg}>
       {seg === 'table' && <TableView div={div} />}
+      {seg === 'power' && <PowerView div={div} />}
       {seg === 'fixtures' && <FixturesView div={div} />}
       {seg === 'stats' && <StatsView div={div} />}
       {seg === 'history' && <HistoryView />}
@@ -68,6 +70,41 @@ function TableView({ div }: { div: number }) {
       <div class="tiny dim" style={{ marginTop: 8 }}>
         <span class="green">▌</span>{div > 1 ? 'Promoted' : 'Champion'} {div > 1 && <><span style={{ color: 'var(--blue)' }}>▌</span>Playoffs </>}<span class="red">▌</span>{div < 10 ? 'Relegated' : 'Drop to regional pool'}
       </div>
+    </Card>
+  );
+}
+
+/** Power ranking (DESIGN 13.2w): every club's team OVR, the same number the Formation page shows for your XI. */
+function PowerView({ div }: { div: number }) {
+  const s = useStore().state!;
+  const lg = s.leagues[div - 1];
+  const idx = buildSquadIndex(s);
+  const table = computeTable(s, lg);
+  const played = table.some((r) => r.p > 0);
+  const pos = new Map(table.map((r, i) => [r.clubId, played ? i + 1 : '-']));
+  const rows = lg.clubIds
+    .map((id) => ({ id, ovr: teamOvr(autoPick(idx.get(id) ?? [], s.clubs[id].formation, 7, id === s.userClubId)) }))
+    .sort((a, b) => b.ovr - a.ovr);
+  const top = rows[0]?.ovr ?? 1;
+  return (
+    <Card>
+      <table class="tbl">
+        <thead>
+          <tr><th class="l">#</th><th class="l">Club</th><th class="l">Strength</th><th>OVR</th><th>Pos</th></tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.id} class={r.id === s.userClubId ? 'me' : ''} onClick={() => nav.push({ kind: 'club', id: r.id })}>
+              <td class="l dim">{i + 1}</td>
+              <td class="l club">{s.clubs[r.id].short}</td>
+              <td class="l" style={{ width: '34%' }}><div class="pw-bar"><i style={{ width: `${Math.max(4, 100 - (top - r.ovr) * 8)}%` }} /></div></td>
+              <td><b>{Math.round(r.ovr)}</b></td>
+              <td class="dim">{pos.get(r.id)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div class="tiny dim" style={{ marginTop: 8 }}>Team OVR of each club's best available XI in its formation. Pos is the current league position.</div>
     </Card>
   );
 }

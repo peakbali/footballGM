@@ -1413,3 +1413,6 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 ### 13.2v Gentler wage curve and a tighter free agent pool **[Agreed]**
 - Wages: the same player's market wage rises by an even 1.4x per division up the pyramid (anchored on division 9 at OVR 40), so a division 1 club pays about 15x what a division 9 club pays for the same player (was about 46x, with uneven steps). Within a division, wage still rises about 11% per OVR point. Prize money is scaled from the new average starter wage.
 - Free agents: an unattached player won't join you if his OVR is more than your division's average plus 4 (plus 6 for players aged 31 and over); he waits for a bigger club. Veterans (33+) will drop at most 4 divisions below their natural level (others 2). In division 9 the best signable free agents are now about 44-46 OVR at the start and 41-45 later, against good starters at 42-45 (before: 58-64).
+
+### 13.2w League power ranking **[Agreed]**
+- League page has a Power tab between Table and Fixtures: every club in the chosen division sorted by team OVR (best available XI in its own formation, the same number the Formation page shows for your club), with a strength bar, your club highlighted in gold, and each club's current league position. Tap a row to open the club.
