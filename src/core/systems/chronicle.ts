@@ -3,6 +3,7 @@ import { squadOf, type GameState } from '../state';
 import { registerSystem } from '../systems';
 import { INCOME_CATS, COST_CATS, type ClubSeasonRecord } from '../types';
 import { boardState } from './board';
+import { prizeMoney } from './finance';
 import { ROUND_NAMES, type CupState } from './cup';
 
 /** Club history, records and the data for the end-of-season reel (DESIGN 12.3). */
@@ -27,6 +28,8 @@ export interface UserSeason {
   bigWin?: { text: string; margin: number };
   income: number;
   costs: number;
+  /** league prize money for the final position (paid at season end) */
+  prize?: number;
   cashStart: number;
   cashEnd: number;
   avgOvr: number;
@@ -113,7 +116,7 @@ export function recordSeason(s: GameState): UserSeason {
   const us: UserSeason = {
     season: s.season, div: rec.div, league: lg.name, pos: rec.pos, outcome: rec.outcome,
     p: rec.p, w: rec.w, d: rec.d, l: rec.l, gf: rec.gf, ga: rec.ga, pts: rec.pts,
-    cs, avgAtt, bestAtt, bigWin, income, costs,
+    cs, avgAtt, bestAtt, bigWin, income, costs, prize: prizeMoney(rec.div, rec.pos, lg.clubIds.length),
     cashStart: (s.ext.cashStart as number | undefined) ?? user.cash, cashEnd: user.cash, avgOvr,
     table: t.map((r) => ({ id: r.clubId, short: s.clubs[r.clubId].short, pts: r.pts, gd: r.gf - r.ga })),
     stars: {

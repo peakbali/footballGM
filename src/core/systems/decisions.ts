@@ -1,7 +1,6 @@
 import { ECONOMY, marketWage, playerValue, roundMoney } from '../data/economy';
 import { DIV_AVG_OVR } from '../data/pyramid';
 import type { Position } from '../data/positions';
-import { LINE } from '../data/positions';
 import { generatePlayer } from '../generate';
 import { clamp, hashSeed, Rng } from '../rng';
 import { addMessage, injurePlayer } from '../season';
@@ -9,11 +8,11 @@ import { buildSquadIndex, CAL, invalidateSquads, isWindowOpen, squadOf, type Gam
 import { registerSystem } from '../systems';
 import type { InboxMessage, Player } from '../types';
 import { boardState } from './board';
-import { applyContract, askingWage, contractAsk, type ContractOffer } from './contracts';
+import { applyContract, contractAsk, type ContractOffer } from './contracts';
 import { dirtyPlayers } from './dirty';
 import { txn } from './finance';
 import { academyCap } from './people';
-import { acceptIncoming, aiBuyerFor, askingPrice, completeDeal, counterIncoming, makeIncomingOffer, rejectIncoming } from './transfers';
+import { acceptIncoming, aiBuyerFor, counterIncoming, makeIncomingOffer, rejectIncoming } from './transfers';
 
 /**
  * Decision events: short popups with 2-3 choices and visible consequences (DESIGN 14).
@@ -29,6 +28,8 @@ export interface DecisionCtx {
   amount?: number;
   amount2?: number;
   pos?: Position;
+  /** free-form key (window_news: which window event) */
+  key?: string;
 }
 export interface Chip {
   t: string;
@@ -47,9 +48,7 @@ interface DecisionDef {
   cat: InboxMessage['cat'];
   phases: Phase[];
   weight: number;
-  /** only in the last week of a transfer window */
-  finalWeek?: boolean;
-  from(s: GameState, c: DecisionCtx): NonNullable<InboxMessage['from']>;
+  from(s: GameState, c: DecisionCtx): InboxMessage['from'];
   make(s: GameState, rng: Rng): DecisionCtx | null;
   title(s: GameState, c: DecisionCtx): string;
   body(s: GameState, c: DecisionCtx): string;
@@ -79,7 +78,6 @@ const approve = (s: GameState, d: number) => {
   const b = boardState(s);
   b.approval = clamp(b.approval + d, 0, 100);
 };
-const terms = (wage: number, role: ContractOffer['role']): ContractOffer => ({ wage, years: 3, clauses: {}, role });
 const gone = (): Choice[] => [{ label: 'Close', chips: [meh('No longer relevant')], apply: () => 'Nothing came of it.' }];
 
 function register(d: DecisionDef) {
@@ -232,58 +230,6 @@ register({
 });
 
 register({
-  type: 'swap_offer', cat: 'Transfers', phases: ['window'], weight: 2,
-  from: (s, c) => ({ kind: 'club', club: c.club, pid: c.pid2 }),
-  make: (s, rng) => {
-    const squad = firstTeam(s).sort(byOvr);
-    const mine = rng.pick(squad.filter((p, i) => i > 2 && i < 18 && p.contract?.type === 'permanent'));
-    if (!mine) return null;
-    const lg = s.leagues.find((l) => l.clubIds.includes(s.userClubId))!;
-    const idx = buildSquadIndex(s);
-    const rivals = rng.shuffle(lg.clubIds.filter((id) => id !== s.userClubId)).slice(0, 8);
-    for (const id of rivals) {
-      const theirs = (idx.get(id) ?? []).filter((q) => !q.academy && q.contract?.type === 'permanent' && LINE[q.pos] === LINE[mine.pos] && q.id !== mine.id && Math.abs(q.ovr - mine.ovr) <= 4 && q.ovr >= mine.ovr - 1);
-      const q = theirs.sort((a, b) => b.pot - a.pot)[0];
-      if (!q) continue;
-      const diff = mine.value - q.value; // > 0: they pay us
-      return { type: 'swap_offer', pid: mine.id, pid2: q.id, club: id, amount: Math.round(diff >= 0 ? diff * 0.8 : diff * 1.1) };
-    }
-    return null;
-  },
-  title: (s, c) => `${s.clubs[c.club!]?.short ?? 'A rival'} propose a swap`,
-  body: (s, c) => {
-    const a = player(s, c.pid), b = player(s, c.pid2);
-    if (!a || !b) return 'The proposal has lapsed.';
-    return `${s.clubs[c.club!].name} offer ${name(b)} (${b.pos}, ${s.season - b.birthYear}, OVR ${b.ovr}) for ${name(a)}${c.amount! >= 0 ? ` and will add ${fmt(c.amount!)}` : ` if you add ${fmt(-c.amount!)}`}.`;
-  },
-  choices: (s, c) => {
-    const a = player(s, c.pid), b = player(s, c.pid2);
-    if (!a || !b || a.clubId !== s.userClubId || b.clubId !== c.club) return gone();
-    const ageA = s.season - a.birthYear, ageB = s.season - b.birthYear;
-    return [
-      {
-        label: 'Do the swap',
-        chips: [meh(`OVR ${a.ovr} → ${b.ovr}`), meh(`Age ${ageA} → ${ageB}`), meh(`POT ${a.pot} → ${b.pot}`), c.amount! >= 0 ? good(`+${fmt(c.amount!)}`) : bad(`−${fmt(-c.amount!)}`)],
-        apply: (s2) => {
-          const rival = c.club!;
-          const wageA = a.contract!.wage;
-          const o1 = { id: s2.nextOfferId++, pid: a.id, seller: s2.userClubId, buyer: rival, type: 'permanent' as const, fee: 0, status: 'accepted' as const, round: 1, week: s2.week, season: s2.season };
-          const e1 = completeDeal(s2, o1, terms(wageA, 'starter'));
-          if (e1) return e1;
-          const o2 = { id: s2.nextOfferId++, pid: b.id, seller: rival, buyer: s2.userClubId, type: 'permanent' as const, fee: 0, status: 'accepted' as const, round: 1, week: s2.week, season: s2.season };
-          const e2 = completeDeal(s2, o2, terms(askingWage(s2, b, s2.userClubId), 'starter'));
-          if (e2) return e2;
-          txn(s2, c.amount! >= 0 ? 'sales' : 'purchases', c.amount!);
-          mood(b, 6);
-          return `${name(b)} arrives and ${a.last} moves on.`;
-        },
-      },
-      { label: 'Decline', chips: [meh('Nothing changes')], apply: () => 'You turn the swap down.' },
-    ];
-  },
-});
-
-register({
   type: 'wants_leave', cat: 'Squad', phases: ['window', 'season'], weight: 2,
   from: (s, c) => ({ kind: 'player', pid: c.pid }),
   make: (s, rng) => {
@@ -322,46 +268,6 @@ register({
     return [
       { label: 'Accept the extension', chips: [good(`−${fmt(cut)}/wk wages`), good('Contract +2 years'), good('Morale +6')], apply: () => { p.contract!.wage -= cut; p.contract!.endSeason += 2; mood(p, 6); return `${p.last} signs until ${p.contract!.endSeason + 1}.`; } },
       { label: 'Not now', chips: [meh('Contract runs down'), bad('Morale −2')], apply: () => { mood(p, -2); return `${p.last} understands, but says he will not wait forever.`; } },
-    ];
-  },
-});
-
-register({
-  type: 'last_day_deal', cat: 'Transfers', phases: ['window'], weight: 1, finalWeek: true,
-  from: () => ({ kind: 'scout' }),
-  make: (s, rng) => {
-    const squad = firstTeam(s).sort(byOvr);
-    const floor = squad[Math.min(10, squad.length - 1)]?.ovr ?? 0;
-    const user = s.clubs[s.userClubId];
-    const cands: Player[] = [];
-    for (const lg of s.leagues) {
-      if (lg.div < user.div - 1 || lg.div > user.div + 1) continue;
-      for (const id of lg.clubIds) {
-        if (id === user.id) continue;
-        for (const q of buildSquadIndex(s).get(id) ?? []) if (!q.academy && q.ovr > floor && q.ovr <= floor + 6 && s.season - q.birthYear <= 30) cands.push(q);
-      }
-    }
-    if (!cands.length) return null;
-    const q = rng.pick(cands);
-    return { type: 'last_day_deal', pid: q.id, club: q.clubId ?? undefined, amount: Math.round(askingPrice(s, q) * 0.7) };
-  },
-  title: () => 'Deadline-day bargain',
-  body: (s, c) => { const q = player(s, c.pid); return q ? `With hours left in the window, ${s.clubs[c.club!].name} will let ${name(q)} (${q.pos}, ${s.season - q.birthYear}, OVR ${q.ovr}) go for ${fmt(c.amount!)}, well below his price.` : 'The deal fell through.'; },
-  choices: (s, c) => {
-    const q = player(s, c.pid);
-    if (!q || q.clubId !== c.club) return gone();
-    const cash = s.clubs[s.userClubId].cash;
-    return [
-      {
-        label: 'Sign him', chips: [bad(`−${fmt(c.amount!)}`), meh(`OVR ${q.ovr}, POT ${q.pot}`)], disabled: cash < c.amount! ? 'Not enough cash' : undefined,
-        apply: (s2) => {
-          const o = { id: s2.nextOfferId++, pid: q.id, seller: c.club!, buyer: s2.userClubId, type: 'permanent' as const, fee: c.amount!, status: 'accepted' as const, round: 1, week: s2.week, season: s2.season };
-          s2.offers.push(o);
-          const err = completeDeal(s2, o, terms(askingWage(s2, q, s2.userClubId), 'starter'));
-          return err ?? `${name(q)} signs on deadline day.`;
-        },
-      },
-      { label: 'Let it go', chips: [meh('Nothing changes')], apply: () => 'The window closes without a deal.' },
     ];
   },
 });
@@ -546,6 +452,97 @@ export function contractNotices(s: GameState) {
   for (const id of Object.keys(st)) if (!s.players.get(+id) || s.players.get(+id)!.clubId !== s.userClubId) delete st[+id];
 }
 
+
+// ---------------- transfer window news (DESIGN 13.2p): a popup when a window opens and when it shuts
+
+const WINDOW_TEXT: Record<string, [string, string]> = {
+  summer_open: ['Summer transfer window open', 'Clubs can buy and sell players again until the end of August (week 9). Bids for your players will start to come in.'],
+  summer_close: ['Summer transfer window closed', 'The summer window has shut. Until January only free agents and loans can come in.'],
+  winter_open: ['January transfer window open', 'The January window is open for four weeks, until week 30. Time to strengthen for the run-in.'],
+  winter_close: ['January transfer window closed', 'The January window has shut. The squad you have now finishes the season.'],
+};
+
+register({
+  type: 'window_news', cat: 'Transfers', phases: [], weight: 0, // posted by windowNews, never rolled
+  from: () => undefined,
+  make: () => null,
+  title: (s, c) => WINDOW_TEXT[c.key ?? '']?.[0] ?? 'Transfer window',
+  body: (s, c) => WINDOW_TEXT[c.key ?? '']?.[1] ?? '',
+  choices: () => [{ label: 'Got it', chips: [], apply: () => 'Noted.' }],
+});
+
+/** Posted in the week before the change, so the popup shows when the new week (open or shut) appears. */
+export function windowNews(s: GameState) {
+  const key =
+    s.week === CAL.summerWindowStart - 1 ? 'summer_open'
+    : s.week === CAL.summerWindowEnd ? 'summer_close'
+    : s.week === CAL.winterWindow[0] - 1 ? 'winter_open'
+    : s.week === CAL.winterWindow[1] ? 'winter_close'
+    : null;
+  if (!key) return;
+  // an older one nobody answered is out of date now
+  for (const m of pendingDecisions(s)) if ((m.action?.data as DecisionCtx | undefined)?.type === 'window_news') { m.resolved = true; m.read = true; m.pick = 'Got it'; }
+  const ctx: DecisionCtx = { type: 'window_news', key };
+  const d = decisionDef('window_news')!;
+  addMessage(s, { cat: d.cat, title: d.title(s, ctx), body: d.body(s, ctx), action: { kind: 'decision', data: ctx } });
+}
+
+// ---------------- life events (DESIGN 13.2p): two a season, a player's news and a chance to send a gift
+
+interface LifeKind { key: string; title: (p: Player) => string; body: (p: Player) => string; boost: number; cost: number; young?: boolean; old?: boolean }
+const LIFE: LifeKind[] = [
+  { key: 'wedding', title: (p) => `${p.last} is getting married`, body: (p) => `${name(p)} is marrying his long-time partner this weekend. The whole dressing room is talking about it.`, boost: 12, cost: 8 },
+  { key: 'baby', title: (p) => `${p.last} becomes a father`, body: (p) => `${name(p)} and his partner have welcomed a baby. He is over the moon.`, boost: 12, cost: 6 },
+  { key: 'birthday', title: (p) => `Happy birthday, ${p.last}`, body: (p) => `${name(p)} turns a year older this week and the lads have a cake ready in the canteen.`, boost: 6, cost: 2 },
+  { key: 'house', title: (p) => `${p.last} buys his first house`, body: (p) => `${name(p)} has just got the keys to a new house near the training ground.`, boost: 8, cost: 4, young: true },
+  { key: 'degree', title: (p) => `${p.last} finishes his degree`, body: (p) => `${name(p)} has been studying in the evenings and has just passed his final exams.`, boost: 8, cost: 3 },
+  { key: 'charity', title: (p) => `${p.last} runs a charity marathon`, body: (p) => `${name(p)} ran a marathon for the local children's hospital on his day off.`, boost: 8, cost: 4 },
+  { key: 'driving', title: (p) => `${p.last} passes his driving test`, body: (p) => `${name(p)} finally passed his driving test, at the fourth attempt.`, boost: 6, cost: 2, young: true },
+  { key: 'family', title: (p) => `${p.last}'s family move over`, body: (p) => `${name(p)}'s parents have moved to town to be closer to him.`, boost: 8, cost: 3 },
+  { key: 'anniversary', title: (p) => `${p.last}'s ten years in the game`, body: (p) => `${name(p)} marks ten years as a professional this week.`, boost: 8, cost: 5, old: true },
+];
+
+register({
+  type: 'life_event', cat: 'Squad', phases: [], weight: 0, // posted by lifeEvents, never rolled
+  from: (s, c) => ({ kind: 'player', pid: c.pid }),
+  make: (s, rng) => {
+    const t = firstTeam(s);
+    if (!t.length) return null;
+    const p = rng.pick(t);
+    const age = s.season - p.birthYear;
+    const kinds = LIFE.map((k, i) => ({ k, i })).filter(({ k }) => (!k.young || age <= 25) && (!k.old || age >= 27));
+    const { i } = rng.pick(kinds);
+    return { type: 'life_event', pid: p.id, amount: i, amount2: Math.max(20, roundMoney(eco(s).wage * LIFE[i].cost)) };
+  },
+  title: (s, c) => { const p = player(s, c.pid); return p ? LIFE[c.amount ?? 0].title(p) : 'Player news'; },
+  body: (s, c) => { const p = player(s, c.pid); return p ? `${LIFE[c.amount ?? 0].body(p)} Do you want to mark it?` : 'He has since left the club.'; },
+  choices: (s, c) => {
+    const p = player(s, c.pid);
+    if (!p || p.clubId !== s.userClubId) return gone();
+    const k = LIFE[c.amount ?? 0];
+    const gift = c.amount2 ?? 50;
+    const pals = firstTeam(s).filter((x) => x.id !== p.id && x.nat === p.nat).slice(0, 3);
+    return [
+      { label: `Send a gift (${fmt(gift)})`, chips: [bad(`−${fmt(gift)}`), good(`${p.last} morale +${k.boost}`), good('Squad morale +1')], apply: (s2) => { txn(s2, 'other_out', -gift); mood(p, k.boost); moodAll(s2, 1); return `${p.last} is delighted with the gift and thanks you in front of the whole squad.`; } },
+      { label: 'Send a card', chips: [good(`${p.last} morale +${Math.round(k.boost / 3)}`)], apply: () => { mood(p, Math.round(k.boost / 3)); pals.forEach((x) => mood(x, 1)); return `${p.last} is happy you remembered.`; } },
+      { label: 'Do nothing', chips: [bad(`${p.last} morale −2`)], apply: () => { mood(p, -2); return `${p.last} notices that nobody from the club said anything.`; } },
+    ];
+  },
+});
+
+/** Two life events a season, on weeks picked when the season starts (one in each half). */
+export function lifeEvents(s: GameState, rng: Rng) {
+  let st = s.ext.life as { season: number; weeks: number[] } | undefined;
+  if (!st || st.season !== s.season) {
+    const r = new Rng(hashSeed(s.seed, s.season, 4242));
+    st = { season: s.season, weeks: [r.int(6, 24), r.int(30, 46)] };
+    s.ext.life = st;
+  }
+  if (!st.weeks.includes(s.week)) return;
+  if (firstTeam(s).length < 11) return;
+  fire(s, rng, decisionDef('life_event')!);
+}
+
 // ---------------- engine
 
 export function pendingDecisions(s: GameState): InboxMessage[] {
@@ -609,7 +606,7 @@ function fire(s: GameState, rng: Rng, d: DecisionDef): boolean {
   return true;
 }
 
-/** Roll this week's decision events (at most one, two in the last week of a window). */
+/** Roll this week's decision events (at most one). */
 export function rollDecisions(s: GameState, rng: Rng) {
   // contract reminders have their own pace and do not hold back the other events
   if (pendingDecisions(s).filter((m) => (m.action?.data as DecisionCtx | undefined)?.type !== 'contract_expiring').length >= 2) return;
@@ -622,7 +619,7 @@ export function rollDecisions(s: GameState, rng: Rng) {
   else if (phase === 'window') p = 0.35;
   else p = 0.12;
   const last = state(s).last;
-  const ok = (d: DecisionDef) => !d.finalWeek && (last[d.type] == null || absWeek(s) - last[d.type] >= 20);
+  const ok = (d: DecisionDef) => d.weight > 0 && (last[d.type] == null || absWeek(s) - last[d.type] >= 20);
   const phases: Phase[] = phase === 'pre' ? ['pre', 'window'] : [phase];
   if (rng.chance(p)) {
     const cands = DEFS.filter((d) => ok(d) && d.phases.some((x) => phases.includes(x)));
@@ -633,17 +630,14 @@ export function rollDecisions(s: GameState, rng: Rng) {
       left.splice(left.indexOf(d), 1);
     }
   }
-  const finalWeek = w === CAL.summerWindowEnd || w === CAL.winterWindow[1] || w === CAL.weeks;
-  if (finalWeek && rng.chance(0.7)) {
-    const d = DEFS.find((x) => x.finalWeek && (last[x.type] == null || absWeek(s) - last[x.type] >= 20));
-    if (d) fire(s, rng, d);
-  }
 }
 
 registerSystem({
   name: 'decisions',
   weekly(s, rng) {
     contractNotices(s);
+    windowNews(s);
+    lifeEvents(s, rng);
     rollDecisions(s, rng);
   },
 });

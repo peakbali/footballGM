@@ -143,6 +143,7 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
       const from = Math.max(0, Math.min(me - 3, u.table.length - 7));
       const rows = u.table.slice(from, from + 7);
       const pos = useCount(u.pos, 700, 500);
+      const prize = useCount(u.prize ?? 0, 1400, 1300);
       return (
         <div class={`reel-body pg0 ${up ? 'up' : u.outcome === 'relegated' ? 'down' : ''}`}>
           {up && <div class="rays" aria-hidden="true" />}
@@ -160,6 +161,13 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
               })}
             </tbody>
           </table>
+          {u.prize != null && (
+            <div class="prize-cheque">
+              <Fx kind="coins" n={14} />
+              <span class="tiny">League prize money · {ordinal(u.pos)} place</span>
+              <b>+{money(prize)}</b>
+            </div>
+          )}
         </div>
       );
     }
@@ -226,6 +234,7 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
             <span class="tiny dim">{money(u.cashStart)} → {money(u.cashEnd)}</span>
           </div>
           <div class="kv" style={{ marginTop: 12, textAlign: 'left' }}>
+            {u.prize != null && <><span>League prize money</span><span class="gold">+{money(u.prize)}</span></>}
             <span>Biggest signing</span><span>{u.topSigning ? `${u.topSigning.name}, ${money(u.topSigning.fee)}` : 'None'}</span>
             <span>Biggest sale</span><span>{u.topSale ? `${u.topSale.name}, ${money(u.topSale.fee)}` : 'None'}</span>
           </div>
@@ -321,6 +330,7 @@ function Reel({ season }: { season: number }) {
       if (up) { sfx('fanfare'); ts.push(later('sparkle', 700)); }
       else if (u.outcome === 'relegated') { sfx('sad'); ts.push(later('rain', 300)); }
       else sfx('win');
+      if (u.prize) ts.push(later('cash', 1250)); // the prize cheque lands
     } else if (i === 1) ts.push(later('reveal', 150));
     else if (i === 2) { ts.push(later('reveal', 100)); ts.push(later('sparkle', 500)); }
     else if (i === 3) ts.push(later('cash', 250));

@@ -1326,3 +1326,20 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 - Incoming transfer bids in the inbox (Accept / Ask for more) end with the same big Success / Failed stamp as contract
   talks. The answered card stays in place until the inbox is closed, and the result stays on the message afterwards.
   The sell decision popup words its outcomes so they also get a Success or Failed stamp.
+
+### 13.2p Popup changes, life events and league prize money **[Agreed]**
+
+- Removed decision popups: the player swap offer and the deadline-day bargain.
+- **Transfer window popups:** a short "Got it" popup when the summer window opens (week 49) and shuts (after week 9),
+  and when the January window opens (week 27) and shuts (after week 30). It shows on the first week of the new state,
+  with no result stamp and no "Decide later". The "Deadline week" inbox note now comes in the last week of the window.
+- **Life events:** two a season (one in each half, on weeks fixed when the season starts). A first-team player is
+  getting married, becomes a father, has a birthday, buys a house, finishes a degree, runs a charity marathon, passes
+  his driving test, has his family move over, or marks ten years as a pro. Choices: send a gift (costs a few weeks of a
+  typical wage for the division; his morale +6 to +12 and squad +1), send a card (about a third of the boost), or do
+  nothing (morale −2).
+- **League prize money:** paid to every club at season end. The champions get about a season of a typical squad's
+  wages for the division (22 × weekly wage × 52), falling steeply to a tenth of that for the bottom club
+  (0.1 + 0.9 × x^1.6, where x runs from 1 for first to 0 for last). In division 9 that is about £18k for the title
+  against £40k starting cash. The season reel shows it as a gold prize cheque on the first page, and the Money page
+  lists it.
