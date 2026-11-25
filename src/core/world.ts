@@ -10,6 +10,8 @@ import { POSITIONS } from './data/positions';
 import { runInitSystems } from './systems';
 import { FOREIGN, FOREIGN_COLORS } from './data/foreign';
 import { randomName } from './generate';
+import { REAL_WORLD } from './edition';
+import { REAL_SHORT } from './data/pyramid.real';
 
 export interface ClubDef {
   name: string;
@@ -64,11 +66,23 @@ export function nearest<T extends { lat: number; lon: number }>(items: T[], lat:
 }
 
 const PALETTE = ['#c8102e', '#003399', '#ffd200', '#1b5e20', '#ffffff', '#111111', '#6a1b9a', '#ff6f00', '#00838f', '#7b1e3c', '#87ceeb', '#e65100', '#2e7d32', '#0d47a1', '#b71c1c', '#f5f5f5'];
-/** No hand-picked kits: every club's colours come from its name (no real club's colours are copied). */
-const KNOWN_COLORS: Record<string, [string, string]> = {};
+/** Real kits for the web version only (DESIGN 13.2y); fictional clubs get colours from their name. */
+const KNOWN_COLORS: Record<string, [string, string]> = REAL_WORLD ? {
+  Arsenal: ['#ef0107', '#ffffff'], 'Aston Villa': ['#670e36', '#95bfe5'], 'AFC Bournemouth': ['#da291c', '#000000'], Brentford: ['#e30613', '#ffffff'],
+  'Brighton & Hove Albion': ['#0057b8', '#ffffff'], Burnley: ['#6c1d45', '#99d6ea'], Chelsea: ['#034694', '#ffffff'], 'Crystal Palace': ['#1b458f', '#c4122e'],
+  Everton: ['#003399', '#ffffff'], Fulham: ['#ffffff', '#000000'], 'Leeds United': ['#ffffff', '#1d428a'], Liverpool: ['#c8102e', '#f6eb61'],
+  'Manchester City': ['#6cabdd', '#ffffff'], 'Manchester United': ['#da291c', '#fbe122'], 'Newcastle United': ['#241f20', '#ffffff'], 'Nottingham Forest': ['#dd0000', '#ffffff'],
+  Sunderland: ['#eb172b', '#ffffff'], 'Tottenham Hotspur': ['#ffffff', '#132257'], 'West Ham United': ['#7a263a', '#1bb1e7'], 'Wolverhampton Wanderers': ['#fdb913', '#231f20'],
+} : {};
 
 /** Relative strength offsets for well-known clubs at the start (OVR points vs division average). */
-const KNOWN_QUALITY: Record<string, number> = {
+const KNOWN_QUALITY: Record<string, number> = REAL_WORLD ? {
+  'Manchester City': 5, Arsenal: 5, Liverpool: 5, Chelsea: 4, 'Manchester United': 3, 'Tottenham Hotspur': 3, 'Newcastle United': 3, 'Aston Villa': 2.5,
+  'Nottingham Forest': 1, 'Brighton & Hove Albion': 1, 'Crystal Palace': 0.5, Brentford: 0, Fulham: 0, 'AFC Bournemouth': 0, Everton: -0.5, 'West Ham United': 0,
+  'Wolverhampton Wanderers': -1.5, 'Leeds United': -2, Burnley: -3, Sunderland: -2.5,
+  'Leicester City': 3, 'Ipswich Town': 3, 'Southampton': 2.5, 'Sheffield United': 2, Middlesbrough: 1.5, Wrexham: 1, 'Coventry City': 1.5,
+  'Birmingham City': 2, 'Wycombe Wanderers': 1.5, 'Bolton Wanderers': 1.5, 'Stockport County': 1.5, 'Luton Town': 2, 'Plymouth Argyle': 1,
+} : {
   'Oakhaven City': 5, 'Northport United': 5, 'Greywater Rovers': 5, 'Blackmere Wanderers': 4, 'Ironport United': 3, 'Elmhaven Wanderers': 3, 'Brackwater Town': 3, 'Kingsmouth City': 2.5,
   'Coldmere Athletic': 1, 'Westbridge Albion': 1, 'Castlebury City': 0.5, 'Ashcombe Rovers': 0, 'Fenmouth Town': 0, 'Redminster Athletic': 0, 'Easthaven County': -0.5, 'Larkford Albion': 0,
   'Dunholt County': -1.5, 'Saltbridge United': -2, 'Havenford United': -3, 'Stanmouth Rovers': -2.5,
@@ -193,6 +207,7 @@ export function newGame(seed: number, userClubName: string): GameState {
 
   defs.forEach((d, i) => {
     const c = makeClub(i, d, rng);
+    if (REAL_WORLD && REAL_SHORT[c.name]) c.short = REAL_SHORT[c.name];
     s.clubs.push(c);
     if (d.name === userClubName) {
       c.user = true;
@@ -202,6 +217,11 @@ export function newGame(seed: number, userClubName: string): GameState {
       c.formation = '4-4-2';
     }
   });
+
+  // two clubs with the same short name (Eastbourne Town / Eastbourne United) show their full names, cut to fit
+  const shortCount = new Map<string, number>();
+  for (const c of s.clubs) shortCount.set(c.short, (shortCount.get(c.short) ?? 0) + 1);
+  for (const c of s.clubs) if ((shortCount.get(c.short) ?? 0) > 1 && c.short !== c.name) c.short = c.name.replace(/^AFC /, '').slice(0, 16).trim();
 
   // Squads
   for (const c of s.clubs) {
@@ -252,3 +272,4 @@ export function playersOf(s: GameState, clubId: number): Player[] {
 
 /** Re-export for tools. */
 export { signContract };
+

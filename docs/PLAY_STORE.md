@@ -4,7 +4,7 @@ How the Play version works, and every step to publish it.
 
 ## How it fits together
 
-- **The app is a Trusted Web Activity (TWA).** The Android app is a thin shell that opens https://peakbali.github.io/footballGM/ full screen in Chrome. Every push to `main` that deploys GitHub Pages also updates the Play app; a new app bundle is only needed when `twa/twa-manifest.json` changes (icon, colours, package settings).
+- **The app is a Trusted Web Activity (TWA).** The Android app is a thin shell that opens https://peakbali.github.io/footballGM/play/ (the fictional-world build, `npm run build:play`; the site root is the real-names web version, DESIGN 13.2y) full screen in Chrome. Every push to `main` that deploys GitHub Pages also updates the Play app; a new app bundle is only needed when `twa/twa-manifest.json` changes (icon, colours, package settings).
 - **Free first season, then a one-time "Full game" unlock.** No ads.
   - `src/core/gate.ts`: a new career plays its whole first season (including the season review) for free. Continue is then replaced by "Unlock season 2", which opens the paywall (`src/ui/features/paywall.tsx`). The squad, transfers and every screen stay usable; only advancing the calendar is locked.
   - Saves that existed before the gate shipped are marked `legacy` the first time they load and stay fully playable.

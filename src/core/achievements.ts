@@ -5,6 +5,7 @@ import { facState } from './systems/facilities';
 import { boardState } from './systems/board';
 import { userStats, type UserStats } from './systems/stats';
 import type { Player } from './types';
+import { CUP_NAME, REAL_WORLD } from './edition';
 
 /**
  * 100 achievements (DESIGN 13.2h). They are about milestones that every club can reach, never about a
@@ -41,7 +42,7 @@ export const CATS: { key: Cat; label: string; icon: string }[] = [
   { key: 'career', label: 'Career', icon: 'clip' },
   { key: 'league', label: 'League', icon: 'cup' },
   { key: 'matches', label: 'Matches', icon: 'flag' },
-  { key: 'cup', label: 'National Cup', icon: 'cup' },
+  { key: 'cup', label: CUP_NAME, icon: 'cup' },
   { key: 'transfers', label: 'Transfers', icon: 'arrows' },
   { key: 'finance', label: 'Finance', icon: 'coin' },
   { key: 'club', label: 'Club', icon: 'house' },
@@ -122,11 +123,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   a('lose_5', 'Rough Patch', 'Lose 5 league matches in a row.', 1, 'matches', 5, (c) => c.st.bestL, true),
 
   // ---- cup
-  a('cup_r4', 'Cup Run', 'Reach the fourth round of the National Cup.', 1, 'cup', 4, cupReach),
-  a('cup_qf', 'Last Eight', 'Reach the National Cup quarter-finals.', 2, 'cup', 6, cupReach),
-  a('cup_sf', 'Semi-Final Dreams', 'Reach the National Cup semi-finals.', 3, 'cup', 7, cupReach),
-  a('cup_final', 'Cup Finalists', 'Reach the National Cup final.', 3, 'cup', 8, cupReach),
-  a('cup_win', 'Cup Winners', 'Win the National Cup.', 4, 'cup', 1, (c) => count(c.se, (u) => !!u.cup?.won)),
+  a('cup_r4', 'Cup Run', `Reach the fourth round of the ${CUP_NAME}.`, 1, 'cup', 4, cupReach),
+  a('cup_qf', 'Last Eight', `Reach the ${CUP_NAME} quarter-finals.`, 2, 'cup', 6, cupReach),
+  a('cup_sf', REAL_WORLD ? 'Wembley Dreams' : 'Semi-Final Dreams', `Reach the ${CUP_NAME} semi-finals.`, 3, 'cup', 7, cupReach),
+  a('cup_final', 'Cup Finalists', `Reach the ${CUP_NAME} final.`, 3, 'cup', 8, cupReach),
+  a('cup_win', 'Cup Winners', `Win the ${CUP_NAME}.`, 4, 'cup', 1, (c) => count(c.se, (u) => !!u.cup?.won)),
 
   // ---- transfers
   a('buy_1', 'First Signing', 'Buy a player for a fee.', 1, 'transfers', 1, (c) => c.st.buys),

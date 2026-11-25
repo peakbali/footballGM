@@ -1,3 +1,6 @@
+import { REAL_WORLD } from '../edition';
+import { REAL_LEAGUES } from './pyramid.real';
+
 /**
  * A fictional ten-division pyramid (Premier Division = div 1 ... regional Division One = div 10).
  * Every club, stadium and league name is invented; the league structure (how many clubs, which
@@ -16,7 +19,7 @@ export interface LeagueDef {
   clubs: string;
 }
 
-export const LEAGUES: LeagueDef[] = [
+export const FICTIONAL_LEAGUES: LeagueDef[] = [
   {
     key: 'PL', div: 1, name: 'Premier Division', short: 'Premier', lat: 52.5, lon: -1.5,
     clubs: `Northport United|Northport Stadium|53800
@@ -1260,4 +1263,7 @@ Dalsbury Celtic|Dalsbury Lane Ground|450`,
 ];
 
 /** Division OVR bands (DESIGN.md 4.4): average starter OVR per division. */
+/** The pyramid this build plays (DESIGN 13.2y). */
+export const LEAGUES: LeagueDef[] = REAL_WORLD ? REAL_LEAGUES : FICTIONAL_LEAGUES;
+
 export const DIV_AVG_OVR = [0, 80, 72, 66, 61, 56, 52, 48, 44, 40, 36];

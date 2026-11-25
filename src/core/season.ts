@@ -11,6 +11,7 @@ import { dist, nearest } from './world';
 import { POSITIONS, type Position } from './data/positions';
 import { playerValue } from './data/economy';
 import { runWeeklySystems, runSeasonEndSystems, runRolloverSystems, hooks } from './systems';
+import { REAL_WORLD } from './edition';
 
 export interface WeekResult {
   week: number;
@@ -186,7 +187,7 @@ function endSeason(s: GameState) {
   const rec = s.history.find((h) => h.season === s.season && h.clubId === s.userClubId)!;
   const lg = s.leagues[rec.div - 1];
   const txt: Record<string, string> = {
-    champion: rec.div === 1 ? `Champions of the ${lg.name}!` : `Champions! Promoted from the ${lg.name}.`,
+    champion: rec.div === 1 ? (REAL_WORLD ? 'Champions of England!' : `Champions of the ${lg.name}!`) : `Champions! Promoted from the ${lg.name}.`,
     promoted: `Promoted! Finished 2nd in the ${lg.name}.`,
     playoff_winner: 'Promoted through the playoffs!',
     relegated: `Relegated from the ${lg.name}.`,

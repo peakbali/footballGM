@@ -3,6 +3,9 @@ import { newGame, clubsInLeague, startingLeagues } from '../src/core/world';
 import { advanceWeek } from '../src/core/season';
 import { CAL, START_SEASON } from '../src/core/state';
 import { gateBlocks, markLoadedCareer, markNewCareer } from '../src/core/gate';
+import { FICTIONAL_LEAGUES } from '../src/core/data/pyramid';
+import { FICTIONAL_FOREIGN } from '../src/core/data/foreign';
+import { REAL_WORLD } from '../src/core/edition';
 
 const club = clubsInLeague(startingLeagues()[0].key)[0];
 
@@ -31,11 +34,15 @@ describe('free first season gate', () => {
   });
 });
 
-describe('fictional world', () => {
+describe('fictional world (Play build data, DESIGN 13.2y)', () => {
   it('ships no real club or league names', () => {
-    const s = newGame(10, club);
-    const names = s.clubs.map((c) => c.name).concat(s.leagues.map((l) => l.name), s.clubs.map((c) => c.stadium));
+    const names = FICTIONAL_LEAGUES.flatMap((l) => [l.name, ...l.clubs.split('\n').flatMap((x) => x.split('|').slice(0, 2))])
+      .concat(FICTIONAL_FOREIGN.flatMap((l) => [l.name, ...l.clubs.split(';').map((x) => x.split(':')[0])]));
     for (const real of ['Arsenal', 'Liverpool', 'Chelsea', 'Real Madrid', 'Barcelona', 'Bayern', 'Juventus', 'Celtic FC', 'Premier League', 'Championship', 'National League', 'Anfield', 'Wembley'])
       expect(names.some((n) => n.includes(real))).toBe(false);
+  });
+  it('web build plays the real pyramid', () => {
+    expect(REAL_WORLD).toBe(true);
+    expect(newGame(10, club).clubs.some((c) => c.name === 'Arsenal')).toBe(true);
   });
 });

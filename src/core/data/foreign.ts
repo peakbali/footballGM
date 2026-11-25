@@ -1,3 +1,6 @@
+import { REAL_WORLD } from '../edition';
+import { REAL_FOREIGN, REAL_FOREIGN_COLORS } from './foreign.real';
+
 /**
  * Foreign player pools (DESIGN 3.1): clubs abroad exist only as squads in the transfer
  * database. No fixtures are simulated for them. All clubs are fictional; each league is a generic top flight of that country.
@@ -12,7 +15,7 @@ export interface ForeignLeague {
   clubs: string;
 }
 
-export const FOREIGN: ForeignLeague[] = [
+export const FICTIONAL_FOREIGN: ForeignLeague[] = [
   {
     key: 'ESP1', country: 'ESP', name: 'Spanish League', avg: 76, suffix: ['Estadio ', ''],
     clubs: 'CD Miramar:8;Real Riberafuerte:8;Cerromar CF:5;UD Albasol:3;SD Castelrosa:3;Deportivo Sierrarosa:2;Racing Benafuerte:2;CD Torrealta:0;Real Moncillo:1;Torrereda CF:0;UD Riberasol:0;SD Valmar:0;Deportivo Cerrosol:-1;Racing Peñablanca:-1;CD Alcareda:-1;Real Miracillo:-1;Sierraverde CF:-2;UD Castelblanca:-3;SD Loralta:-3;Deportivo Sierramar:-4',
@@ -43,5 +46,6 @@ export const FOREIGN: ForeignLeague[] = [
   },
 ];
 
-/** No hand-picked kits: colours come from the club name (no real club's colours are copied). */
-export const FOREIGN_COLORS: Record<string, [string, string]> = {};
+/** Foreign pools and kits this build plays (DESIGN 13.2y): fictional clubs get colours from their name. */
+export const FOREIGN: ForeignLeague[] = REAL_WORLD ? REAL_FOREIGN : FICTIONAL_FOREIGN;
+export const FOREIGN_COLORS: Record<string, [string, string]> = REAL_WORLD ? REAL_FOREIGN_COLORS : {};

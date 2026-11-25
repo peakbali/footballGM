@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:single": "vite build --mode single",
+    "build:play": "tsc && vite build --mode play",
     "test": "vitest run",
     "typecheck": "tsc",
     "sim": "tsx scripts/simulate.ts",
