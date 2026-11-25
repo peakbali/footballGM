@@ -1,7 +1,7 @@
 import { playerValue, roundMoney } from '../data/economy';
 import { DIV_AVG_OVR } from '../data/pyramid';
 import { addMessage, addNews } from '../season';
-import { clamp, type Rng } from '../rng';
+import type { Rng } from '../rng';
 import { buildSquadIndex, CAL, invalidateSquads, isWindowOpen, squadOf, type GameState } from '../state';
 import { registerSystem } from '../systems';
 import type { Contract, OfferType, Player, TransferOffer, TransferRecord } from '../types';
@@ -274,8 +274,7 @@ export function acceptIncoming(s: GameState, offerId: number): string | null {
 export function rejectIncoming(s: GameState, offerId: number) {
   const o = s.offers.find((x) => x.id === offerId);
   if (o) o.status = 'rejected';
-  const p = o && s.players.get(o.pid);
-  if (p && !p.listed && o!.type === 'permanent') p.morale = clamp(p.morale - (p.personality < 40 ? 12 : 4), 0, 100);
+  // turning a bid down does not upset the player (Khen, 2026-11-25)
 }
 
 /** Counter at a higher fee: AI accepts if still reasonable. */

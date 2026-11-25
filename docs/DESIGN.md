@@ -1400,3 +1400,12 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
   seasonal random swing of ±10 is added. In a new division 9 career, about 280 of 400 free agents qualify.
 - Scout recommendations keep the 30 newest reports (`SCOUTED_MAX`). Each new report goes on top and pushes the
   oldest off the list.
+
+### 13.2u Bid refusals and when to say FAILED **[Agreed]**
+
+- Turning down a bid for one of your players (inbox Reject, the "Refuse" choice in the bid popup, or "Keep him"
+  on a loan request) no longer changes his morale.
+- The red FAILED stamp is kept for a transfer or a negotiation that falls through: bids, loan requests, pay-rise
+  talks, extensions, contract renewals, youth trials, signings and deals. Any other event whose outcome reads badly
+  (a row that drags on, an injury gamble that goes wrong) now shows the neutral DONE stamp (`decisionTone`). Old
+  saves are shown the same way.

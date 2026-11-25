@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { GameState } from '../../core/state';
 import type { InboxMessage } from '../../core/types';
-import { decisionChoices, failRenewal, outcomeTone, pendingDecisions, resolveDecision, signRenewal, type Choice } from '../../core/systems/decisions';
+import { decisionChoices, decisionTone, failRenewal, pendingDecisions, resolveDecision, signRenewal, type Choice } from '../../core/systems/decisions';
 import { ContractTerms } from './contractTerms';
 import { ResultStamp } from '../resultStamp';
 import { CardArt } from '../cardArt';
@@ -70,9 +70,11 @@ export function DecisionCard({ s, m }: { s: GameState; m: InboxMessage }) {
   );
 }
 
+const typeOf = (m: InboxMessage) => (m.action?.data as { type?: string } | undefined)?.type;
+
 export function Outcome({ m }: { m: InboxMessage }) {
   if (!m.pick) return null;
-  return <ResultStamp quiet tone={m.tone ?? outcomeTone(m.outcome)} title={m.pick} text={m.outcome} />;
+  return <ResultStamp quiet tone={decisionTone(typeOf(m), m.outcome, m.tone)} title={m.pick} text={m.outcome} />;
 }
 
 /** A different sound for each kind of popup: offers chime like coins, contract reminders rustle paper, the board is lower. */
@@ -126,7 +128,7 @@ export function DecisionPopup() {
           <h2>{m.title}</h2>
           <div class="dpop-text">{m.body}</div>
           {messagePlayer(s, m) && <div class="tiny dim dpop-hint">Tap {messagePlayer(s, m)!.last}'s picture to open his page</div>}
-          <ChoiceList s={s} m={m} onDone={(out) => { if (out && !info) setResult({ title: m.title, pick: m.pick ?? '', outcome: out, id: m.id, tone: m.tone ?? outcomeTone(out) }); }} />
+          <ChoiceList s={s} m={m} onDone={(out) => { if (out && !info) setResult({ title: m.title, pick: m.pick ?? '', outcome: out, id: m.id, tone: decisionTone(typeOf(m), out, m.tone) }); }} />
           {!info && <button class="linkbtn later" onClick={() => { st.hiddenUpTo = m.id; store.bump(); }}>Decide later</button>}
         </div>
       </div>
