@@ -547,3 +547,22 @@ table.tbl.compact { font-size: 12px; }
 .cyear.on { border-color: var(--gold); color: var(--gold); }
 .cwage { width: 100%; margin: 4px 0; }
 .renewal { background: var(--bg2); border: 2px solid var(--line); border-radius: 4px; padding: 10px; margin-bottom: 8px; }
+/* result stamp (13.2n) */
+.rstamp { --rc: #8e9ad8; position: relative; margin: 8px 0; padding: 14px 12px 12px; border: 3px solid var(--rc); border-radius: 6px; text-align: center;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--rc) 30%, transparent), transparent 70%), color-mix(in srgb, var(--rc) 10%, var(--bg2));
+  box-shadow: 0 0 0 1px #070b18, 0 0 22px color-mix(in srgb, var(--rc) 45%, transparent); animation: rs-glow 1.2s ease-out; }
+.rs-good { --rc: #3ddc84; }
+.rs-bad { --rc: #ff5a64; }
+.rstamp-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 3px solid var(--rc); border-radius: 4px; color: var(--rc);
+  font-family: var(--px); font-size: 22px; text-transform: uppercase; letter-spacing: 1px; transform: rotate(-4deg); background: rgba(7,11,24,.55);
+  text-shadow: 2px 2px 0 #070b18; animation: rs-slam .42s cubic-bezier(.2,1.6,.4,1) both; }
+.rstamp-icon { font-size: 26px; line-height: 1; }
+.rstamp-title { margin-top: 10px; font-size: 16px; font-weight: 700; }
+.rstamp-text { margin-top: 4px; font-size: 15px; line-height: 1.35; color: var(--text); }
+.rstamp.quiet { padding: 8px 10px; margin: 4px 0; animation: none; box-shadow: none; }
+.rstamp.quiet .rstamp-badge { font-size: 13px; padding: 3px 8px; animation: none; border-width: 2px; }
+.rstamp.quiet .rstamp-icon { font-size: 14px; }
+.rstamp.quiet .rstamp-text { font-size: 13px; }
+@keyframes rs-slam { 0% { transform: scale(2.6) rotate(-14deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: scale(1) rotate(-4deg); opacity: 1; } }
+@keyframes rs-glow { 0% { box-shadow: 0 0 0 1px #070b18, 0 0 60px var(--rc); } 100% { box-shadow: 0 0 0 1px #070b18, 0 0 22px color-mix(in srgb, var(--rc) 45%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .rstamp, .rstamp-badge { animation: none; } }

@@ -330,7 +330,102 @@ export type Sfx =
   | 'click' | 'tap' | 'confirm' | 'swipe' | 'page'
   | 'pop' | 'offer' | 'contract' | 'board' | 'achieve'
   | 'goal' | 'win' | 'loss' | 'fanfare' | 'coin' | 'cash' | 'build'
-  | 'reveal' | 'stamp' | 'tick' | 'sparkle' | 'rain' | 'sad' | 'rise';
+  | 'reveal' | 'stamp' | 'tick' | 'sparkle' | 'rain' | 'sad' | 'rise'
+  | 'cheer' | 'boo' | 'hmm';
+
+// ---------- crowd (match results, DESIGN 13.2n): many voices, each a buzzy tone shaped by two vowel formants
+
+/** Gain that follows [time offset, level] points (linear ramps), ending silent. */
+function shape(dest: AudioNode, t: number, pts: [number, number][]) {
+  const g = ctx!.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  for (const [dt, v] of pts) g.gain.linearRampToValueAtTime(Math.max(0.0001, v), t + dt);
+  g.connect(dest);
+  return g;
+}
+
+/** One crowd voice: sawtooth at f0 (pitch follows `glide` multipliers over its length), vibrato, vowel formants. */
+function crowdVoice(dest: AudioNode, t: number, f0: number, dur: number, vowel: [number, number], vol: number, glide: number[], attack: number) {
+  const c = ctx!;
+  const o = c.createOscillator();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(f0 * glide[0], t);
+  glide.forEach((m, i) => { if (i) o.frequency.linearRampToValueAtTime(f0 * m, t + (dur * i) / (glide.length - 1)); });
+  const vib = c.createOscillator();
+  const vd = c.createGain();
+  vib.frequency.value = rnd(4.5, 6.5);
+  vd.gain.value = f0 * 0.015;
+  vib.connect(vd).connect(o.frequency);
+  const g = shape(dest, t, [[attack, vol], [dur * 0.7, vol * 0.8], [dur, 0]]);
+  for (const [f, q, k] of [[vowel[0], 5, 1], [vowel[1], 7, 0.5]] as const) {
+    const bp = c.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = f * rnd(0.92, 1.08);
+    bp.Q.value = q;
+    const kg = c.createGain();
+    kg.gain.value = k;
+    o.connect(bp).connect(kg).connect(g);
+  }
+  o.start(t); vib.start(t);
+  o.stop(t + dur + 0.05); vib.stop(t + dur + 0.05);
+}
+
+/** Crowd bed: filtered noise with a swell. */
+function crowdBed(dest: AudioNode, t: number, type: BiquadFilterType, freq: number, pts: [number, number][]) {
+  const c = ctx!;
+  const src = c.createBufferSource();
+  src.buffer = noise(c);
+  src.loop = true;
+  const f = c.createBiquadFilter();
+  f.type = type;
+  f.frequency.value = freq;
+  f.Q.value = 0.6;
+  src.connect(f).connect(shape(dest, t, pts));
+  src.start(t, Math.random() * 0.5);
+  src.stop(t + pts[pts.length - 1][0] + 0.05);
+}
+
+/** The crowd is many quiet voices: this lifts the whole crowd to sit just above the music. */
+function crowdBus(c: AudioContext, d: AudioNode) {
+  const g = c.createGain();
+  g.gain.value = 3;
+  g.connect(d);
+  return g;
+}
+
+function cheer(d: AudioNode, t: number) {
+  crowdBed(d, t, 'bandpass', 1100, [[0.2, 0.3], [1.6, 0.26], [3, 0]]);
+  for (let i = 0; i < 18; i++) {
+    const st = t + rnd(0, 0.35);
+    crowdVoice(d, st, rnd(170, 340), rnd(1.4, 2.6), [rnd(700, 850), rnd(1100, 1400)], 0.11, [0.9, 1.15, 1.1, 0.95], 0.12);
+  }
+  for (let i = 0; i < 40; i++) { // applause
+    const ct = t + 0.15 + Math.pow(Math.random(), 1.3) * 2.6;
+    noiseHit(d, ct, 0.03, rnd(0.1, 0.2), 'bandpass', rnd(1200, 2600), 1.2);
+  }
+  for (let i = 0; i < 2; i++) { // whistles
+    const wt = t + rnd(0.3, 1.2);
+    const g = shape(d, wt, [[0.04, 0.035], [0.3, 0.03], [0.45, 0]]);
+    osc(g, wt, 'sine', rnd(2000, 2400), 0.45, 0, rnd(2700, 3100));
+  }
+}
+
+function boo(d: AudioNode, t: number) {
+  crowdBed(d, t, 'lowpass', 450, [[0.4, 0.25], [1.8, 0.2], [2.8, 0]]);
+  for (let i = 0; i < 16; i++) {
+    const st = t + rnd(0, 0.4);
+    crowdVoice(d, st, rnd(95, 165), rnd(1.6, 2.4), [rnd(280, 340), rnd(700, 850)], 0.18, [1, 1.02, 0.95, 0.85], 0.35);
+  }
+}
+
+function hmm(d: AudioNode, t: number) {
+  crowdBed(d, t, 'lowpass', 600, [[0.3, 0.1], [1, 0.08], [1.6, 0]]);
+  for (let i = 0; i < 8; i++) {
+    const st = t + rnd(0, 0.25);
+    // closed-mouth "mm": low vowel formants, pitch dips then lifts like a doubtful "hmm?"
+    crowdVoice(d, st, rnd(105, 150), rnd(1, 1.4), [rnd(230, 280), rnd(500, 600)], 0.16, [1, 0.94, 1.05], 0.12);
+  }
+}
 
 let lastTick = 0;
 
@@ -396,6 +491,9 @@ export function sfx(name: Sfx) {
     case 'sparkle': for (let i = 0; i < 6; i++) vibes(d, t + i * 0.08 + rnd(0, 0.03), pick([84, 86, 88, 91, 93, 96]), 0.5, 0.045); break;
     case 'rain': noiseHit(d, t, 2.6, 0.05, 'lowpass', 1400, 0.3); for (let i = 0; i < 10; i++) { const tt = t + rnd(0, 2); const g = env(d, tt, 0.02, 0.05, 0.002); osc(g, tt, 'sine', rnd(1800, 3500), 0.05); } break;
     case 'rise': noiseHit(d, t, 0.6, 0.04, 'bandpass', 400, 0.8, 3000); ep([65, 69, 72, 76], 0.08, 1, 0.1); break;
+    case 'cheer': cheer(crowdBus(c, d), t); ep([67, 72, 76, 79], 0.07, 0.9, 0.07); break;
+    case 'boo': boo(crowdBus(c, d), t); break;
+    case 'hmm': hmm(crowdBus(c, d), t); break;
   }
 }
 

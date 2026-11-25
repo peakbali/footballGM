@@ -212,6 +212,8 @@ export interface InboxMessage {
   /** Decision events: the choice made and what came of it (kept in the inbox history). */
   pick?: string;
   outcome?: string;
+  /** How it went for you: shown as a big success / failed stamp (DESIGN 13.2n). */
+  tone?: 'good' | 'bad' | 'neutral';
 }
 
 export interface NewsItem {

@@ -1,3 +1,4 @@
+import { ResultStamp } from '../resultStamp';
 import { useState } from 'preact/hooks';
 import { applyContract, releaseCost, releasePlayer } from '../../core/systems/contracts';
 import { makeReport, coverage } from '../../core/systems/scouting';
@@ -70,7 +71,7 @@ function RenewScreen({ pid }: { pid: number }) {
   return (
     <Overlay title={`Contract: ${p.last}`} sub={p.contract ? `Now ${money(p.contract.wage)}/wk to June ${p.contract.endSeason + 1}` : ''}>
       {!done && <ContractTerms s={s} p={p} clubId={s.userClubId} title="New contract" onAgreed={(o) => { applyContract(s, p, s.userClubId, o); setDone(`${p.last} signs a new ${o.years}-year deal.`); store.bump(); void store.persist(); }} onFailed={(m) => setDone(m)} />}
-      {done && <Card><div class="px gold" style={{ marginBottom: 10 }}>{done}</div><button class="btn block" onClick={() => nav.pop()}>Done</button></Card>}
+      {done && <Card><ResultStamp tone={/signs/.test(done) ? 'good' : 'bad'} stamp={/signs/.test(done) ? 'Signed' : 'No deal'} text={done} /><button class="btn block" onClick={() => nav.pop()}>Done</button></Card>}
     </Overlay>
   );
 }

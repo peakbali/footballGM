@@ -155,7 +155,7 @@ export function HubScreen() {
         const f = r?.userFixture;
         if (f) {
           const mine = f.home === club.id ? f.hg! - f.ag! : f.ag! - f.hg!;
-          sfx(mine > 0 ? 'win' : mine < 0 ? 'loss' : 'click');
+          sfx(mine > 0 ? 'cheer' : mine < 0 ? 'boo' : 'hmm'); // crowd: cheers, boos, or a doubtful murmur
         }
         if (r?.seasonEnded && openReelIfPending(s)) return;
         if (f) nav.push({ kind: 'match', fixtureId: f.id, after: true });
