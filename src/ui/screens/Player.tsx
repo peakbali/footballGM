@@ -1,4 +1,4 @@
-import { ATTR_GROUPS, ATTR_LABELS, POSITIONS } from '../../core/data/positions';
+import { ATTR_GROUPS, ATTR_LABELS, POSITION_WEIGHTS, POSITIONS } from '../../core/data/positions';
 import { posOvr, familiarityMult } from '../../core/ratings';
 import { Badge, Card, Hex, Overlay, PosPill, Bar } from '../components';
 import { money, nav, useStore } from '../store';
@@ -68,11 +68,13 @@ export function PlayerScreen({ id }: { id: number }) {
             <div class="attrgrid">
               {g.attrs.map((a) => {
                 const v = p.attrs[ATTR_INDEX[a]];
-                return <div class="attr" key={a}><span>{ATTR_LABELS[a]}</span><b style={{ color: v >= 70 ? 'var(--green)' : v >= 50 ? 'var(--text)' : 'var(--dim)' }}>{show(v)}</b></div>;
+                // how much this attribute counts for his natural position (DESIGN 4.3 weights: 3 key, 2 important)
+                const w = POSITION_WEIGHTS[p.pos][a] ?? 0;
+                return <div class={`attr ${w >= 3 ? 'k3' : w === 2 ? 'k2' : ''}`} key={a}><span>{ATTR_LABELS[a]}</span><b style={{ color: v >= 70 ? 'var(--green)' : v >= 50 ? 'var(--text)' : 'var(--dim)' }}>{show(v)}</b></div>;
               })}
             </div>
           </Card>
-        ))
+        )).concat(<div class="tiny dim attr-legend" key="legend"><i class="k3" /> key for a {p.pos} <i class="k2" /> important</div>)
       ) : (
         <Card title="Attributes"><div class="dim small">Scout this player to see his attributes.</div></Card>
       )}
