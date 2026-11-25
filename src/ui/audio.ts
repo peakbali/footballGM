@@ -53,7 +53,7 @@ function ensure(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;
-  if (!ctx) { buildGraph(new AC()); void loadClips(ctx!); }
+  if (!ctx) { buildGraph(new AC()); void loadClips(ctx!); void loadTrack(ctx!).catch(() => undefined); }
   applyVolumes();
   return ctx;
 }
@@ -275,26 +275,69 @@ function tick() {
   }
 }
 
+// ---------- Khen's lo-fi track (DESIGN 13.5d): web build only, like the result clips; the Play build keeps the synth.
+// The file holds the loop with one second of padding on each side (the loop's end before it, its start after it),
+// so looping between LOOP_START and LOOP_END is seamless even if a decoder shifts the audio by a few milliseconds.
+const LOOP_START = 1;
+const LOOP_END = 1 + 4097375 / 44100;
+/** level of the track against the synth music it replaces (both go through musicGain, so the Music slider works) */
+const TRACK_GAIN = 0.8;
+let trackLoading: Promise<AudioBuffer> | null = null;
+let trackSrc: AudioBufferSourceNode | null = null;
+
+function loadTrack(c: BaseAudioContext): Promise<AudioBuffer> {
+  if (!CLIPS_ON) return Promise.reject(new Error('no track in this build'));
+  return (trackLoading ??= clipModule!()
+    .then(({ MUSIC_URL }) => fetch(MUSIC_URL))
+    .then((r) => r.arrayBuffer())
+    .then((b) => c.decodeAudioData(b))
+    .catch((e) => { trackLoading = null; throw e; }));
+}
+
+function startTrack(c: BaseAudioContext, buf: AudioBuffer, at: number, fade = 1.5): AudioBufferSourceNode {
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.loopStart = LOOP_START;
+  src.loopEnd = Math.min(LOOP_END, buf.duration);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0, at);
+  g.gain.linearRampToValueAtTime(TRACK_GAIN, at + fade);
+  src.connect(g).connect(musicGain!);
+  src.start(at, LOOP_START);
+  return src;
+}
+
+function startSynth(c: AudioContext) {
+  if (!style || timer != null) return;
+  beat = 0;
+  prog = pick(style.progressions);
+  beatTime = c.currentTime + 0.1;
+  timer = window.setInterval(tick, 60);
+}
+
 /**
  * Start the background music ('hub') or stop it (null). The music plays continuously across screens, popups, the
  * match report and the season reel; it only pauses when the app goes to the background (and is silent when muted).
  * Calling it again with the same name does nothing, so it never restarts.
  */
 export function music(name: 'hub' | null) {
-  if (name === currentName && (timer != null || !name)) return;
+  if (name === currentName && (timer != null || trackSrc || !name)) return;
   currentName = name;
   if (timer != null) {
     clearInterval(timer);
     timer = null;
   }
+  if (trackSrc) { trackSrc.stop(); trackSrc = null; }
   style = name === 'hub' ? HUB : null;
   if (!style) return;
   const c = ensure();
   if (!c || c.state !== 'running') return; // starts on the first user gesture
-  beat = 0;
-  prog = pick(style.progressions);
-  beatTime = c.currentTime + 0.1;
-  timer = window.setInterval(tick, 60);
+  if (!CLIPS_ON) { startSynth(c); return; }
+  loadTrack(c).then(
+    (buf) => { if (currentName === name && !trackSrc && timer == null) trackSrc = startTrack(c, buf, c.currentTime + 0.05); },
+    () => { if (currentName === name) startSynth(c); },
+  );
 }
 
 // ---------- effects
@@ -408,6 +451,8 @@ function hmm(d: AudioNode, t: number) {
 // dynamic import below is dropped and the mp3s never ship there. Until a clip has decoded, the synth plays.
 declare const __CLIPS__: boolean | undefined;
 const CLIPS_ON = typeof __CLIPS__ === 'undefined' || __CLIPS__;
+// the only reference to the clip module, written on the define itself so the Play build drops it for certain
+const clipModule = (typeof __CLIPS__ === 'undefined' || __CLIPS__) ? () => import('./sfxClips') : null;
 /** playback level of the -3 dBFS clips, matched by loudness (about -27 LUFS each) */
 const CLIP_GAIN = { cheer: 0.25, hmm: 0.5, boo: 0.53 } as const;
 type ClipName = keyof typeof CLIP_GAIN;
@@ -416,7 +461,7 @@ let clipsLoading: Promise<void> | null = null;
 
 function loadClips(c: BaseAudioContext): Promise<void> {
   if (!CLIPS_ON) return Promise.resolve();
-  return (clipsLoading ??= import('./sfxClips').then(({ CLIP_URLS }) => Promise.all(
+  return (clipsLoading ??= clipModule!().then(({ CLIP_URLS }) => Promise.all(
     (Object.keys(CLIP_URLS) as ClipName[]).map((k) => fetch(CLIP_URLS[k]).then((r) => r.arrayBuffer()).then((b) => c.decodeAudioData(b)).then((buf) => { clips[k] = buf; })),
   )).then(() => undefined).catch(() => { clipsLoading = null; }));
 }
@@ -539,6 +584,7 @@ export function installAudio() {
  */
 export async function renderPreview(what: 'music' | Sfx, secs: number, rate = 44100): Promise<AudioBuffer> {
   if (what === 'cheer' || what === 'boo' || what === 'hmm') await loadClips(ctx ?? new OfflineAudioContext(1, 1, rate));
+  const song = what === 'music' && CLIPS_ON ? await loadTrack(ctx ?? new OfflineAudioContext(1, 1, rate)) : null;
   const saved = { ctx, master, musicGain, musicIn, lowpass, sfxGain, reverb, musicVerb, sfxVerb, style, beat, beatTime, prog, lastMusic };
   const oc = new OfflineAudioContext(2, Math.ceil(secs * rate), rate);
   buildGraph(oc);
@@ -547,7 +593,9 @@ export async function renderPreview(what: 'music' | Sfx, secs: number, rate = 44
   musicGain!.gain.value = st.music * 0.8 || 0.48;
   musicVerb!.gain.value = (st.music || 0.6) * 0.12;
   sfxGain!.gain.value = (st.sfx || 0.8) * 0.6;
-  if (what === 'music') {
+  if (song) {
+    startTrack(oc, song, 0, 0.01);
+  } else if (what === 'music') {
     style = HUB; beat = 0; prog = pick(HUB.progressions); beatTime = 0.05;
     while (beatTime < secs - 0.5) { scheduleBeat(beatTime); beatTime += 60 / HUB.bpm; beat++; }
   } else {
