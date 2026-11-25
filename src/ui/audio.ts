@@ -345,8 +345,15 @@ function shape(dest: AudioNode, t: number, pts: [number, number][]) {
 }
 
 /** One crowd voice: sawtooth at f0 (pitch follows `glide` multipliers over its length), vibrato, vowel formants. */
-function crowdVoice(dest: AudioNode, t: number, f0: number, dur: number, vowel: [number, number], vol: number, glide: number[], attack: number) {
+function crowdVoice(dest: AudioNode, t: number, f0: number, dur: number, vowel: [number, number], vol: number, glide: number[], attack: number, top = 1600) {
   const c = ctx!;
+  // a low-pass after the vowel filters keeps the voices round and clear (no buzzy top end)
+  const lp = c.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = top;
+  lp.Q.value = 0.5;
+  lp.connect(dest);
+  dest = lp;
   const o = c.createOscillator();
   o.type = 'sawtooth';
   o.frequency.setValueAtTime(f0 * glide[0], t);
@@ -370,21 +377,6 @@ function crowdVoice(dest: AudioNode, t: number, f0: number, dur: number, vowel: 
   o.stop(t + dur + 0.05); vib.stop(t + dur + 0.05);
 }
 
-/** Crowd bed: filtered noise with a swell. */
-function crowdBed(dest: AudioNode, t: number, type: BiquadFilterType, freq: number, pts: [number, number][]) {
-  const c = ctx!;
-  const src = c.createBufferSource();
-  src.buffer = noise(c);
-  src.loop = true;
-  const f = c.createBiquadFilter();
-  f.type = type;
-  f.frequency.value = freq;
-  f.Q.value = 0.6;
-  src.connect(f).connect(shape(dest, t, pts));
-  src.start(t, Math.random() * 0.5);
-  src.stop(t + pts[pts.length - 1][0] + 0.05);
-}
-
 /** The crowd is many quiet voices: this lifts the whole crowd to sit just above the music. */
 function crowdBus(c: AudioContext, d: AudioNode) {
   const g = c.createGain();
@@ -394,14 +386,10 @@ function crowdBus(c: AudioContext, d: AudioNode) {
 }
 
 function cheer(d: AudioNode, t: number) {
-  crowdBed(d, t, 'bandpass', 1100, [[0.2, 0.3], [1.6, 0.26], [3, 0]]);
-  for (let i = 0; i < 18; i++) {
+  // voices only: no noise bed and no noise claps, so it stays clean (DESIGN 13.2n)
+  for (let i = 0; i < 14; i++) {
     const st = t + rnd(0, 0.35);
     crowdVoice(d, st, rnd(170, 340), rnd(1.4, 2.6), [rnd(700, 850), rnd(1100, 1400)], 0.11, [0.9, 1.15, 1.1, 0.95], 0.12);
-  }
-  for (let i = 0; i < 40; i++) { // applause
-    const ct = t + 0.15 + Math.pow(Math.random(), 1.3) * 2.6;
-    noiseHit(d, ct, 0.03, rnd(0.1, 0.2), 'bandpass', rnd(1200, 2600), 1.2);
   }
   for (let i = 0; i < 2; i++) { // whistles
     const wt = t + rnd(0.3, 1.2);
@@ -411,19 +399,17 @@ function cheer(d: AudioNode, t: number) {
 }
 
 function boo(d: AudioNode, t: number) {
-  crowdBed(d, t, 'lowpass', 450, [[0.4, 0.25], [1.8, 0.2], [2.8, 0]]);
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 12; i++) {
     const st = t + rnd(0, 0.4);
-    crowdVoice(d, st, rnd(95, 165), rnd(1.6, 2.4), [rnd(280, 340), rnd(700, 850)], 0.18, [1, 1.02, 0.95, 0.85], 0.35);
+    crowdVoice(d, st, rnd(95, 165), rnd(1.6, 2.4), [rnd(280, 340), rnd(700, 850)], 0.13, [1, 1.02, 0.95, 0.85], 0.35, 1000);
   }
 }
 
 function hmm(d: AudioNode, t: number) {
-  crowdBed(d, t, 'lowpass', 600, [[0.3, 0.1], [1, 0.08], [1.6, 0]]);
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 7; i++) {
     const st = t + rnd(0, 0.25);
     // closed-mouth "mm": low vowel formants, pitch dips then lifts like a doubtful "hmm?"
-    crowdVoice(d, st, rnd(105, 150), rnd(1, 1.4), [rnd(230, 280), rnd(500, 600)], 0.16, [1, 0.94, 1.05], 0.12);
+    crowdVoice(d, st, rnd(105, 150), rnd(1, 1.4), [rnd(230, 280), rnd(500, 600)], 0.14, [1, 0.94, 1.05], 0.12, 800);
   }
 }
 
