@@ -1382,3 +1382,10 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 - In the Technical, Mental and Physical (and Goalkeeping) cards, attributes that count for the player's natural
   position are highlighted from the OVR weights in 4.3. Key attributes (weight 3) get a gold bar and bold gold name.
   Important ones (weight 2) get a softer gold bar and a light gold name. A small legend under the cards explains it.
+
+### 13.2s Position colours and cash on facility pages **[Agreed]**
+
+- Player page, Positions card: natural positions get a green bar and green text, and accomplished positions a blue
+  bar and blue text. Unfamiliar positions stay plain. A legend sits under the grid.
+- Facility branch pages (Stadium, Training ground, Academy, Commercial) show the club's current cash at the top
+  right of the top bar, where it stays visible while scrolling the upgrades.

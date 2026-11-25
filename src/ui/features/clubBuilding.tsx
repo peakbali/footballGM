@@ -78,7 +78,7 @@ function BranchCard({ s, b }: { s: GameState; b: (typeof BRANCHES)[number] }) {
       <div class="row" style={{ gap: 3, marginBottom: 6 }}>
         {Array.from({ length: 10 }, (_, i) => <div key={i} style={{ flex: 1, height: 6, borderRadius: 1, background: i < lvl ? 'var(--gold)' : 'var(--bg)' }} />)}
       </div>
-      <div class="tiny dim">{b.desc} {BRANCH_STAFF[b.key]}{b.key !== 'stadium' ? ` Cap now ${lvl * 10 + 10}.` : ''} Cash {money(s.clubs[s.userClubId].cash)}.</div>
+      <div class="tiny dim">{b.desc} {BRANCH_STAFF[b.key]}{b.key !== 'stadium' ? ` Cap now ${lvl * 10 + 10}.` : ''}</div>
       {b.key === 'stadium' && gradingNote(s) && <div class="tiny amber" style={{ marginTop: 6 }}>{gradingNote(s)}</div>}
       {b.key === 'training' && lab.level > 0 && (
         <div class="tiny" style={{ marginTop: 4 }}>Skills lab stock: {(['pos', 'stat', 'pers'] as const).map((k) => `${ITEM_LABEL[k]} ${st.stock[k]}/${lab.cap}`).join(' · ')}. New items every {lab.every} weeks. Use them from a player's page.</div>
@@ -124,7 +124,10 @@ function Facilities({ s }: { s: GameState }) {
 function FacilityPage({ branch }: { branch: string }) {
   const s = useStore().state!;
   const b = BRANCHES.find((x) => x.key === branch) ?? BRANCHES[0];
-  return <Overlay title={b.label} sub={`Facilities · upkeep ${money(facilityUpkeep(s))}/wk`}><BranchCard s={s} b={b} /></Overlay>;
+  const cash = s.clubs[s.userClubId].cash;
+  // current cash in the top bar, so each upgrade can be judged against it
+  const right = <div class="fac-cash"><span>Cash</span><b class={`money ${cash < 0 ? 'neg' : ''}`}>{money(cash)}</b></div>;
+  return <Overlay title={b.label} sub={`Facilities · upkeep ${money(facilityUpkeep(s))}/wk`} right={right}><BranchCard s={s} b={b} /></Overlay>;
 }
 registerOverlay('facility', (data) => <FacilityPage branch={data as string} />);
 

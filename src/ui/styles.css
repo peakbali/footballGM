@@ -99,6 +99,15 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; font-varian
 .attrgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
 .attr { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; border-bottom: 1px dotted var(--line); }
 .attr b { font-variant-numeric: tabular-nums; }
+/* player page: positions he can play (natural green, accomplished blue) */
+.attr.pos-n, .attr.pos-a { margin: 0 -6px; padding-left: 6px; padding-right: 6px; border-radius: 3px; }
+.attr.pos-n { background: rgba(61, 220, 132, 0.14); box-shadow: inset 3px 0 0 #3ddc84; }
+.attr.pos-n > span, .attr.pos-n b { color: #3ddc84; font-weight: 700; }
+.attr.pos-a { background: rgba(77, 166, 255, 0.12); box-shadow: inset 3px 0 0 #4da6ff; }
+.attr.pos-a > span, .attr.pos-a b { color: #8cc6ff; }
+.attr:not(.pos-n):not(.pos-a) > span .tiny { color: var(--dim); }
+.attr-legend i.pos-n { background: #3ddc84; }
+.attr-legend i.pos-a { background: #4da6ff; margin-left: 8px; }
 /* player page: attributes that matter for his natural position (DESIGN 4.3 weights) */
 .attr.k3, .attr.k2 { margin: 0 -6px; padding-left: 6px; padding-right: 6px; border-radius: 3px; }
 .attr.k3 { background: rgba(255, 204, 77, 0.14); box-shadow: inset 3px 0 0 var(--gold); }
@@ -605,3 +614,8 @@ table.tbl.compact { font-size: 12px; }
 .pw-restore { align-self: center; }
 .pw-err { color: var(--amber); text-align: center; }
 .pw-stamp { align-self: center; margin: 24px 0 6px; font-family: var(--px); font-size: 26px; color: var(--green); border: 4px solid var(--green); padding: 8px 18px; transform: rotate(-6deg); border-radius: 4px; }
+
+/* facility branch pages: current cash in the top bar */
+.fac-cash { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.fac-cash span { font-size: 10px; color: var(--dim); }
+.fac-cash .money { font-size: 15px; }

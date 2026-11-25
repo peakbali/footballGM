@@ -83,9 +83,11 @@ export function PlayerScreen({ id }: { id: number }) {
           <div class="attrgrid">
             {POSITIONS.map((pos) => {
               const v = Math.round(posOvr(p.attrs, pos) * familiarityMult(p, pos));
-              return <div class="attr" key={pos}><span>{pos} <span class="tiny dim">{p.fam[pos] === 'N' ? 'natural' : p.fam[pos] === 'A' ? 'accomplished' : ''}</span></span><b>{v}</b></div>;
+              const f = p.fam[pos];
+              return <div class={`attr ${f === 'N' ? 'pos-n' : f === 'A' ? 'pos-a' : ''}`} key={pos}><span>{pos} <span class="tiny">{f === 'N' ? 'natural' : f === 'A' ? 'accomplished' : ''}</span></span><b>{v}</b></div>;
             })}
           </div>
+          <div class="tiny dim attr-legend" style={{ margin: '8px 0 0' }}><i class="pos-n" /> natural <i class="pos-a" /> accomplished <span style={{ marginLeft: 8 }}>others: unfamiliar</span></div>
         </Card>
       )}
       {p.career.length > 0 && (
