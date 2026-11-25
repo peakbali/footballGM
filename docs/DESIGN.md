@@ -1416,3 +1416,8 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 
 ### 13.2w League power ranking **[Agreed]**
 - League page has a Power tab between Table and Fixtures: every club in the chosen division sorted by team OVR (best available XI in its own formation, the same number the Formation page shows for your club), with a strength bar, your club highlighted in gold, and each club's current league position. Tap a row to open the club.
+
+### 13.2x Club names with an authentic football feel **[Agreed]**
+- Every club name, stadium and capacity in the pyramid was regenerated (new careers only; existing saves keep their names). Top two divisions are hand-written big-city style names (Northport United, Kingsmouth City); the rest are English-style place names with football suffixes weighted like a real pyramid (Town, United, FC, Athletic, AFC ...; Harriers, Corinthians, Colliery etc. mostly in non-league), plus a few "North / Market / Great X" places.
+- Safety rules: no real club's name, nickname or deliberate lookalike spelling; a blocklist of real club towns is checked when generating; hand-picked kit colours that matched real clubs (English and foreign) are gone, so colours now come from the name; stadium capacities were shifted so they no longer match real grounds. Script kept outside the repo; rerun only with the same rules.
+- Short names drop the suffix (and a leading AFC) when the full name is over 14 letters.

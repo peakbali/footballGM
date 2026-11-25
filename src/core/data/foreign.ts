@@ -43,12 +43,5 @@ export const FOREIGN: ForeignLeague[] = [
   },
 ];
 
-export const FOREIGN_COLORS: Record<string, [string, string]> = {
-  'CD Miramar': ['#ffffff', '#1d2a6b'], 'Real Riberafuerte': ['#a50044', '#004d98'], 'Cerromar CF': ['#cb3524', '#ffffff'],
-  'Eintracht Lindorf': ['#dc052d', '#ffffff'], 'FC Altendorf': ['#fde100', '#000000'], 'SV Altenbach': ['#e32221', '#000000'],
-  'Castelvento Calcio': ['#0068a8', '#000000'], 'Virtus Valvento': ['#ffffff', '#000000'], 'Sporting Cambello': ['#fb090b', '#000000'], 'SS Vernera': ['#12a0d7', '#ffffff'],
-  'Stade Lanpierre': ['#004170', '#da291c'], 'RC Langny': ['#2faee0', '#ffffff'],
-  'Desportivo Fontefiel': ['#e83030', '#ffffff'], 'SC Ribeibrava': ['#1e3a8a', '#ffffff'], 'CD Barrolinhos': ['#008057', '#ffffff'],
-  'Sportclub Langehorst': ['#ed1c24', '#ffffff'], 'Quick Zuiderhoven': ['#d2122e', '#ffffff'], 'VV Hoogberg': ['#e30613', '#ffffff'],
-  'Balgowrie Thistle': ['#018749', '#ffffff'], 'Dalleven FC': ['#1b458f', '#ffffff'],
-};
+/** No hand-picked kits: colours come from the club name (no real club's colours are copied). */
+export const FOREIGN_COLORS: Record<string, [string, string]> = {};
