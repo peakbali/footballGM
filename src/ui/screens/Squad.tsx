@@ -47,12 +47,37 @@ export function SquadScreen() {
   );
 }
 
+type Sort = { key: string; dir: 1 | -1 }; // key: a column label, 'ovr', or 'pos' (by position, the default)
+const POS_SORT: Sort = { key: 'pos', dir: 1 };
+// remembered per sub-page while the game is open
+const lastSort: Partial<Record<View, Sort>> = {};
+/** Columns where the smallest value comes first on the first tap (contract that ends soonest). */
+const ASC_FIRST = new Set(['Exp']);
+
 function SquadList({ s }: { s: GameState }) {
   const [view, setViewState] = useState<View>(lastView);
   const setView = (v: View) => { lastView = v; setViewState(v); };
+  const [, bump] = useState(0);
+  const sort = lastSort[view] ?? POS_SORT;
+  const pick = (key: string) => {
+    lastSort[view] = sort.key === key ? { key, dir: (-sort.dir) as 1 | -1 } : { key, dir: key === 'pos' || ASC_FIRST.has(key) ? 1 : -1 };
+    bump((x) => x + 1);
+  };
   const squad = squadOf(s, s.userClubId).filter((p) => !p.academy);
-  const sorted = [...squad].sort((a, b) => ORDER[LINE[a.pos]] - ORDER[LINE[b.pos]] || b.ovr - a.ovr);
+  const byPos = (a: Player, b: Player) => ORDER[LINE[a.pos]] - ORDER[LINE[b.pos]] || b.ovr - a.ovr;
+  const sorted = [...squad].sort((a, b) => {
+    if (sort.key === 'pos') return byPos(a, b) * sort.dir;
+    const x = sortValue(a, view, sort.key, s.season), y = sortValue(b, view, sort.key, s.season);
+    if (x == null && y == null) return byPos(a, b);
+    if (x == null) return 1; // no value ("-") always last
+    if (y == null) return -1;
+    return (x - y) * sort.dir || byPos(a, b);
+  });
   const avg = squad.length ? Math.round(squad.map((p) => p.ovr).sort((a, b) => b - a).slice(0, 11).reduce((x, y) => x + y, 0) / Math.min(11, squad.length)) : 0;
+  const arrow = (k: string) => (sort.key === k ? (sort.dir > 0 ? '▲' : '▼') : '');
+  const btn = (k: string, label: string, cls = '') => (
+    <button class={`sq-sort ${cls} ${sort.key === k ? 'on' : ''}`} onClick={() => pick(k)}>{label}<i class="sq-arrow">{arrow(k)}</i></button>
+  );
   return (
     <Card title={`Squad · ${squad.length} players · best XI ${avg}`}>
       <div class="seg" data-seg-bar>
@@ -60,14 +85,38 @@ function SquadList({ s }: { s: GameState }) {
       </div>
       <SwipePages keys={VIEWS} value={view} onChange={setView}>
         <div class="sq-head">
-          <span class="grow" />
-          <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{COLS[view].map(([l, w]) => <span key={l} class={l.startsWith('-') && l.length === 2 ? 'sq-yr' : ''} style={{ width: w }}>{colLabel(l, s.season)}</span>)}</div>
-          <span style={{ width: 25 }}>OVR</span>
+          <span class="grow" style={{ textAlign: 'left' }}>{btn('pos', 'Pos')}</span>
+          <div class={`sq-cols ${view === 'contract' ? 'lined' : ''}`}>{COLS[view].map(([l, w]) => <span key={l} style={{ width: w }}>{btn(l, colLabel(l, s.season), l.startsWith('-') && l.length === 2 ? 'sq-yr' : '')}</span>)}</div>
+          <span style={{ width: 25 }}>{btn('ovr', 'OVR')}</span>
         </div>
         {sorted.map((p) => <SquadRow key={p.id} p={p} season={s.season} view={view} />)}
+        <div class="tiny dim" style={{ marginTop: 6 }}>Tap a column to sort, tap again to flip. Pos puts the list back in position order.</div>
       </SwipePages>
     </Card>
   );
+}
+
+/** The number a column sorts by (null = no value, shown as "-" and kept last). */
+function sortValue(p: Player, view: View, key: string, season: number): number | null {
+  if (key === 'ovr') return p.ovr;
+  const st = p.stats, ct = p.contract;
+  switch (key) {
+    case 'Wage': return ct ? ct.wage : null;
+    case 'Exp': return ct ? ct.endSeason : null;
+    case 'Value': return p.value;
+    case '-2': return ovrAt(p, season - 2) ?? null;
+    case '-1': return ovrAt(p, season - 1) ?? null;
+    case '+/-': { const o = ovrAt(p, season - 1); return o == null ? null : p.ovr - o; }
+    case 'POT': return p.pot;
+    case 'App': return st.apps;
+    case 'G': return st.goals;
+    case 'A': return st.assists;
+    case 'Avg': return st.apps ? st.ratingSum / st.apps : null;
+    case 'CS': return p.pos === 'GK' || LINE[p.pos] === 'DEF' ? st.cs : null;
+  }
+  const g = ['TEC', 'MEN', 'PHY', 'GK'].indexOf(key);
+  void view;
+  return g >= 0 ? groupAvg(p, ATTR_GROUPS[g].attrs) : null;
 }
 
 const groupAvg = (p: Player, names: string[]) => {

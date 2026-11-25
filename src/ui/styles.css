@@ -278,6 +278,11 @@ table.tbl.compact { font-size: 12px; }
 .sq-item .tiny { font-size: 11px; }
 .sq-sort { background: none; border: 0; padding: 2px 0; font: inherit; color: inherit; text-align: right; cursor: pointer; white-space: nowrap; }
 .sq-sort.on { color: var(--gold); }
+/* squad list headers: the button fills its column; the arrow is small so labels keep their width */
+.sq-head .sq-cols > span > .sq-sort, .sq-head > span > .sq-sort { width: 100%; }
+.sq-head .grow > .sq-sort { width: auto; text-align: left; }
+.sq-arrow { font-style: normal; font-size: 7px; margin-left: 1px; }
+.sq-arrow:empty { display: none; }
 .pt .sq-sort { text-align: center; overflow: hidden; }
 .pt .sq-cols.lined > span { padding: 0; justify-content: center; }
 .pt .sq-cols .sq-c { text-align: center; }
