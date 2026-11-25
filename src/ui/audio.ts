@@ -5,10 +5,12 @@ import { store } from './store';
  * it works offline and the build stays small.
  *
  * Music is a generated lo-fi jazz loop: electric piano chords (7ths, 9ths, 13ths) with a lazy swing, a soft
- * upright-style bass, soft clean percussion (no noise: kick, rim and ride are all tuned sine tones), a sparse
- * vibraphone melody, and everything through a gentle low-pass and a small, smooth room reverb, with headroom so
- * nothing clips. (An earlier version had vinyl crackle and noise drums; they were removed as too noisy.) Chords, fills and melody notes vary from bar to bar, so it does not
- * sound like a short loop. One mellow loop plays everywhere, continuously.
+ * upright-style bass, a soft kick and rim (tuned sine tones), a sparse vibraphone melody, all through a gentle
+ * low-pass. It is generated beat by beat, so there is no audio file and no loop point to click.
+ *
+ * Clean by design (DESIGN 13.5a): nothing in the game uses noise. The room sound is a few filtered feedback echoes
+ * (no noise-based reverb tail), there are no high cymbal tones, every voice is two sines at most, and a limiter on
+ * the master keeps peaks from clipping or crackling on phones.
  *
  * Effects are short and soft, tuned to the same jazzy palette (see `Sfx`).
  */
@@ -19,7 +21,7 @@ let musicGain: GainNode | null = null;
 let musicIn: GainNode | null = null; // music instruments play into this: low-pass then musicGain
 let lowpass: BiquadFilterNode | null = null;
 let sfxGain: GainNode | null = null;
-let reverb: ConvolverNode | null = null;
+let reverb: GainNode | null = null; // input of the echo room
 let musicVerb: GainNode | null = null;
 let sfxVerb: GainNode | null = null;
 
@@ -27,33 +29,48 @@ function settings() {
   return store.state?.settings ?? { muted: false, music: 0.6, sfx: 0.8 };
 }
 
-function impulse(c: AudioContext, secs: number) {
-  const len = Math.floor(c.sampleRate * secs);
-  const buf = c.createBuffer(2, len, c.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const d = buf.getChannelData(ch);
-    // smoothed (low-passed) noise so the tail is warm, not hissy
-    let y = 0;
-    for (let i = 0; i < len; i++) {
-      y += 0.25 * ((Math.random() * 2 - 1) - y);
-      d[i] = y * Math.pow(1 - i / len, 3);
-    }
+/** A small, clean room: three filtered feedback echoes (no noise impulse, so no hiss in the tail). */
+function room(c: BaseAudioContext, out: AudioNode): GainNode {
+  const input = c.createGain();
+  for (const [time, fb] of [[0.113, 0.32], [0.171, 0.28], [0.239, 0.24]] as const) {
+    const dl = c.createDelay(1);
+    dl.delayTime.value = time;
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 1500;
+    const g = c.createGain();
+    g.gain.value = fb;
+    input.connect(dl);
+    dl.connect(lp).connect(g).connect(dl); // feedback loop, darker on every pass
+    const o = c.createGain();
+    o.gain.value = 0.33;
+    lp.connect(o).connect(out);
   }
-  return buf;
+  return input;
 }
 
 function ensure(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;
-  if (!ctx) {
-    const c = new AC();
-    ctx = c;
+  if (!ctx) buildGraph(new AC());
+  applyVolumes();
+  return ctx;
+}
+
+/** Master chain: everything -> limiter -> speakers, plus the music filter and the echo room. */
+function buildGraph(c: BaseAudioContext) {
+  {
+    ctx = c as AudioContext;
     master = c.createGain();
-    master.connect(c.destination);
-    reverb = c.createConvolver();
-    reverb.buffer = impulse(c, 1.8);
-    reverb.connect(master);
+    const limiter = c.createDynamicsCompressor();
+    limiter.threshold.value = -10;
+    limiter.knee.value = 6;
+    limiter.ratio.value = 12;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.25;
+    master.connect(limiter).connect(c.destination);
+    reverb = room(c, master);
 
     musicGain = c.createGain();
     musicGain.connect(master);
@@ -81,8 +98,6 @@ function ensure(): AudioContext | null {
     sfxVerb.gain.value = 0.2;
     sfxGain.connect(sfxVerb).connect(reverb);
   }
-  applyVolumes();
-  return ctx;
 }
 
 let lastMusic = -1;
@@ -105,16 +120,6 @@ const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
 
-let noiseBuf: AudioBuffer | null = null;
-function noise(c: AudioContext) {
-  if (!noiseBuf) {
-    noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate);
-    const d = noiseBuf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  }
-  return noiseBuf;
-}
-
 /** Gain envelope: quick attack, exponential decay to silence at t + dur. */
 function env(dest: AudioNode, t: number, vol: number, dur: number, attack = 0.006) {
   const g = ctx!.createGain();
@@ -136,35 +141,15 @@ function osc(dest: AudioNode, t: number, type: OscillatorType, freq: number, dur
   o.stop(t + dur + 0.05);
 }
 
-function noiseHit(dest: AudioNode, t: number, dur: number, vol: number, type: BiquadFilterType, freq: number, q = 0.8, sweepTo?: number) {
-  const c = ctx!;
-  const src = c.createBufferSource();
-  src.buffer = noise(c);
-  src.loop = true;
-  const f = c.createBiquadFilter();
-  f.type = type;
-  f.frequency.setValueAtTime(freq, t);
-  if (sweepTo) f.frequency.exponentialRampToValueAtTime(sweepTo, t + dur);
-  f.Q.value = q;
-  const g = env(dest, t, vol, dur, Math.min(0.01, dur / 4));
-  src.connect(f).connect(g);
-  const off = Math.random() * 0.5;
-  src.start(t, off);
-  src.stop(t + dur + 0.05);
-}
-
 // ---------- instruments
 
-/** Electric piano (Rhodes-like): two soft sines, a little detuned, plus a short bell-like tine on the attack. */
+/** Electric piano (Rhodes-like): a warm sine plus a short, soft octave on the attack. */
 function epiano(dest: AudioNode, t: number, n: number, dur: number, vel = 0.12) {
   const f = midi(n);
-  const g = env(dest, t, vel, dur, 0.008);
-  osc(g, t, 'sine', f, dur, -4);
-  osc(g, t, 'sine', f, dur, 5);
-  const g2 = env(dest, t, vel * 0.25, Math.min(dur, 0.9), 0.005);
-  osc(g2, t, 'sine', f * 2, Math.min(dur, 0.9));
-  const g3 = env(dest, t, vel * 0.08, 0.18, 0.006);
-  osc(g3, t, 'sine', f * 7, 0.18);
+  const g = env(dest, t, vel * 1.4, dur, 0.012);
+  osc(g, t, 'sine', f, dur);
+  const g2 = env(dest, t, vel * 0.22, Math.min(dur, 0.7), 0.008);
+  osc(g2, t, 'sine', f * 2, Math.min(dur, 0.7));
 }
 
 /** Vibraphone-ish lead: sine with a soft tremolo. */
@@ -182,8 +167,6 @@ function vibes(dest: AudioNode, t: number, n: number, dur: number, vel = 0.07) {
   lfo.stop(t + dur + 0.05);
   trem.connect(g);
   osc(trem, t, 'sine', midi(n), dur);
-  const g2 = env(dest, t, vel * 0.2, 0.4, 0.003);
-  osc(g2, t, 'sine', midi(n) * 4, 0.4);
 }
 
 /** Upright-style bass: sine plus a filtered triangle, short pluck. */
@@ -202,18 +185,10 @@ function kick(dest: AudioNode, t: number, vel = 0.5) {
   const g = env(dest, t, vel, 0.22, 0.006);
   osc(g, t, 'sine', 95, 0.22, 0, 45);
 }
-/** Soft rim click: two short tuned sines, no noise. */
+/** Soft rim knock: one short, low, tuned sine (no noise, no high click). */
 const rim = (dest: AudioNode, t: number, vel = 0.05) => {
-  const g = env(dest, t, vel, 0.07, 0.003);
-  osc(g, t, 'sine', 1650, 0.07, 0, 1500);
-  const g2 = env(dest, t, vel * 0.6, 0.05, 0.003);
-  osc(g2, t, 'triangle', 420, 0.05, 0, 380);
-};
-/** Ride-cymbal-like ting: two quiet inharmonic sines with a short decay. */
-const ride = (dest: AudioNode, t: number, vel = 0.012) => {
-  const g = env(dest, t, vel, 0.12, 0.004);
-  osc(g, t, 'sine', 3150, 0.12);
-  osc(g, t, 'sine', 4730, 0.12);
+  const g = env(dest, t, vel, 0.06, 0.004);
+  osc(g, t, 'sine', 820, 0.06, 0, 700);
 };
 
 // ---------- music
@@ -269,13 +244,11 @@ function scheduleBeat(t: number) {
   if (b === 2) bass(dest, t + h(), chord.root + pick([7, 7, 12, 10]), spb * 1.6, 0.28);
   if (b === 3 && Math.random() < 0.5) bass(dest, off + h(), next.root + pick([-1, 1, 2]), spb * 0.5, 0.22);
 
-  // drums: lazy kick, rim click on 2 and 4, a quiet swung ride
+  // drums: lazy kick and a soft rim knock on 2 and 4 (no cymbals: high tones read as hiss on phone speakers)
   if (b === 0) kick(dest, t + h(), 0.3);
   if (b === 2 && Math.random() < 0.5 + st.busy * 0.3) kick(dest, t + h(), 0.22);
   if (b === 1 && Math.random() < st.busy * 0.4) kick(dest, off + h(), 0.16);
-  if (b === 1 || b === 3) rim(dest, t + h(), st.busy > 0.6 ? 0.05 : 0.038);
-  ride(dest, t + h(), b % 2 ? 0.01 : 0.013);
-  if (Math.random() < 0.3 + st.busy * 0.5) ride(dest, off + h(), 0.008);
+  if (b === 1 || b === 3) rim(dest, t + h(), 0.03);
 
   // vibes melody: sparse notes, more on the second half of every 2 bars
   const want = (bar % 2 === 1 ? 0.45 : 0.2) * (0.6 + st.busy * 0.5);
@@ -380,36 +353,33 @@ function crowdVoice(dest: AudioNode, t: number, f0: number, dur: number, vowel: 
 /** The crowd is many quiet voices: this lifts the whole crowd to sit just above the music. */
 function crowdBus(c: AudioContext, d: AudioNode) {
   const g = c.createGain();
-  g.gain.value = 3;
+  g.gain.value = 2.6;
   g.connect(d);
   return g;
 }
 
 function cheer(d: AudioNode, t: number) {
   // voices only: no noise bed and no noise claps, so it stays clean (DESIGN 13.2n)
-  for (let i = 0; i < 14; i++) {
-    const st = t + rnd(0, 0.35);
-    crowdVoice(d, st, rnd(170, 340), rnd(1.4, 2.6), [rnd(700, 850), rnd(1100, 1400)], 0.11, [0.9, 1.15, 1.1, 0.95], 0.12);
-  }
-  for (let i = 0; i < 2; i++) { // whistles
-    const wt = t + rnd(0.3, 1.2);
-    const g = shape(d, wt, [[0.04, 0.035], [0.3, 0.03], [0.45, 0]]);
-    osc(g, wt, 'sine', rnd(2000, 2400), 0.45, 0, rnd(2700, 3100));
+  // a warm, happy "aah" that swells and fades (calmer: fewer voices, no whistles, softer top end)
+  for (let i = 0; i < 9; i++) {
+    const st = t + rnd(0, 0.3);
+    crowdVoice(d, st, rnd(170, 300), rnd(1.1, 1.6), [rnd(700, 820), rnd(1100, 1300)], 0.09, [0.95, 1.1, 1.05, 0.95], 0.25, 1100);
   }
 }
 
 function boo(d: AudioNode, t: number) {
-  for (let i = 0; i < 12; i++) {
-    const st = t + rnd(0, 0.4);
-    crowdVoice(d, st, rnd(95, 165), rnd(1.6, 2.4), [rnd(280, 340), rnd(700, 850)], 0.13, [1, 1.02, 0.95, 0.85], 0.35, 1000);
+  // a low, disappointed "ohh" that sinks away (not a harsh boo)
+  for (let i = 0; i < 7; i++) {
+    const st = t + rnd(0, 0.3);
+    crowdVoice(d, st, rnd(100, 160), rnd(1.1, 1.5), [rnd(300, 360), rnd(650, 750)], 0.09, [1, 0.98, 0.9, 0.8], 0.3, 750);
   }
 }
 
 function hmm(d: AudioNode, t: number) {
-  for (let i = 0; i < 7; i++) {
-    const st = t + rnd(0, 0.25);
+  for (let i = 0; i < 5; i++) {
+    const st = t + rnd(0, 0.2);
     // closed-mouth "mm": low vowel formants, pitch dips then lifts like a doubtful "hmm?"
-    crowdVoice(d, st, rnd(105, 150), rnd(1, 1.4), [rnd(230, 280), rnd(500, 600)], 0.14, [1, 0.94, 1.05], 0.12, 800);
+    crowdVoice(d, st, rnd(110, 150), rnd(0.8, 1.1), [rnd(230, 280), rnd(500, 600)], 0.1, [1, 0.94, 1.04], 0.15, 700);
   }
 }
 
@@ -439,19 +409,19 @@ export function sfx(name: Sfx) {
     case 'click': { const g = env(d, t, 0.06, 0.035, 0.003); osc(g, t, 'sine', 1500, 0.035, 0, 1100); break; }
     case 'tap': { const g = env(d, t, 0.045, 0.03, 0.002); osc(g, t, 'sine', 1100, 0.03, 0, 850); break; }
     case 'confirm': ep([72, 79], 0.05, 0.4, 0.12); break;
-    case 'swipe': noiseHit(d, t, 0.18, 0.05, 'bandpass', 600, 1.2, 2400); break;
-    case 'page': noiseHit(d, t, 0.32, 0.07, 'bandpass', 500, 1, 3000); epiano(d, t + 0.12, pick([76, 79, 81]), 0.5, 0.06); break;
+    case 'swipe': { const g = env(d, t, 0.035, 0.14, 0.01); osc(g, t, 'sine', 520, 0.14, 0, 780); break; }
+    case 'page': { const g = env(d, t, 0.03, 0.2, 0.02); osc(g, t, 'sine', 440, 0.2, 0, 660); epiano(d, t + 0.1, pick([76, 79, 81]), 0.5, 0.05); break; }
     case 'pop': ep([67, 74, 79], 0.06, 0.7, 0.12); break;
     case 'offer': ep([79, 84, 88], 0.05, 0.5, 0.11); [0, 0.07, 0.14].forEach((k) => { const g = env(d, t + 0.18 + k, 0.05, 0.12, 0.002); osc(g, t + 0.18 + k, 'sine', 2600 + k * 4000, 0.12); }); break;
-    case 'contract': noiseHit(d, t, 0.09, 0.08, 'bandpass', 3200, 1.5); noiseHit(d, t + 0.1, 0.12, 0.07, 'bandpass', 2600, 1.5); ep([64, 71], 0.08, 0.6, 0.1); break;
+    case 'contract': ep([64, 71], 0.08, 0.6, 0.1); break;
     case 'board': ep([57, 60, 64], 0.04, 0.9, 0.1); bass(d, t, 45, 0.6, 0.2); break;
     case 'achieve': ep([72, 76, 79, 83, 86], 0.07, 1.2, 0.12); [0.35, 0.45, 0.55].forEach((k, i) => vibes(d, t + k, [91, 95, 98][i], 0.6, 0.06)); break;
     case 'coin': ep([83, 88], 0.07, 0.3, 0.1); break;
     case 'cash': for (let i = 0; i < 7; i++) { const tt = t + i * 0.055 + rnd(0, 0.02); const g = env(d, tt, 0.05, 0.15, 0.002); osc(g, tt, 'sine', rnd(2400, 4200), 0.15); } ep([72, 79, 84], 0.04, 0.8, 0.09); break;
-    case 'build': kick(d, t, 0.3); noiseHit(d, t + 0.12, 0.08, 0.06, 'bandpass', 1500); kick(d, t + 0.24, 0.25); ep([60, 64, 67, 72], 0.06, 0.6, 0.1); break;
-    case 'goal': ep([72, 76, 79, 84], 0.06, 0.9, 0.14); noiseHit(d, t, 1.2, 0.06, 'bandpass', 1500, 0.4); break;
-    case 'win': ep([67, 72, 76, 79], 0.07, 0.9, 0.13); break;
-    case 'loss': ep([69, 65, 62], 0.14, 0.9, 0.12); break;
+    case 'build': kick(d, t, 0.25); kick(d, t + 0.24, 0.2); ep([60, 64, 67, 72], 0.06, 0.6, 0.09); break;
+    case 'goal': ep([72, 76, 79, 84], 0.06, 0.9, 0.12); break;
+    case 'win': ep([67, 72, 76], 0.09, 0.7, 0.12); break;
+    case 'loss': ep([64, 60, 57], 0.16, 0.8, 0.11); break;
     case 'sad': ep([57, 60, 64], 0.02, 1.6, 0.1); ep([65, 62, 59], 0.3, 1.2, 0.08); bass(d, t, 38, 1.4, 0.2); break;
     case 'fanfare': {
       // a bright horn-ish line (filtered saw) over a rising chord, with a cymbal swell
@@ -461,12 +431,11 @@ export function sfx(name: Sfx) {
       f.connect(d);
       [67, 72, 76, 79, 84].forEach((n, i) => { const tt = t + i * 0.11; const g = env(f, tt, 0.08, i === 4 ? 1.1 : 0.22, 0.02); osc(g, tt, 'sawtooth', midi(n), i === 4 ? 1.1 : 0.22); osc(g, tt, 'sawtooth', midi(n), i === 4 ? 1.1 : 0.22, 8); });
       ep([60, 64, 67, 71, 74], 0.015, 1.6, 0.1);
-      noiseHit(d, t, 1.4, 0.05, 'highpass', 6000, 0.3);
       kick(d, t + 0.44, 0.35);
       break;
     }
-    case 'reveal': noiseHit(d, t, 0.5, 0.04, 'bandpass', 800, 0.8, 4000); ep([60, 67, 71, 74], 0.03, 1.1, 0.08); break;
-    case 'stamp': kick(d, t, 0.55); noiseHit(d, t, 0.09, 0.12, 'bandpass', 700, 0.8); break;
+    case 'reveal': ep([60, 67, 71, 74], 0.03, 1.1, 0.08); break;
+    case 'stamp': kick(d, t, 0.4); { const g = env(d, t, 0.05, 0.08, 0.003); osc(g, t, 'sine', 300, 0.08, 0, 200); } break;
     case 'tick': {
       if (c.currentTime - lastTick < 0.065) return;
       lastTick = c.currentTime;
@@ -475,11 +444,11 @@ export function sfx(name: Sfx) {
       break;
     }
     case 'sparkle': for (let i = 0; i < 6; i++) vibes(d, t + i * 0.08 + rnd(0, 0.03), pick([84, 86, 88, 91, 93, 96]), 0.5, 0.045); break;
-    case 'rain': noiseHit(d, t, 2.6, 0.05, 'lowpass', 1400, 0.3); for (let i = 0; i < 10; i++) { const tt = t + rnd(0, 2); const g = env(d, tt, 0.02, 0.05, 0.002); osc(g, tt, 'sine', rnd(1800, 3500), 0.05); } break;
-    case 'rise': noiseHit(d, t, 0.6, 0.04, 'bandpass', 400, 0.8, 3000); ep([65, 69, 72, 76], 0.08, 1, 0.1); break;
-    case 'cheer': cheer(crowdBus(c, d), t); ep([67, 72, 76, 79], 0.07, 0.9, 0.07); break;
-    case 'boo': boo(crowdBus(c, d), t); break;
-    case 'hmm': hmm(crowdBus(c, d), t); break;
+    case 'rain': for (let i = 0; i < 10; i++) { const tt = t + rnd(0, 2); const g = env(d, tt, 0.02, 0.05, 0.002); osc(g, tt, 'sine', rnd(1800, 3500), 0.05); } break;
+    case 'rise': ep([65, 69, 72, 76], 0.08, 1, 0.1); break;
+    case 'cheer': cheer(crowdBus(c, d), t); ep([67, 72, 76], 0.09, 0.8, 0.09); break;
+    case 'boo': boo(crowdBus(c, d), t); ep([62, 57], 0.2, 0.9, 0.08); break;
+    case 'hmm': hmm(crowdBus(c, d), t); ep([62, 67], 0.12, 0.7, 0.07); break;
   }
 }
 
@@ -511,4 +480,30 @@ export function installAudio() {
     else void ctx.resume().then(() => { if (style) beatTime = Math.max(beatTime, ctx!.currentTime + 0.1); });
   });
   store.subscribe(applyVolumes);
+}
+
+/**
+ * Render a few seconds of music or one effect offline, for listening tests (scripts/audio-samples.cjs).
+ * It builds a separate graph on an OfflineAudioContext and puts the live one back afterwards.
+ */
+export async function renderPreview(what: 'music' | Sfx, secs: number, rate = 44100): Promise<AudioBuffer> {
+  const saved = { ctx, master, musicGain, musicIn, lowpass, sfxGain, reverb, musicVerb, sfxVerb, style, beat, beatTime, prog, lastMusic };
+  const oc = new OfflineAudioContext(2, Math.ceil(secs * rate), rate);
+  buildGraph(oc);
+  const st = settings();
+  master!.gain.value = 0.55;
+  musicGain!.gain.value = st.music * 0.8 || 0.48;
+  musicVerb!.gain.value = (st.music || 0.6) * 0.12;
+  sfxGain!.gain.value = (st.sfx || 0.8) * 0.6;
+  if (what === 'music') {
+    style = HUB; beat = 0; prog = pick(HUB.progressions); beatTime = 0.05;
+    while (beatTime < secs - 0.5) { scheduleBeat(beatTime); beatTime += 60 / HUB.bpm; beat++; }
+  } else {
+    // sfx() only plays on a running context; an offline one reports 'suspended' until it renders
+    Object.defineProperty(oc, 'state', { get: () => 'running' });
+    sfx(what);
+  }
+  const buf = await oc.startRendering();
+  ({ ctx, master, musicGain, musicIn, lowpass, sfxGain, reverb, musicVerb, sfxVerb, style, beat, beatTime, prog, lastMusic } = saved);
+  return buf;
 }
