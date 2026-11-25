@@ -1447,3 +1447,8 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 ### 13.5c Recorded result sounds from Khen **[Agreed]**
 - Win: a police whistle (0.56 s). Draw: a man's thinking "hmm" (1.7 s). Loss: a disappointed crowd (2.6 s). Khen supplied all three; each is trimmed, mono, peak-normalized and played at about -27 LUFS so the three sit at the same level (src/ui/sfx, src/ui/sfxClips.ts).
 - Web build only. They are third-party clips, so the Google Play build (`__CLIPS__` false) leaves them out and keeps the synthesized sounds of 13.5b until Khen confirms the rights. The synth also plays if a clip has not decoded yet.
+
+### 13.5d Lo-fi background music from Khen **[Agreed]**
+- Khen's lo-fi track replaces the generated music in the web build. It is cut into one seamless 93-second loop (3.55 s to 96.46 s of the original, with the joins lined up by waveform and a 1.5 s crossfade at the seam) and encoded as a 96 kbps stereo mp3 of 1.1 MB (src/ui/music/lofi-loop.mp3).
+- The file has a second of padding on each side, and the player loops between `LOOP_START` and `LOOP_END`, so the seam stays clean even if a decoder shifts the audio slightly. It plays through the Music slider (musicGain) at about the level of the old synth, keeps going across screens and popups, ducks under effects, pauses in the background and is silent when muted, as before.
+- Like 13.5c it is third-party, so the Play build leaves it out and keeps the synthesized music. The synth is also the fallback if the track cannot load.
