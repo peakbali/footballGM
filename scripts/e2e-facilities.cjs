@@ -11,7 +11,7 @@ const shots = process.argv[3];
   const expect = (name, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : `(got ${JSON.stringify(got)}, want ${JSON.stringify(want)})`); if (!ok) failed++; };
   const cash = async () => (await p.textContent('.topbar .money')).trim();
   await p.goto(url); await p.waitForSelector('.slot.empty');
-  await p.tap('.slot.empty >> nth=0'); await p.tap('text=Wessex League Premier'); await p.tap('text=Brockenhurst');
+  await p.tap('.slot.empty >> nth=0'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
   await p.waitForSelector('button.continue', { timeout: 30000 });
   await p.tap('.tabs button:has-text("Club")'); await p.waitForTimeout(300);
   await p.tap('.seg button:has-text("Facilities")'); await p.waitForTimeout(400);

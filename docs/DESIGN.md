@@ -1,4 +1,4 @@
-# footballGM: Game Design Document
+# FootballGM: Game Design Document
 
 > Status: **Draft v0.3** (2026-11-24). Captures the concept agreed in project chat, plus proposals needed to make it buildable.
 > Sections marked **[Agreed]** reflect decisions already made. Sections marked **[Proposal]** are starting points for tuning and review. Anything unresolved lives in [Open questions](#15-open-questions).
@@ -66,6 +66,8 @@ You are the **General Manager** of a club starting in division 9 of the English 
 ---
 
 ## 3. World and data
+
+> **Update 2026-11-25 (Google Play release):** every club, stadium and league is now fictional (generated names in `src/core/data/pyramid.ts` and `foreign.ts`; the league structure is unchanged), the FA Cup is the National Cup, and the local EA FC import was removed. Where this section mentions real clubs, leagues or players, read it as the historical plan. Monetisation (free first season, one-time Full game unlock, no ads) is described in [PLAY_STORE.md](PLAY_STORE.md).
 
 ### 3.1 The pyramid **[Agreed + Proposal]**
 

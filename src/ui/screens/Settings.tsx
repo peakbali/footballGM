@@ -3,6 +3,8 @@ import { useState } from 'preact/hooks';
 import { nav, store, useStore } from '../store';
 import { ACHIEVEMENTS } from '../../core/achievements';
 import { InstallApp } from '../installCard';
+import { billing } from '../billing';
+import { PrivacyLink } from '../features/privacyLink';
 
 export function SettingsScreen() {
   const st = useStore();
@@ -31,6 +33,11 @@ export function SettingsScreen() {
       <Card title="Install">
         <InstallApp />
       </Card>
+      <Card title="Full game">
+        <div class="small dim" style={{ marginBottom: 10 }}>{billing.unlocked ? 'Unlocked. Every season is open in every save slot. Thank you!' : 'The first season of every career is free. A one-time purchase unlocks every season after it. No ads.'}</div>
+        {!billing.unlocked && <button class="btn gold block" onClick={() => nav.push({ kind: 'custom', key: 'paywall' })}>Unlock full game ›</button>}
+        {!billing.unlocked && billing.store && <><div style={{ height: 8 }} /><button class="btn block" onClick={() => void billing.restore()}>Restore purchase</button>{billing.error && <div class="tiny amber" style={{ marginTop: 6 }}>{billing.error}</div>}</>}
+      </Card>
       <Card title="Achievements" art="trophy">
         <button class="btn block" onClick={() => nav.push({ kind: 'custom', key: 'achievements' })}>Achievements · {got}/{ACHIEVEMENTS.length} ›</button>
       </Card>
@@ -41,7 +48,8 @@ export function SettingsScreen() {
         <button class="btn danger block" onClick={() => { if (sure) void store.deleteSave(); else setSure(true); }}>{sure ? 'Tap again to delete this career' : 'Delete this career'}</button>
       </Card>
       <Card title="Credits">
-        <div class="small dim">Club names and league membership: Wikipedia (CC BY-SA 4.0). {s.ext.realData ? `Real players imported locally from ${(s.ext.realData as { source: string; players: number }).source} (${(s.ext.realData as { players: number }).players} players); everyone else is generated.` : 'All players are generated unless you import your own data locally.'} Fonts: Silkscreen and Inter (OFL).</div>
+        <div class="small dim">All clubs, leagues, stadiums and players are fictional. Fonts: Silkscreen and Inter (OFL).</div>
+        <PrivacyLink />
       </Card>
     </Overlay>
   );

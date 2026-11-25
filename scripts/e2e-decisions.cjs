@@ -7,7 +7,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   const p = await ctx.newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(url); await p.waitForTimeout(800);
-  await p.tap('text=New career'); await p.tap('text=Wessex League Premier'); await p.tap('text=Brockenhurst');
+  await p.tap('text=New career'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
   await p.waitForSelector('button.continue', { timeout: 30000 });
   let failed = 0;
   const expect = (name, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : `(got ${JSON.stringify(got)}, want ${JSON.stringify(want)})`); if (!ok) failed++; };

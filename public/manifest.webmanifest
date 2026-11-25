@@ -1,7 +1,8 @@
 {
-  "name": "Football GM",
-  "short_name": "Football GM",
-  "description": "Build a football club from the bottom of the pyramid. Offline, single player.",
+  "id": "./",
+  "name": "FootballGM",
+  "short_name": "FootballGM",
+  "description": "Take a club from the ninth tier to the top. An offline, single-player football GM game.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -9,8 +10,26 @@
   "background_color": "#0b1020",
   "theme_color": "#0b1020",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "games",
+    "sports"
+  ],
+  "lang": "en"
 }

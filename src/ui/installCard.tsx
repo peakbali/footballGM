@@ -10,7 +10,7 @@ export function InstallApp({ compact }: { compact?: boolean }) {
     return (
       <div>
         <button class="btn gold block" onClick={() => void promptInstall()}>⬇ Install app</button>
-        {!compact && <div class="tiny dim" style={{ marginTop: 6 }}>Adds Football GM to your home screen. It plays offline and keeps your save on this device.</div>}
+        {!compact && <div class="tiny dim" style={{ marginTop: 6 }}>Adds FootballGM to your home screen. It plays offline and keeps your save on this device.</div>}
       </div>
     );
   if (ios)

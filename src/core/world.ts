@@ -10,7 +10,6 @@ import { POSITIONS } from './data/positions';
 import { runInitSystems } from './systems';
 import { FOREIGN, FOREIGN_COLORS } from './data/foreign';
 import { randomName } from './generate';
-import { applyRealPlayers, type RealData } from './realData';
 
 export interface ClubDef {
   name: string;
@@ -19,7 +18,7 @@ export interface ClubDef {
   league: LeagueDef;
 }
 
-/** All real clubs, deduplicated (a club listed twice keeps its highest division). */
+/** All clubs, deduplicated (a club listed twice keeps its highest division). */
 export function clubDefs(): ClubDef[] {
   const seen = new Set<string>();
   const out: ClubDef[] = [];
@@ -66,20 +65,20 @@ export function nearest<T extends { lat: number; lon: number }>(items: T[], lat:
 
 const PALETTE = ['#c8102e', '#003399', '#ffd200', '#1b5e20', '#ffffff', '#111111', '#6a1b9a', '#ff6f00', '#00838f', '#7b1e3c', '#87ceeb', '#e65100', '#2e7d32', '#0d47a1', '#b71c1c', '#f5f5f5'];
 const KNOWN_COLORS: Record<string, [string, string]> = {
-  Arsenal: ['#ef0107', '#ffffff'], 'Aston Villa': ['#670e36', '#95bfe5'], 'AFC Bournemouth': ['#da291c', '#000000'], Brentford: ['#e30613', '#ffffff'],
-  'Brighton & Hove Albion': ['#0057b8', '#ffffff'], Burnley: ['#6c1d45', '#99d6ea'], Chelsea: ['#034694', '#ffffff'], 'Crystal Palace': ['#1b458f', '#c4122e'],
-  Everton: ['#003399', '#ffffff'], Fulham: ['#ffffff', '#000000'], 'Leeds United': ['#ffffff', '#1d428a'], Liverpool: ['#c8102e', '#f6eb61'],
-  'Manchester City': ['#6cabdd', '#ffffff'], 'Manchester United': ['#da291c', '#fbe122'], 'Newcastle United': ['#241f20', '#ffffff'], 'Nottingham Forest': ['#dd0000', '#ffffff'],
-  Sunderland: ['#eb172b', '#ffffff'], 'Tottenham Hotspur': ['#ffffff', '#132257'], 'West Ham United': ['#7a263a', '#1bb1e7'], 'Wolverhampton Wanderers': ['#fdb913', '#231f20'],
+  'Belwell Harriers': ['#ef0107', '#ffffff'], 'Walwood Colliery': ['#670e36', '#95bfe5'], 'Woldmere Athletic': ['#da291c', '#000000'], 'Ottwick Swifts': ['#e30613', '#ffffff'],
+  'Falstow FC': ['#0057b8', '#ffffff'], 'Whitham Olympic': ['#6c1d45', '#99d6ea'], 'Quenham Olympic': ['#034694', '#ffffff'], 'Ashbridge United': ['#1b458f', '#c4122e'],
+  'Dunbridge Town': ['#003399', '#ffffff'], 'AFC Ulstead': ['#ffffff', '#000000'], 'Rushstead Dynamos': ['#ffffff', '#1d428a'], 'Coldwood FC': ['#c8102e', '#f6eb61'],
+  'Oakbridge Victoria': ['#6cabdd', '#ffffff'], 'Woldbury Colliery': ['#da291c', '#fbe122'], 'Lindfield Rovers': ['#241f20', '#ffffff'], 'Ormwell Sports': ['#dd0000', '#ffffff'],
+  'Ashmouth Celtic': ['#eb172b', '#ffffff'], 'Ludham Victoria': ['#ffffff', '#132257'], 'Ramston Rangers': ['#7a263a', '#1bb1e7'], 'Ulwood Sports': ['#fdb913', '#231f20'],
 };
 
 /** Relative strength offsets for well-known clubs at the start (OVR points vs division average). */
 const KNOWN_QUALITY: Record<string, number> = {
-  'Manchester City': 5, Arsenal: 5, Liverpool: 5, Chelsea: 4, 'Manchester United': 3, 'Tottenham Hotspur': 3, 'Newcastle United': 3, 'Aston Villa': 2.5,
-  'Nottingham Forest': 1, 'Brighton & Hove Albion': 1, 'Crystal Palace': 0.5, Brentford: 0, Fulham: 0, 'AFC Bournemouth': 0, Everton: -0.5, 'West Ham United': 0,
-  'Wolverhampton Wanderers': -1.5, 'Leeds United': -2, Burnley: -3, Sunderland: -2.5,
-  'Leicester City': 3, 'Ipswich Town': 3, 'Southampton': 2.5, 'Sheffield United': 2, Middlesbrough: 1.5, Wrexham: 1, 'Coventry City': 1.5,
-  'Birmingham City': 2, 'Wycombe Wanderers': 1.5, 'Bolton Wanderers': 1.5, 'Stockport County': 1.5, 'Luton Town': 2, 'Plymouth Argyle': 1,
+  'Oakbridge Victoria': 5, 'Belwell Harriers': 5, 'Coldwood FC': 5, 'Quenham Olympic': 4, 'Woldbury Colliery': 3, 'Ludham Victoria': 3, 'Lindfield Rovers': 3, 'Walwood Colliery': 2.5,
+  'Ormwell Sports': 1, 'Falstow FC': 1, 'Ashbridge United': 0.5, 'Ottwick Swifts': 0, 'AFC Ulstead': 0, 'Woldmere Athletic': 0, 'Dunbridge Town': -0.5, 'Ramston Rangers': 0,
+  'Ulwood Sports': -1.5, 'Rushstead Dynamos': -2, 'Whitham Olympic': -3, 'Ashmouth Celtic': -2.5,
+  'Kesgate Corinthians': 3, 'AFC Scardale': 3, 'Gilby Town': 2.5, 'AFC Wexmere': 2, 'Carrcliffe Sports': 1.5, 'Langwell Villa': 1, 'Rushby Rangers': 1.5,
+  'Calmore FC': 2, 'Vercott Wanderers': 1.5, 'Falmere Town': 1.5, 'Kesthorpe Villa': 1.5, 'Paddale Town': 2, 'Belford FC': 1,
 };
 
 export function abbrev(name: string): string {
@@ -146,7 +145,7 @@ function addForeign(s: GameState, rng: Rng) {
       const eco = ECONOMY[div];
       const h = hashString(name);
       const colors = FOREIGN_COLORS[name] ?? [PALETTE[h % PALETTE.length], '#ffffff'];
-      const town = name.replace(/^(1\. FC|FC|SC|AC|RB|VfB|VfL|TSG|AS|OGC|RC|SL|CD|UD|CA|AZ|NEC|PEC|NAC) /, '').split(' ')[0];
+      const town = name.replace(/^(1\. FC|FC|SC|AC|RB|VfB|VfL|TSG|AS|OGC|RC|SL|CD|UD|CA|AZ|NEC|PEC|NAC|SV|TSV|US|SS|SD|VV|GD|Real|Racing|Deportivo|Eintracht|Sportfreunde|Virtus|Sporting|Stade|Quick|Sportclub|União|Académico|Desportivo) /, '').split(' ')[0];
       const c: Club = {
         id: s.clubs.length, name, short: shortName(name), abbrev: abbrev(name), colors,
         stadium: `${fl.suffix[0]}${town}${fl.suffix[1]}`,
@@ -178,7 +177,7 @@ export function foreignLeagueName(c: Club): string | null {
 }
 
 /** Create a new world. `userClubName` must be a club in a division 9 league. */
-export function newGame(seed: number, userClubName: string, opts: { real?: RealData } = {}): GameState {
+export function newGame(seed: number, userClubName: string): GameState {
   const rng = new Rng(seed);
   const defs = clubDefs();
   const userDef = defs.find((d) => d.name === userClubName);
@@ -216,10 +215,6 @@ export function newGame(seed: number, userClubName: string, opts: { real?: RealD
     for (const p of generateSquad(rng, nextId, c.id, c.div, q, season, size)) s.players.set(p.id, p);
   }
   addForeign(s, rng);
-  if (opts.real) {
-    const r = applyRealPlayers(s, opts.real, rng);
-    s.ext.realData = { source: opts.real.source, clubs: r.clubs, players: r.players };
-  }
   // Free agents (spread across levels)
   for (let i = 0; i < 400; i++) {
     const div = rng.int(3, 10);
