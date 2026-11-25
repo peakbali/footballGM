@@ -1,3 +1,4 @@
+import { APP_NAME, STORE_NAME } from '../../core/edition';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { START_SEASON } from '../../core/state';
 import { ordinal } from '../../core/season';
@@ -41,7 +42,7 @@ function Paywall() {
       <Overlay title="Full game">
         <div class="paywall">
           <div class="pw-stamp">UNLOCKED</div>
-          <div class="pw-title">Thanks for supporting FootballGM!</div>
+          <div class="pw-title">Thanks for supporting {APP_NAME}!</div>
           <div class="dim small" style={{ textAlign: 'center' }}>Every season is open now. Good luck with the climb.</div>
           <button class="btn gold block" onClick={() => nav.pop()}>Back to the club ›</button>
         </div>
@@ -73,7 +74,7 @@ function Paywall() {
           </>
         ) : (
           <>
-            <a class="btn gold block pw-buy" href={PLAY_URL} target="_blank" rel="noopener">Get FootballGM on Google Play ›</a>
+            <a class="btn gold block pw-buy" href={PLAY_URL} target="_blank" rel="noopener">Get {STORE_NAME} on Google Play ›</a>
             <div class="tiny dim" style={{ textAlign: 'center' }}>The full game is a one-time purchase in the Android app. This web version plays the first season of each career for free.</div>
             {import.meta.env.DEV && <button class="btn block" onClick={() => void b.buy()}>Simulate purchase (dev build)</button>}
           </>

@@ -22,8 +22,15 @@ export default defineConfig(({ mode }) => {
       // stamp the service worker with this build so each deploy replaces the old cache
       name: 'stamp-sw',
       apply: 'build' as const,
+      transformIndexHtml(html: string) {
+        return mode === 'play' ? html.replaceAll('FootballGM', 'Peak Football') : html;
+      },
       closeBundle() {
         if (mode === 'single') return;
+        // the Google Play app is called Peak Football (src/core/edition.ts)
+        if (mode === 'play') for (const n of ['manifest.webmanifest', 'privacy.html']) {
+          try { const p = join(outDir, n); writeFileSync(p, readFileSync(p, 'utf8').replaceAll('FootballGM', 'Peak Football')); } catch { /* missing file */ }
+        }
         const f = join(outDir, 'sw.js');
         try {
           // precache every built asset so the first offline launch works without a second visit

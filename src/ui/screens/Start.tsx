@@ -1,3 +1,4 @@
+import { LOGO } from '../../core/edition';
 import { useEffect, useState } from 'preact/hooks';
 import { startingLeagues, clubsInLeague } from '../../core/world';
 import { SLOT_COUNT, type SlotInfo } from '../../storage/slots';
@@ -24,12 +25,12 @@ export function StartScreen() {
   const refresh = () => store.slots().then(setSlots).catch(() => setSlots(Array(SLOT_COUNT).fill(null)));
   useEffect(() => { void refresh(); }, []);
 
-  if (busy) return <div class="start"><div class="logo">FOOTBALL<br />GM</div><div class="spinner">Building the pyramid...</div><div class="dim small">Creating about 1,100 clubs and 24,000 players.</div></div>;
+  if (busy) return <div class="start"><div class="logo">{LOGO[0]}<br />{LOGO[1]}</div><div class="spinner">Building the pyramid...</div><div class="dim small">Creating about 1,100 clubs and 24,000 players.</div></div>;
 
   if (step === 'menu')
     return (
       <div class="start">
-        <div class="logo">FOOTBALL<br />GM</div>
+        <div class="logo">{LOGO[0]}<br />{LOGO[1]}</div>
         <div class="dim">Take a club from the ninth tier of the football pyramid to the top. You are the general manager: money, players, staff and facilities.</div>
         <div class="slots">
           {(slots ?? Array(SLOT_COUNT).fill(undefined)).map((info: SlotInfo | null | undefined, i: number) => {

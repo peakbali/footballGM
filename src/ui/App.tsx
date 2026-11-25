@@ -1,3 +1,4 @@
+import { LOGO } from '../core/edition';
 import { useEffect, useState } from 'preact/hooks';
 import { nav, store, useStore, money } from './store';
 import { Badge, Icon } from './components';
@@ -38,7 +39,7 @@ export function App() {
   const due = !!st.state && !st.busy && nav.stack.length === 0 && welcomeDue(st.state);
   useEffect(() => { if (due) openWelcome(); }, [due]);
 
-  if (booting) return <div class="app"><div class="start"><div class="logo">FOOTBALL<br />GM</div><div class="spinner">Loading...</div></div></div>;
+  if (booting) return <div class="app"><div class="start"><div class="logo">{LOGO[0]}<br />{LOGO[1]}</div><div class="spinner">Loading...</div></div></div>;
   music('hub'); // one continuous loop everywhere (title screen, popups, match report, season reel)
   if (!st.state) {
     return <div class="app"><StartScreen /></div>;
