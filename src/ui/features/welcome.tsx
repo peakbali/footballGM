@@ -17,9 +17,9 @@ export const managerName = (s: GameState): string => ((s.ext.manager as string |
 const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 const OUTCOME: Record<string, string> = { champion: 'champions', promoted: 'promoted', playoff_winner: 'promoted via the playoffs', relegated: 'relegated' };
 
-/** Opens the window once per season (after the season review), when nothing else is on screen. */
+/** Opens the window every time a save is opened and once per season (after the season review), when nothing else is on screen. */
 export function welcomeDue(s: GameState): boolean {
-  if (s.ext.welcomeSeen === s.season) return false;
+  if (s.ext.welcomeSeen === s.season && !store.greet) return false;
   const reel = s.ext.reelPending as number | undefined;
   return reel == null || s.ext.reelSeen === reel;
 }
@@ -132,5 +132,6 @@ registerOverlay('welcome', () => <Welcome />);
 export function openWelcome() {
   const s = store.state;
   if (s) s.ext.welcomeSeen = s.season;
+  store.greet = false;
   nav.push({ kind: 'custom', key: 'welcome' });
 }

@@ -20,6 +20,8 @@ class Store {
   busy = false;
   /** the decision popup stays hidden for decisions up to this message id ("Decide later") */
   hiddenUpTo = 0;
+  /** set when a save is opened, so the welcome window greets every session (DESIGN 13.3b) */
+  greet = false;
   lastResult: WeekResult | null = null;
   saving: Promise<unknown> | null = null;
   /** achievements earned so far (all slots) and the ones waiting to be announced */
@@ -46,6 +48,7 @@ class Store {
     this.state = r.state;
     markLoadedCareer(r.state);
     this.save = r.store;
+    this.greet = true;
     this.bump();
     return true;
   }
@@ -69,6 +72,7 @@ class Store {
     this.save = await SqliteSave.create(slot);
     this.state = s;
     this.busy = false;
+    this.greet = true;
     await this.persist();
     this.bump();
   }
