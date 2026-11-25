@@ -9,7 +9,8 @@ const url = process.argv[2] || 'http://localhost:5173/';
 const shots = process.argv[3];
 (async () => {
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: shots ? 3 : 1, hasTouch: true, isMobile: true });
+  const [vw, vh, dsf] = (process.env.SHOT_VIEWPORT || '360x640x3').split('x').map(Number);
+  const ctx = await b.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: shots ? dsf : 1, hasTouch: true, isMobile: true });
   const p = await ctx.newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   let failed = 0;

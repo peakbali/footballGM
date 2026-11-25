@@ -1,4 +1,8 @@
-const DB_NAME = 'footballgm';
+import { REAL_WORLD } from '../core/edition';
+
+// The Play build (/play/) lives on the same site as the web version, so it keeps its saves in its own database:
+// web careers (real names, no unlock) never show up in the store app.
+const DB_NAME = REAL_WORLD ? 'footballgm' : 'peakfootball';
 const STORE = 'saves';
 
 function open(): Promise<IDBDatabase> {
