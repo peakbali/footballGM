@@ -645,13 +645,38 @@ tr.me .pw-bar i { background: var(--gold, #ffcc4d); }
 .hof-top3 .hof-rank { color: #c98a4b; }
 .hof-val { white-space: nowrap; font-size: 12px; flex: none; text-align: right; }
 
-/* welcome window (DESIGN 13.3b) */
-.overlay.welcome-bg { background: rgba(5, 8, 20, 0.82); justify-content: center; align-items: center; padding: 14px; overflow-y: auto; }
-.welcome { width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto; margin: 0; display: flex; flex-direction: column; gap: 10px; border: 2px solid var(--gold); }
-.welcome-kicker { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
-.welcome-hi { font-family: var(--px); font-size: 16px; line-height: 1.3; }
-.welcome-name { display: flex; flex-direction: column; gap: 3px; }
-.welcome-club { display: flex; gap: 10px; align-items: center; }
-.welcome-sec { display: flex; flex-direction: column; gap: 3px; }
-.welcome-sec .tiny { letter-spacing: 1px; margin-bottom: 1px; }
+/* welcome window (DESIGN 13.3b): a pixel game screen */
+.overlay.welcome-bg { background: rgba(5, 8, 20, 0.86); justify-content: center; align-items: center; padding: 12px; overflow-y: auto; animation: dfade .2s ease-out; }
+.welcome { width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto; background: var(--panel); border: 3px solid var(--gold); box-shadow: 0 0 0 3px #070b18, 0 0 0 6px var(--line), 0 10px 30px rgba(0,0,0,.6); animation: dpop-in .3s ease-out; image-rendering: pixelated; }
+.wel-hero { position: relative; height: 150px; border-bottom: 3px solid #070b18; }
+.wel-hero > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.wel-ribbon { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-family: var(--px); font-size: 10px; letter-spacing: 1px; color: #1c2650; background: var(--gold); padding: 5px 10px 4px; box-shadow: 0 3px 0 #a0781e; white-space: nowrap; }
+.wel-ribbon::before, .wel-ribbon::after { content: ''; position: absolute; top: 4px; width: 8px; height: 100%; background: #c99a2e; z-index: -1; }
+.wel-ribbon::before { left: -6px; } .wel-ribbon::after { right: -6px; }
+.wel-crest { position: absolute; left: 0; right: 0; margin: 0 auto; width: fit-content; bottom: -34px; padding: 6px; background: var(--panel); border: 3px solid var(--gold); box-shadow: 0 3px 0 #070b18; animation: pop .5s .15s ease-out both; }
+.wel-body { padding: 44px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+.wel-hi { font-family: var(--px); font-size: 17px; line-height: 1.35; text-align: center; text-shadow: 0 3px 0 #070b18; }
+.wel-club { text-align: center; font-weight: 700; margin-top: -4px; }
+.wel-center { text-align: center; margin-top: -8px; }
+.wel-name { display: flex; align-items: stretch; border: 2px solid var(--line); background: var(--bg); }
+.wel-name span { font-family: var(--px); font-size: 9px; color: #1c2650; background: var(--pitch); padding: 0 8px; display: flex; align-items: center; }
+.wel-name input { flex: 1; min-width: 0; border: 0; border-radius: 0; background: transparent; font-size: 15px; padding: 9px 10px; }
+.wel-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wel-tile { display: grid; grid-template-columns: 26px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; background: var(--bg2); border: 2px solid var(--line); box-shadow: inset 0 -3px 0 #0a0f22; padding: 8px; animation: rise .4s ease-out both; }
+.wel-tile:nth-child(2) { animation-delay: .06s; } .wel-tile:nth-child(3) { animation-delay: .12s; } .wel-tile:nth-child(4) { animation-delay: .18s; }
+.wel-ico { grid-row: span 2; width: 26px; height: 26px; }
+.wel-tile b { font-family: var(--px); font-size: 11px; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wel-tile span { font-size: 11px; color: var(--dim); }
+.wel-label { font-family: var(--px); font-size: 9px; letter-spacing: 1px; color: var(--gold); margin-bottom: 6px; }
+.wel-board { background: #f3ead2; color: #2a2238; padding: 10px 12px; border: 2px solid #070b18; box-shadow: 3px 3px 0 #070b18; position: relative; }
+.wel-board::before { content: ''; position: absolute; top: -7px; left: 50%; width: 34px; height: 10px; transform: translateX(-50%); background: var(--steel, #5b6694); border: 2px solid #070b18; }
+.wel-board .wel-label { color: #8a5a3c; }
+.wel-goal { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.35; padding: 2px 0; }
+.wel-goal i { flex: none; width: 10px; height: 10px; margin-top: 3px; border: 2px solid #2a2238; background: #fff; }
+.wel-tips { background: repeating-linear-gradient(90deg, #22874a 0 24px, #1f7a43 24px 48px); border: 2px solid #070b18; padding: 10px 12px; }
+.wel-tips .wel-label { color: #fff; text-shadow: 0 2px 0 #0b3d22; }
+.wel-tip { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; line-height: 1.35; color: #f2fff6; padding: 2px 0; }
+.wel-n { flex: none; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--px); font-size: 9px; color: #1c2650; background: #fff; box-shadow: 0 2px 0 #0b3d22; }
+.wel-go { font-family: var(--px); animation: pulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .welcome, .wel-crest, .wel-tile, .wel-go { animation: none !important; } }
 .topbar .help-btn { font-family: var(--px); font-size: 12px; color: var(--gold); width: 24px; height: 24px; padding: 0; border: 2px solid var(--line); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; }
