@@ -30,7 +30,7 @@
   "enableSiteSettingsShortcut": false,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "minSdkVersion": 23,
+  "minSdkVersion": 24,
   "fingerprints": [
     { "name": "upload key", "value": "D6:FF:89:F7:03:08:57:E7:4E:07:9A:56:35:85:CC:A8:8E:F1:09:3A:86:1B:94:07:DE:BE:D9:55:5E:83:62:5F" }
   ],

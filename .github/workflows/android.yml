@@ -38,7 +38,11 @@ jobs:
         run: |
           if [ -z "$KEYSTORE_B64" ]; then echo "::error::Add the ANDROID_KEYSTORE_B64 and ANDROID_KEYSTORE_PASSWORD secrets first (docs/PLAY_STORE.md)"; exit 1; fi
           mkdir -p ~/.bubblewrap build-twa
-          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$ANDROID_SDK_ROOT\"}" > ~/.bubblewrap/config.json
+          # Bubblewrap expects sdkmanager at <sdk>/bin (its own SDK layout); the runner keeps it in cmdline-tools/latest/bin
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          [ -e "$SDK/bin" ] || sudo ln -s "$SDK/cmdline-tools/latest/bin" "$SDK/bin"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.1.0" > /dev/null
+          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$SDK\"}" > ~/.bubblewrap/config.json
           jq --argjson vc "${{ inputs.version_code }}" --arg vn "${{ inputs.version_name }}" '.appVersionCode=$vc | .appVersionName=$vn | .appVersion=$vn' twa/twa-manifest.json > build-twa/twa-manifest.json
           echo "$KEYSTORE_B64" | base64 -d > build-twa/upload.keystore
           cd build-twa
