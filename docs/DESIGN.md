@@ -1315,5 +1315,5 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
   - the transfer screen: bid accepted, rejected, signed, no deal
   - contract talks: agreed or no deal
   - the inbox: a smaller, quiet version on resolved decisions
-- **Match result sounds:** when Continue plays your match, the crowd reacts. A win gets cheers (open "ah" voices rising, applause and whistles), a loss gets boos (low "oo" voices sliding down), and a draw gets a doubtful "hmm" murmur (closed-mouth voices that dip and lift). All are synthesised (many sawtooth voices through vowel formant filters, plus a filtered crowd bed), peak around -11 dB, and the music keeps playing underneath.
+- **Match result sounds:** when Continue plays your match, the crowd reacts. A win gets cheers (open "ah" voices rising, applause and whistles), a loss gets boos (low "oo" voices sliding down), and a draw gets a doubtful "hmm" murmur (closed-mouth voices that dip and lift). All are synthesised from voices only: sawtooth voices through vowel formant filters and a low-pass, with no noise bed and no noise claps. Khen found the first version noisy and loud, so on 2026-11-25 these were removed and the peaks lowered to about -15 dB (from -11). The music keeps playing underneath.
 
