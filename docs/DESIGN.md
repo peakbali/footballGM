@@ -542,6 +542,30 @@ Gains are distributed across attributes weighted by the player's main position, 
 
 Retirement: probability rises from age 33, near certain at 40 (GKs +2 years).
 
+### 10.4 Rating balance over many seasons **[Agreed, 2026-11-25]**
+
+Khen found that after a few seasons the world filled with 85 to 97 OVR players, many of them free agents. A 25-season
+audit (`npx tsx scripts/pot-audit.ts 25`) traced it to three things, now fixed:
+
+- **POT for young players was far too high.** A 17-year-old got about +22 POT on top of an OVR that was already at the
+  division's level, so every young player became a star. Now generation treats the division band as the player's
+  *prime* level: young players start below it by the growth still ahead (`youthDeficit(age)` = 2.1 × (24.5 − age),
+  × 0.85), and POT = OVR + that growth + spread (sd 1.5 + 0.25 × growth). Academy intake and youth trials pass their
+  current OVR (`current: true`). Fully random development types swing with sd 2 a season instead of 3.
+- **Top players were released and never re-signed.** Starters (top 11) now re-sign 95% of the time instead of 80%,
+  clubs sign a free agent up to 8 OVR better than they need, and top-division clubs take anyone better.
+- **A thermostat keeps each division on its band.** At each rollover `ratingDrift` measures how far each simulated
+  league's XI average sits from its band. AI players in a division that runs hot grow a little slower (and faster
+  when it runs cold, growth factor −45% to +30%), and new players made to fill squads or the free agent pool are
+  made weaker or stronger by up to 6 to 12 OVR. The user's own squad is never touched.
+
+Result with seed 12345 (start, then after 25 seasons): division XI averages stay within about 0 to +2 of their bands
+(they used to climb without limit). The whole spread stays put: the 10th percentile is 26 then 23, the median 37
+then 38, the 90th percentile 64 then 62, and the 99th percentile 77 then 80. There are 1,540 then 1,359 players at
+70+. The top settles within about 5 seasons at roughly 100 players at 85+ and 15 to 25 at 90+, which matches the
+division 1 band (best 92 to 95) plus the foreign top leagues. Free agents at 80+ went from 77 after 6 seasons to
+0 to 5.
+
 ### 10.3 Personality **[Agreed]**
 
 A hidden 1 to 100 value, shown as a label (Volatile / Demanding / Balanced / Professional / Model Pro).

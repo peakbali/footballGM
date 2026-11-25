@@ -214,6 +214,7 @@ export function rollover(s: GameState) {
   // 2. Players: career log, development, retirement, contracts
   const idx = buildSquadIndex(s);
   const devCtxFn = hooks.devContext;
+  const drift = ratingDrift(s, idx);
   for (const p of [...s.players.values()]) {
     if (p.retired) continue;
     if (p.stats.apps > 0 || p.clubId != null) p.career.push({ s: prev, c: p.clubId ?? -1, apps: p.stats.apps, goals: p.stats.goals, ovr: p.ovr });
@@ -221,7 +222,12 @@ export function rollover(s: GameState) {
     const ageNow = s.season - p.birthYear;
     const share = p.minutesShare ?? estimateShare(p, idx);
     // own squad develops monthly (stage 3); everyone else once a year here
-    if (p.clubId !== s.userClubId) developPlayer(rng, p, ageNow, devCtxFn ? devCtxFn(s, p) : { ...DEFAULT_DEV, playtime: share }, 1);
+    if (p.clubId !== s.userClubId) {
+      const ctx = devCtxFn ? devCtxFn(s, p) : { ...DEFAULT_DEV, playtime: share };
+      // thermostat: AI players grow a little slower in a division that runs above its band, faster below it
+      const d = p.clubId != null ? drift[s.clubs[p.clubId].div] ?? 0 : 0;
+      developPlayer(rng, p, ageNow, { ...ctx, bonus: (ctx.bonus ?? 0) + clamp(-(d + 0.5) * 0.12, -0.45, 0.3) }, 1);
+    }
     p.stats = emptyStats();
     p.yellowAcc = 0;
     p.ban = 0;
@@ -240,7 +246,7 @@ export function rollover(s: GameState) {
       const club = s.clubs[p.clubId!];
       const squad = idx.get(club.id) ?? [];
       const rank = squad.filter((q) => q.ovr > p.ovr).length;
-      if (rank < 18 && ageNow < 34 && rng.chance(0.8)) {
+      if (rank < 18 && ageNow < 34 && rng.chance(rank < 11 ? 0.95 : 0.8)) {
         signContract(rng, p, club.id, club.div, s.season, roleForRank(rank));
       } else {
         p.clubId = null;
@@ -367,10 +373,31 @@ function movePyramid(s: GameState, season: number, rng: Rng) {
 
 const POS_NEEDS: Position[] = ['GK', 'GK', 'CB', 'CB', 'CB', 'CB', 'LB', 'RB', 'DM', 'CM', 'CM', 'CM', 'AM', 'LM', 'RM', 'LW', 'RW', 'ST', 'ST', 'ST'];
 
+/**
+ * Rating thermostat (DESIGN 10.4): how far each division's XIs sit from their band (index = division).
+ * Used to nudge AI growth and new players so ratings neither inflate nor sink over many seasons.
+ */
+export function ratingDrift(s: GameState, idx: Map<number, Player[]>): number[] {
+  // measured on the simulated league tables (what the player sees); foreign and regional clubs follow the same nudge
+  const sum = new Array(11).fill(0), n = new Array(11).fill(0);
+  for (const c of s.leagues.flatMap((l) => l.clubIds.map((id) => s.clubs[id]))) {
+    if (c.user) continue;
+    const sq = (idx.get(c.id) ?? []).map((p) => p.ovr).sort((a, b) => b - a).slice(0, 11);
+    if (!sq.length) continue;
+    sum[c.div] += sq.reduce((x, y) => x + y, 0) / sq.length;
+    n[c.div]++;
+  }
+  return sum.map((v, d) => (d && n[d] ? v / n[d] - DIV_AVG_OVR[d] : 0));
+}
+
 /** AI clubs: replace departures so squads stay 20-24, pulling quality toward the division level. */
 export function maintainSquads(s: GameState, rng: Rng) {
   const idx = buildSquadIndex(s);
   const fas = [...s.players.values()].filter((p) => p.clubId == null && !p.retired);
+  const drift = ratingDrift(s, idx);
+  const divMean = (d: number) => DIV_AVG_OVR[d] + drift[d];
+  // new players for a level are made a little weaker when it runs hot and a little stronger when it runs cold
+  const correction = (d: number) => clamp((drift[d] + 0.5) * 3, -6, 12);
   for (const c of s.clubs) {
     if (c.user) continue;
     const squad = idx.get(c.id) ?? [];
@@ -378,20 +405,27 @@ export function maintainSquads(s: GameState, rng: Rng) {
     if (squad.length >= target) continue;
     const avg = DIV_AVG_OVR[c.div];
     const cur = squad.length ? squad.map((p) => p.ovr).sort((a, b) => b - a).slice(0, 14).reduce((x, y) => x + y, 0) / Math.min(14, squad.length) : avg;
-    const quality = (cur - avg) * 0.3 - 1;
+    const quality = (cur - divMean(c.div)) * 0.3 - correction(c.div);
     while (squad.length < target) {
       const counts: Record<string, number> = {};
       for (const p of squad) counts[p.pos] = (counts[p.pos] ?? 0) + 1;
       const need = POS_NEEDS.find((pos, i) => (counts[pos] ?? 0) < POS_NEEDS.slice(0, i + 1).filter((x) => x === pos).length) ?? rng.pick(POSITIONS.slice(1));
       // try a free agent of the right position and level first
-      const faIdx = fas.findIndex((p) => p.pos === need && Math.abs(p.ovr - (avg + quality - 3)) < 4);
+      // a free agent of the right position and level first (a little better than needed is fine)
+      const want = avg + quality - 1;
+      let faIdx = -1;
+      for (let k = 0; k < fas.length; k++) {
+        const f = fas[k];
+        if (f.pos !== need || f.ovr < want - 4 || (f.ovr > want + 8 && c.div > 1)) continue; // top-level clubs take anyone better
+        if (faIdx < 0 || f.ovr > fas[faIdx].ovr) faIdx = k;
+      }
       let p: Player;
       if (faIdx >= 0) {
         p = fas.splice(faIdx, 1)[0];
       } else {
         const young = rng.chance(0.45);
         const a = young ? rng.int(17, 20) : randomAge(rng);
-        p = generatePlayer(rng, s.nextPlayerId++, { ovr: avg + quality - (young ? 7 : 3) + rng.normal(0, 3), pos: need, age: a, season: s.season, div: c.div, potBoost: young ? 3 : 0, nat: c.country && rng.chance(0.65) ? c.country : undefined });
+        p = generatePlayer(rng, s.nextPlayerId++, { ovr: avg + quality - 1 + rng.normal(0, 3), pos: need, age: a, season: s.season, div: c.div, nat: c.country && rng.chance(0.65) ? c.country : undefined });
         s.players.set(p.id, p);
       }
       signContract(rng, p, c.id, c.div, s.season, roleForRank(squad.filter((q) => q.ovr > p.ovr).length));
@@ -402,7 +436,7 @@ export function maintainSquads(s: GameState, rng: Rng) {
   const faCount = [...s.players.values()].filter((p) => p.clubId == null).length;
   for (let i = faCount; i < 450; i++) {
     const div = rng.int(4, 10);
-    const p = generatePlayer(rng, s.nextPlayerId++, { ovr: DIV_AVG_OVR[div] - 4 + rng.normal(0, 4), pos: rng.pick(POSITIONS), age: randomAge(rng), season: s.season, div });
+    const p = generatePlayer(rng, s.nextPlayerId++, { ovr: DIV_AVG_OVR[div] - 4 - correction(div) + rng.normal(0, 4), pos: rng.pick(POSITIONS), age: randomAge(rng), season: s.season, div });
     s.players.set(p.id, p);
   }
 }

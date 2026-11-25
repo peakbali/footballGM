@@ -192,7 +192,7 @@ export function academyIntake(s: GameState, rng: Rng): Player[] {
     const age = rng.int(15, 16);
     const quality = (yc - 20) / 12 + e.youthQuality + (lvl - 1) * 0.6 + (golden ? 8 : 0);
     const ovr = avg - 17 + quality * 0.5 + rng.normal(0, 4);
-    const p = generatePlayer(rng, s.nextPlayerId++, { ovr, pos: rng.pick(positions), age, season: s.season, div: user.div, potBoost: quality * 0.6 + (rng.chance(0.04) ? 12 : 0) });
+    const p = generatePlayer(rng, s.nextPlayerId++, { ovr, current: true, pos: rng.pick(positions), age, season: s.season, div: user.div, potBoost: quality * 0.6 + (rng.chance(0.04) ? 12 : 0) });
     p.clubId = user.id;
     p.academy = true;
     p.personality = clamp(Math.round(p.personality + yc / 10 - 3), 1, 100);

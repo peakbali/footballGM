@@ -44,7 +44,7 @@ export function developPlayer(rng: Rng, p: Player, age: number, ctx: DevContext,
   const fac = 0.9 + ((ctx.facility - 1) / 9) * 0.25;
   let change = curve > 0 ? curve * play * coach * fac * (1 + (ctx.bonus ?? 0)) : curve / (0.6 + 0.4 * coach * fac);
   change *= fraction;
-  const noiseSd = (p.dev === 'random' ? 3 : 1.2) * Math.sqrt(fraction);
+  const noiseSd = (p.dev === 'random' ? 2 : 1.2) * Math.sqrt(fraction);
   change += rng.normal(0, noiseSd);
   if (p.dev !== 'random' && curve > 0) change = Math.min(change, Math.max(0, gap));
   if (Math.abs(change) < 0.05) return 0;
