@@ -34,6 +34,7 @@ const shots = process.argv[3];
   // play on until the lab is ready
   await p.tap('.tabs button:has-text("Hub")'); await p.waitForTimeout(300);
   for (let k = 0; k < 30; k++) {
+    if (await p.locator('.wel-go').count()) { await p.click('.wel-go'); await p.waitForTimeout(150); continue; } // welcome / pre-season windows
     if (await p.locator('.dpop .dchoice:not(.off)').count()) { await p.tap('.dpop .dchoice:not(.off) >> nth=0'); await p.waitForTimeout(150); continue; }
     if (await p.locator('.dpop .btn').count()) { await p.tap('.dpop .btn'); continue; }
     if (await p.locator('.overlay .back').count()) { await p.tap('.overlay .back'); continue; }

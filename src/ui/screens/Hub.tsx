@@ -17,6 +17,7 @@ import { pendingDecisions } from '../../core/systems/decisions';
 import { gateBlocks } from '../../core/gate';
 import { billing } from '../billing';
 import { CUP_NAME } from '../../core/edition';
+import { PRE_WEEKS, inPreseason } from '../../core/systems/preseason';
 
 /**
  * Hub (DESIGN 13.2): everything on one phone screen, no scrolling.
@@ -91,6 +92,7 @@ export function HubScreen() {
               <div class="small dim" style={{ marginTop: 6 }}>No match scheduled. {phase === 'Off-season' ? 'The new season starts in July.' : ''}</div>
             )}
             <div class="chips-row">
+              {inPreseason(s) && <span class="tag gold">PRE-SEASON {s.week}/{PRE_WEEKS}</span>}
               {nf && <span class="tag">{home ? 'HOME' : 'AWAY'}</span>}
               {nf?.playoff && <span class="tag gold">PLAYOFF {nf.playoff}</span>}
               {opp && <span class="tag">{ordinal(table.findIndex((r) => r.clubId === opp.id) + 1)}</span>}
@@ -164,9 +166,11 @@ export function HubScreen() {
         }
         if (r?.seasonEnded && openReelIfPending(s)) return;
         if (f) nav.push({ kind: 'match', fixtureId: f.id, after: true });
+        const pre = r?.messages.find((m) => m.title.startsWith('Pre-season '));
+        if (pre) nav.push({ kind: 'custom', key: 'preseason', data: pre.id }); // the week's pre-season update (DESIGN 13.2za)
         else if (r?.messages.some((m) => m.action && !m.resolved && m.action.kind !== 'decision')) nav.push({ kind: 'inbox' });
       }}>
-        {st.busy ? <span class="spinner">Playing...</span> : gateBlocks(s, billing.unlocked) ? '🔒 Unlock season 2 ›' : 'Continue ›'}
+        {st.busy ? <span class="spinner">Playing...</span> : gateBlocks(s, billing.unlocked) ? '🔒 Unlock season 2 ›' : inPreseason(s) ? `Pre-season week ${s.week} ›` : s.week === PRE_WEEKS + 1 ? 'Start the season ›' : 'Continue ›'}
       </button>
     </div>
   );

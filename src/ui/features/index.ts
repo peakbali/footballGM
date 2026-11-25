@@ -14,3 +14,4 @@ import './paywall';
 export {};
 import './hallOfFame';
 import './welcome';
+import './preseasonUI';

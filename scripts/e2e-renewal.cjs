@@ -15,6 +15,7 @@ const shots = process.argv[3];
   let found = false;
   for (let k = 0; k < 160 && !found; k++) {
     if (await p.locator('.dpop .renewal').count()) { found = true; break; }
+    if (await p.locator('.wel-go').count()) { await p.click('.wel-go'); await p.waitForTimeout(150); continue; } // welcome / pre-season windows
     if (await p.locator('.dpop .dchoice:not(.off)').count()) { await p.tap('.dpop .dchoice:not(.off) >> nth=0'); await p.waitForTimeout(150); continue; }
     if (await p.locator('.dpop .btn').count()) { await p.tap('.dpop .btn >> nth=0'); continue; }
     if (await p.locator('.overlay .back').count()) { await p.tap('.overlay .back'); continue; }

@@ -24,7 +24,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   // keep playing slot 1 and check it is untouched by slot 2
   await p.tap('.slot.used >> nth=0 >> .slot-main'); await p.waitForSelector('button.continue'); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold');
   expect('slot 1 loads its own club', (await p.textContent('.topbar .title')).includes('Fenhurst'), true);
-  await p.tap('button.continue'); await p.waitForTimeout(1200);
+  await p.tap('button.continue'); await p.waitForTimeout(1200); if (await p.$('.pre-win')) { await p.click('.pre-win .wel-go'); await p.waitForTimeout(400); }
   await p.reload(); await p.waitForSelector('button.continue', { timeout: 20000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold');
   expect('reload resumes the slot played last', (await p.textContent('.topbar .title')).includes('Fenhurst'), true);
   // legacy save: no slot info record, listing rebuilds it
@@ -38,12 +38,14 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   // play on until an achievement toast shows
   let toast = 0;
   for (let k = 0; k < 80 && !toast; k++) {
+    if (await p.locator('.wel-go').count()) { await p.click('.wel-go'); await p.waitForTimeout(150); } // welcome / pre-season windows
     if (await p.locator('.dpop .dchoice:not(.off)').count()) { await p.tap('.dpop .dchoice:not(.off) >> nth=0'); await p.waitForTimeout(150); continue; }
     if (await p.locator('.dpop .btn').count()) { await p.tap('.dpop .btn'); continue; }
     await p.tap('button.continue', { timeout: 3000 }).catch(() => {});
     toast = await p.waitForSelector('.atoast', { timeout: 1500 }).then(() => 1).catch(() => 0);
   }
   expect('an achievement popup appears', toast >= 1, true);
+  if (await p.locator('.wel-go').count()) await p.click('.wel-go');
   await p.tap('.atoast'); await p.waitForTimeout(400);
   expect('tapping the popup opens the achievements page', await p.locator('.ach').count() > 50, true);
   expect('page shows an unlocked entry', await p.locator('.ach.got').count() >= 1, true);
