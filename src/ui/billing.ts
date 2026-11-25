@@ -1,3 +1,4 @@
+import { STORE_NAME } from '../core/edition';
 /**
  * "Full game" one-time purchase (docs/PLAY_STORE.md).
  * - In the Google Play app (a Trusted Web Activity), Play Billing via the Digital Goods API + Payment Request.
@@ -62,7 +63,7 @@ class Billing {
 
   /** Re-reads Play's purchase list. Quiet = launch check (no error text). */
   async restore(quiet = false) {
-    if (!this.service) { if (!quiet) this.error = 'Purchases can be restored in the Google Play version of FootballGM.'; this.bump(); return; }
+    if (!this.service) { if (!quiet) this.error = `Purchases can be restored in ${STORE_NAME} from Google Play.`; this.bump(); return; }
     try {
       const list = await this.service.listPurchases();
       const p = list.find((x) => x.itemId === PRODUCT_ID);

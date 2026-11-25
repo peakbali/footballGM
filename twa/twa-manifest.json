@@ -1,8 +1,8 @@
 {
   "packageId": "com.peakbali.footballgm",
   "host": "peakbali.github.io",
-  "name": "FootballGM",
-  "launcherName": "FootballGM",
+  "name": "Peak Football",
+  "launcherName": "Peak Football",
   "display": "standalone",
   "orientation": "portrait",
   "themeColor": "#0B1020",

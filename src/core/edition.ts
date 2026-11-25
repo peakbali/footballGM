@@ -8,4 +8,10 @@ declare const __REAL_WORLD__: boolean | undefined;
 const fromEnv = () => (typeof process !== 'undefined' ? process.env?.VITE_WORLD : undefined) !== 'fictional';
 export const REAL_WORLD: boolean = typeof __REAL_WORLD__ !== 'undefined' ? __REAL_WORLD__ : fromEnv();
 
+/** The Google Play app is called Peak Football; the web version keeps the FootballGM name. */
+export const STORE_NAME = 'Peak Football';
+export const APP_NAME = REAL_WORLD ? 'FootballGM' : STORE_NAME;
+/** Title-screen logo, two lines. */
+export const LOGO: [string, string] = REAL_WORLD ? ['FOOTBALL', 'GM'] : ['PEAK', 'FOOTBALL'];
+
 export const CUP_NAME = REAL_WORLD ? 'FA Cup' : 'National Cup';
