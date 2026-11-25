@@ -1389,3 +1389,14 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
   bar and blue text. Unfamiliar positions stay plain. A legend sits under the grid.
 - Facility branch pages (Stadium, Training ground, Academy, Commercial) show the club's current cash at the top
   right of the top bar, where it stays visible while scrolling the upgrades.
+
+### 13.2t Interested free agents and a 30-player scouted list **[Agreed]**
+
+- The Free agents list shows only players open to joining you, using the same check as scout recommendations
+  (`isInterested`). A player refuses outright if he thinks he belongs more than 2 divisions above you, unless he is
+  33 or older. Otherwise his interest score must reach 50. The score starts at 50, gets +15 for being a free agent, and
+  ±10 for whether he would start ahead of your best player in his position. Your training ground and stadium
+  levels add to it, he leans towards you with a good personality or low morale, players aged 30+ get +5, and a
+  seasonal random swing of ±10 is added. In a new division 9 career, about 280 of 400 free agents qualify.
+- Scout recommendations keep the 30 newest reports (`SCOUTED_MAX`). Each new report goes on top and pushes the
+  oldest off the list.
