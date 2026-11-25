@@ -358,28 +358,49 @@ function crowdBus(c: AudioContext, d: AudioNode) {
   return g;
 }
 
+/** One fan whistle: a pure sine that swoops (glide = [time fraction, frequency] points), with a little vibrato. */
+function whistle(d: AudioNode, t: number, pts: [number, number][], dur: number, vol: number) {
+  const c = ctx!;
+  const o = c.createOscillator();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(pts[0][1], t);
+  for (const [k, f] of pts.slice(1)) o.frequency.linearRampToValueAtTime(f, t + dur * k);
+  const vib = c.createOscillator();
+  const vd = c.createGain();
+  vib.frequency.value = rnd(5, 7);
+  vd.gain.value = 18;
+  vib.connect(vd).connect(o.frequency);
+  const g = shape(d, t, [[0.03, vol], [dur * 0.8, vol * 0.85], [dur, 0]]);
+  o.connect(g);
+  o.start(t); vib.start(t);
+  o.stop(t + dur + 0.05); vib.stop(t + dur + 0.05);
+}
+
+/** Win (DESIGN 13.5b): fans whistling over a soft, happy murmur. Pure tones only, no noise. */
 function cheer(d: AudioNode, t: number) {
-  // voices only: no noise bed and no noise claps, so it stays clean (DESIGN 13.2n)
-  // a warm, happy "aah" that swells and fades (calmer: fewer voices, no whistles, softer top end)
-  for (let i = 0; i < 9; i++) {
-    const st = t + rnd(0, 0.3);
-    crowdVoice(d, st, rnd(170, 300), rnd(1.1, 1.6), [rnd(700, 820), rnd(1100, 1300)], 0.09, [0.95, 1.1, 1.05, 0.95], 0.25, 1100);
+  // the classic two-note "wheet-whee-oo" wolf whistle, then two shorter whistles from elsewhere in the ground
+  whistle(d, t + 0.05, [[0, 1500], [0.35, 2600], [0.45, 2300], [0.55, 1400], [0.8, 2500], [1, 1900]], 0.75, 0.05);
+  whistle(d, t + 0.3, [[0, 2100], [0.6, 2900], [1, 2700]], 0.4, 0.035);
+  whistle(d, t + 0.62, [[0, 1800], [0.5, 2400], [1, 2200]], 0.45, 0.03);
+  for (let i = 0; i < 6; i++) {
+    const st = t + rnd(0, 0.25);
+    crowdVoice(d, st, rnd(170, 280), rnd(0.9, 1.3), [rnd(700, 800), rnd(1100, 1250)], 0.06, [0.95, 1.08, 1.02, 0.95], 0.25, 1000);
   }
 }
 
+/** Loss: a real low boo ("booo" vowel, pitch sagging), calmer and shorter than a stadium boo. */
 function boo(d: AudioNode, t: number) {
-  // a low, disappointed "ohh" that sinks away (not a harsh boo)
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 10; i++) {
     const st = t + rnd(0, 0.3);
-    crowdVoice(d, st, rnd(100, 160), rnd(1.1, 1.5), [rnd(300, 360), rnd(650, 750)], 0.09, [1, 0.98, 0.9, 0.8], 0.3, 750);
+    crowdVoice(d, st, rnd(90, 150), rnd(1.2, 1.7), [rnd(280, 330), rnd(650, 760)], 0.1, [1, 1.02, 0.95, 0.85], 0.3, 850);
   }
 }
 
+/** Draw: a neutral, level "hmm" (closed mouth, no rise or fall). */
 function hmm(d: AudioNode, t: number) {
   for (let i = 0; i < 5; i++) {
     const st = t + rnd(0, 0.2);
-    // closed-mouth "mm": low vowel formants, pitch dips then lifts like a doubtful "hmm?"
-    crowdVoice(d, st, rnd(110, 150), rnd(0.8, 1.1), [rnd(230, 280), rnd(500, 600)], 0.1, [1, 0.94, 1.04], 0.15, 700);
+    crowdVoice(d, st, rnd(115, 145), rnd(0.8, 1.1), [rnd(230, 270), rnd(500, 580)], 0.1, [1, 1, 0.99], 0.15, 700);
   }
 }
 
@@ -446,9 +467,9 @@ export function sfx(name: Sfx) {
     case 'sparkle': for (let i = 0; i < 6; i++) vibes(d, t + i * 0.08 + rnd(0, 0.03), pick([84, 86, 88, 91, 93, 96]), 0.5, 0.045); break;
     case 'rain': for (let i = 0; i < 10; i++) { const tt = t + rnd(0, 2); const g = env(d, tt, 0.02, 0.05, 0.002); osc(g, tt, 'sine', rnd(1800, 3500), 0.05); } break;
     case 'rise': ep([65, 69, 72, 76], 0.08, 1, 0.1); break;
-    case 'cheer': cheer(crowdBus(c, d), t); ep([67, 72, 76], 0.09, 0.8, 0.09); break;
-    case 'boo': boo(crowdBus(c, d), t); ep([62, 57], 0.2, 0.9, 0.08); break;
-    case 'hmm': hmm(crowdBus(c, d), t); ep([62, 67], 0.12, 0.7, 0.07); break;
+    case 'cheer': cheer(crowdBus(c, d), t); break;
+    case 'boo': boo(crowdBus(c, d), t); break;
+    case 'hmm': hmm(crowdBus(c, d), t); break;
   }
 }
 
