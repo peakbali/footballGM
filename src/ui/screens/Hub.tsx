@@ -16,6 +16,7 @@ import { Avatar, KINDS, senderKind } from '../senderArt';
 import { pendingDecisions } from '../../core/systems/decisions';
 import { gateBlocks } from '../../core/gate';
 import { billing } from '../billing';
+import { CUP_NAME } from '../../core/edition';
 
 /**
  * Hub (DESIGN 13.2): everything on one phone screen, no scrolling.
@@ -147,7 +148,7 @@ export function HubScreen() {
             })}
           </tbody>
         </table>
-        {cup && <div class="tiny dim cupline" onClick={() => nav.push({ kind: 'custom', key: 'cup' })}>🏆 National Cup: <span class="gold">{cup}</span> ›</div>}
+        {cup && <div class="tiny dim cupline" onClick={() => nav.push({ kind: 'custom', key: 'cup' })}>🏆 {CUP_NAME}: <span class="gold">{cup}</span> ›</div>}
       </Card>
 
       <button class="btn gold continue" disabled={st.busy} onClick={async () => {

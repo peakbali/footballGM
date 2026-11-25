@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-single/
+dist-play/
 android/
 ios/
 # Real player data (EA FC) must never be committed

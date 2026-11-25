@@ -4,6 +4,7 @@ import { clamp } from '../rng';
 import type { GameState } from '../state';
 import { registerSystem } from '../systems';
 import { txn } from './finance';
+import { REAL_WORLD } from '../edition';
 
 /**
  * Facilities (DESIGN 9.2, reworked in 13.2i). Four main branches, each made of five sub-facilities
@@ -349,6 +350,6 @@ registerSystem({
 /** Ground grading note for the UI (DESIGN 9.2, informational only in this sandbox). */
 export function gradingNote(s: GameState): string | null {
   const c = s.clubs[s.userClubId];
-  if (c.div <= 5 && trackLevel(s, 'stands') < 2) return 'Grounds in the top five divisions need a covered stand. Build Seats & stands to level 2 to meet ground grading.';
+  if (c.div <= 5 && trackLevel(s, 'stands') < 2) return (REAL_WORLD ? 'National League grounds' : 'Grounds in the top five divisions') + ' need a covered stand. Build Seats & stands to level 2 to meet ground grading.';
   return null;
 }

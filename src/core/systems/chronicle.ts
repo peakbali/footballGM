@@ -5,6 +5,7 @@ import { INCOME_CATS, COST_CATS, type ClubSeasonRecord } from '../types';
 import { boardState } from './board';
 import { prizeMoney } from './finance';
 import { ROUND_NAMES, type CupState } from './cup';
+import { CUP_NAME } from '../edition';
 
 /** Club history, records and the data for the end-of-season reel (DESIGN 12.3). */
 
@@ -142,7 +143,7 @@ export function recordSeason(s: GameState): UserSeason {
   if (buys[0] && (!R.signing || buys[0].fee > R.signing.v)) { nr(`Record signing: ${buys[0].name}`); R.signing = { v: buys[0].fee, season: s.season, name: buys[0].name }; }
   if (sales[0] && (!R.sale || sales[0].fee > R.sale.v)) { nr(`Record sale: ${sales[0].name}`); R.sale = { v: sales[0].fee, season: s.season, name: sales[0].name }; }
   if (better({ div: rec.div, pos: rec.pos }, R.bestFinish)) { if (R.bestFinish) nr(`Best finish ever: ${rec.pos}${rec.pos === 1 ? 'st' : rec.pos === 2 ? 'nd' : rec.pos === 3 ? 'rd' : 'th'} in division ${rec.div}`); R.bestFinish = { div: rec.div, pos: rec.pos, season: s.season }; }
-  if (cup && (!R.cup || cup.reached > R.cup.reached)) { if (R.cup || cup.won) nr(cup.won ? 'National Cup winners for the first time!' : `Best National Cup run: ${cup.text.replace('Out in the ', '')}`); R.cup = { reached: cup.reached, won: cup.won, season: s.season }; }
+  if (cup && (!R.cup || cup.reached > R.cup.reached)) { if (R.cup || cup.won) nr(cup.won ? `${CUP_NAME} winners for the first time!` : `Best ${CUP_NAME} run: ${cup.text.replace('Out in the ', '')}`); R.cup = { reached: cup.reached, won: cup.won, season: s.season }; }
   const prevTop = topScorerAllTime(s);
   for (const p of squadOf(s, user.id)) {
     if (!p.stats.goals) continue;

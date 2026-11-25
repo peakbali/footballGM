@@ -25,6 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # the Google Play app (TWA) opens /play/: the fictional-world build (DESIGN 13.2y)
+      - run: npm run build:play && cp -r dist-play dist/play
       - uses: actions/configure-pages@v5
         with:
           enablement: true

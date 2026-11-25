@@ -5,12 +5,13 @@ import { registerSystem } from '../systems';
 import { txn } from './finance';
 
 /**
- * The National Cup: a knockout for every club in the simulated pyramid (200 clubs).
+ * The cup (FA Cup on the web, National Cup in the Play build): a knockout for every club in the simulated pyramid (200 clubs).
  * The 144 lowest-ranked clubs play the first round, the top 56 enter in round two.
  * Ties are played midweek alongside the league; draws go to penalties.
  */
 export const CUP_KEY = 'fa';
-export const CUP_NAME = 'National Cup';
+import { CUP_NAME } from '../edition';
+export { CUP_NAME };
 export const CUP_WEEKS = [9, 13, 18, 22, 26, 31, 36, 41];
 export const ROUND_NAMES = ['First round', 'Second round', 'Third round', 'Fourth round', 'Fifth round', 'Quarter-final', 'Semi-final', 'Final'];
 const BYES = 56;

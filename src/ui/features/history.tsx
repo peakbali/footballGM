@@ -11,6 +11,7 @@ import { registerOverlay } from '../overlays';
 import { sfx } from '../audio';
 import { CardArt, type ArtKey } from '../cardArt';
 import { Portrait } from '../portrait';
+import { CUP_NAME } from '../../core/edition';
 
 // ---------- chart: one measure per chart, all seasons, tap a point for its value
 
@@ -185,7 +186,7 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
             <Stat k={5} n={u.bestAtt} label="best crowd" />
           </div>
           {u.bigWin && <div class="strip" style={{ '--n': 6 } as never}>⚽ Biggest win <b class="gold">{u.bigWin.text}</b></div>}
-          {u.cup && <div class="strip" style={{ '--n': 7 } as never}>🏆 National Cup <b class={u.cup.won ? 'gold' : ''}>{u.cup.text}</b></div>}
+          {u.cup && <div class="strip" style={{ '--n': 7 } as never}>🏆 {CUP_NAME} <b class={u.cup.won ? 'gold' : ''}>{u.cup.text}</b></div>}
         </div>
       );
     case 2: {
@@ -286,7 +287,7 @@ function ReelCard({ i, s, u }: { i: number; s: GameState; u: UserSeason }) {
             {R.attendance && <><span>Best crowd</span><span>{R.attendance.v.toLocaleString()}</span></>}
             {R.signing && <><span>Record signing</span><span>{R.signing.name}, {money(R.signing.v)}</span></>}
             {R.sale && <><span>Record sale</span><span>{R.sale.name}, {money(R.sale.v)}</span></>}
-            {R.cup && <><span>Best National Cup run</span><span>{R.cup.won ? `Winners (${R.cup.season})` : `${ROUND_NAMES[R.cup.reached] ?? 'Entry'} (${R.cup.season})`}</span></>}
+            {R.cup && <><span>Best {CUP_NAME} run</span><span>{R.cup.won ? `Winners (${R.cup.season})` : `${ROUND_NAMES[R.cup.reached] ?? 'Entry'} (${R.cup.season})`}</span></>}
           </div>
         </div>
       );
