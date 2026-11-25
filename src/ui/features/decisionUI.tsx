@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { GameState } from '../../core/state';
 import type { InboxMessage } from '../../core/types';
-import { decisionChoices, pendingDecisions, resolveDecision, type Choice } from '../../core/systems/decisions';
+import { decisionChoices, failRenewal, pendingDecisions, resolveDecision, signRenewal, type Choice } from '../../core/systems/decisions';
+import { ContractTerms } from './contractTerms';
 import { CardArt } from '../cardArt';
 import { Avatar, KINDS, messagePlayer, senderKind } from '../senderArt';
 import { nav, store, useStore } from '../store';
@@ -14,8 +15,20 @@ export function Chips({ chips }: { chips: Choice['chips'] }) {
 /** The choice buttons of a pending decision, each with its consequence chips. */
 export function ChoiceList({ s, m, onDone }: { s: GameState; m: InboxMessage; onDone?: (outcome: string | null) => void }) {
   const choices = decisionChoices(s, m);
+  const ctx = m.action?.data as { type?: string; pid?: number } | undefined;
+  const renewal = ctx?.type === 'contract_expiring' ? s.players.get(ctx.pid ?? -1) : undefined;
+  const finish = (out: string | null) => { store.bump(); void store.persist(); onDone?.(out); };
   return (
     <div class="dchoices">
+      {renewal && renewal.clubId === s.userClubId && renewal.contract && (
+        <div class="renewal">
+          <div class="mail-from">Offer a new contract</div>
+          <ContractTerms s={s} p={renewal} clubId={s.userClubId} bare
+            onAgreed={(o) => { sfx('confirm'); finish(signRenewal(s, m.id, renewal.id, o)); }}
+            onFailed={(msg) => finish(failRenewal(s, m.id, renewal.id, msg))} />
+          {choices.length > 0 && <div class="mail-from" style={{ marginTop: 6 }}>Or</div>}
+        </div>
+      )}
       {choices.map((ch, i) => (
         <button
           key={i}

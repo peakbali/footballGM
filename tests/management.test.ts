@@ -4,7 +4,7 @@ import { advanceWeek } from '../src/core/season';
 import { Rng } from '../src/core/rng';
 import { squadOf } from '../src/core/state';
 import { askingPrice, completeDeal, submitBid } from '../src/core/systems/transfers';
-import { askingWage, negotiate, seniorCount } from '../src/core/systems/contracts';
+import { contractAsk, negotiate, seniorCount } from '../src/core/systems/contracts';
 import { acceptSponsor } from '../src/core/systems/sponsors';
 import { isInterested, knowledgeOf, makeReport } from '../src/core/systems/scouting';
 import '../src/core/systems/all';
@@ -76,7 +76,7 @@ describe('management', () => {
     expect(['countered', 'rejected']).toContain(low.status);
     const ok = submitBid(s, new Rng(1), { pid: target.id, type: 'permanent', fee });
     expect(ok.status).toBe('accepted');
-    const ask = askingWage(s, target, s.userClubId);
+    const ask = contractAsk(s, target, s.userClubId, 2); // the ask depends on the length (DESIGN 13.2m)
     const r = negotiate(s, target, s.userClubId, { wage: ask, years: 2, clauses: {}, role: 'starter' }, 1);
     expect(r.result).toBe('accept');
     const before = seniorCount(s);

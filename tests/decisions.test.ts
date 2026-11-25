@@ -60,6 +60,7 @@ describe('every decision type', () => {
         team.slice(5, 9).forEach((p) => { p.morale = 30; p.personality = 30; p.listed = false; });
         team.slice(13, 18).forEach((p) => { p.birthYear = s.season - 20; });
         const vet = team[2];
+        team[0].contract!.signedSeason = s.season - 3; // pay-rise talks need a deal signed 2+ years ago
         vet.birthYear = s.season - 31; vet.personality = 80; vet.contract!.endSeason = s.season;
         const m = fireDecision(s, new Rng(5), type);
         expect(m, `${type} could not be created`).not.toBeNull();
