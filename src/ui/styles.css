@@ -626,3 +626,12 @@ tr.me .pw-bar i { background: var(--gold, #ffcc4d); }
 .fac-track-head .grow { min-width: 0; }
 .fac-art { width: 64px; height: 40px; flex: none; image-rendering: pixelated; background: rgba(0,0,0,.3); border: 1px solid var(--line); border-radius: 3px; }
 .fac-art.unbuilt { opacity: .45; filter: grayscale(.7); }
+/* Hall of Fame (DESIGN 13.3a) */
+.hof-btn { margin-top: 10px; }
+.hof-row { gap: 10px; }
+.hof-rank { width: 22px; text-align: center; font-family: var(--px); color: var(--dim, #8a93b8); }
+.hof-top1 .hof-rank { color: var(--gold); }
+.hof-top2 .hof-rank { color: #c4cde0; }
+.hof-top3 .hof-rank { color: #c98a4b; }
+.hof-val { white-space: nowrap; font-size: 13px; }
+.hof-chips { flex-wrap: wrap; }

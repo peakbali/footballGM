@@ -415,10 +415,10 @@ function HistorySection({ s }: { s: GameState }) {
   const list = seasons(s);
   const R = records(s);
   const top = topScorerAllTime(s);
-  if (!list.length) return <Card title="History" art="trophy"><div class="empty small">Your first season is still being written. History and records appear here after the season ends.</div></Card>;
+  if (!list.length) return <Card title="History" art="trophy"><div class="empty small">Your first season is still being written. History and records appear here after the season ends.</div><button class="btn gold block hof-btn" onClick={() => nav.push({ kind: 'custom', key: 'hof' })}>🏆 Hall of Fame ›</button></Card>;
   return (
     <div>
-      <Card title="Club history"><Graphs list={list} /></Card>
+      <Card title="Club history"><Graphs list={list} /><button class="btn gold block hof-btn" onClick={() => nav.push({ kind: 'custom', key: 'hof' })}>🏆 Hall of Fame ›</button></Card>
       <Card title="Seasons">
         {[...list].reverse().map((u) => (
           <div class="item" key={u.season} onClick={() => nav.push({ kind: 'custom', key: 'reel', data: u.season })}>
