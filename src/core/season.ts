@@ -12,6 +12,7 @@ import { POSITIONS, type Position } from './data/positions';
 import { playerValue } from './data/economy';
 import { runWeeklySystems, runSeasonEndSystems, runRolloverSystems, hooks } from './systems';
 import { REAL_WORLD } from './edition';
+import { hofSync } from './systems/hof';
 
 export interface WeekResult {
   week: number;
@@ -105,6 +106,7 @@ export function advanceWeek(s: GameState): WeekResult {
   }
 
   runWeeklySystems(s, rng, idx, res);
+  hofSync(s); // Hall of Fame ledger, before a rollover can retire anyone (DESIGN 13.3a)
 
   if (s.week === CAL.seasonEndWeek) {
     endSeason(s);
