@@ -77,7 +77,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   await gotoTab('League');
   const seg = () => active('.seg[data-seg-bar] button.on');
   await swipe(300, 500, 60, 500);
-  expect('league swipe left -> fixtures', await seg(), 'fixtures');
+  expect('league swipe left -> power', await seg(), 'power');
   await p.waitForTimeout(300); await gotoTab('Club');
   await swipe(300, 500, 60, 500);
   expect('club swipe left -> Facilities', await seg(), 'Facilities');
