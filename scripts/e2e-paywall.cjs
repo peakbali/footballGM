@@ -20,7 +20,7 @@ const shots = process.argv[3];
 
   await p.goto(url); await p.waitForSelector('.slots .slot.empty');
   await p.tap('.slot.empty >> nth=0'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
-  await p.waitForSelector('button.continue', { timeout: 30000 });
+  await p.waitForSelector('button.continue', { timeout: 30000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); // welcome window (DESIGN 13.3b)
   await play(17); await p.evaluate(() => { const st = window.__fgm.store; st.hiddenUpTo = 1e9; st.bump(); }); await clearPopups();
   await shot('1-hub');
   await p.tap('.tabs button >> nth=1'); await p.waitForTimeout(300); await shot('2-squad');
@@ -63,7 +63,7 @@ const shots = process.argv[3];
   expect('after unlock Continue is back', (await p.textContent('button.continue')).trim(), 'Continue ›');
   await p.evaluate(async () => { const st = window.__fgm.store; for (let i = 0; i < 30 && st.state.season === 2025; i++) await st.continueGame(12); });
   expect('season two starts', await p.evaluate(() => window.__fgm.store.state.season), 2026);
-  await p.reload(); await p.waitForSelector('button.continue', { timeout: 20000 });
+  await p.reload(); await p.waitForSelector('button.continue', { timeout: 20000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); // welcome window (DESIGN 13.3b)
   expect('the unlock survives a reload', await p.evaluate(() => localStorage.getItem('fgm.fullGame')), 'dev');
   console.log('console errors:', JSON.stringify(errs));
   await b.close();

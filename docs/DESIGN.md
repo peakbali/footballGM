@@ -1436,6 +1436,11 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 - Ledger: src/core/systems/hof.ts, stored in the save (ext.hof), synced weekly after the weekly systems so a player's last games before a transfer or retirement count. Players who left or retired keep their records.
 - Older saves: backfilled on the first sync from the players' career logs (appearances, goals, highest OVR per season at the club, for players still in the database). Assists, clean sheets, wages and best-season ratings start counting from now; players who already retired before the update are not in the ledger.
 
+### 13.3b Welcome window and the manager's name **[Agreed]**
+- A welcome window opens by itself at the start of a new career and of every new season (after the season review, once nothing else is on screen). It shows the season, "Welcome, <name>!", the club and its division, last season's finish, the squad's strength rank in the league (team OVR), the board's mood and goals, the key dates (summer window, first match, winter window) and a six-line guide to playing.
+- The manager types their name there. It is stored per save (ext.manager), greets them in the window and shows on the save slot cards. The window counts as seen for the season as soon as it opens, so closing it any way (button, tap outside, back) never brings it back.
+- A [?] button in the top bar, next to Settings, reopens it any time.
+
 ### 13.5a Clean music and calmer result sounds **[Agreed]**
 - Nothing in the game uses noise any more. The noise-based convolution reverb is replaced by three filtered feedback echoes, the ride-cymbal tings are gone, the electric piano and vibes are at most two sines per note, all noise bursts in effects (page, swipe, contract, build, goal, fanfare, reveal, stamp, rain, rise) are replaced by tones or removed, and a limiter on the master stops peaks from clipping. A rendered 40 s of music has no measurable energy above 5 kHz. The music is generated beat by beat, so it has no loop seam.
 - Match results are calmer: win is a warm "aah" swell (9 voices, no whistles) with a soft rising major arpeggio, draw a short doubtful "hmm" with two neutral notes, loss a low sinking "ohh" with a soft falling pair; all shorter (about 1-1.6 s) and softer than before. Deal stamps (win/loss) are softer three-note figures.

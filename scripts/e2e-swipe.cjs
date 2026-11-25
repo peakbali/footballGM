@@ -9,7 +9,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   const cdp = await ctx.newCDPSession(p);
   await p.goto(url); await p.waitForTimeout(1000);
   await p.tap('text=New career'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
-  await p.waitForSelector('button.continue', { timeout: 30000 });
+  await p.waitForSelector('button.continue', { timeout: 30000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); // welcome window (DESIGN 13.3b)
   const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
   const swipe = async (x0, y0, x1, y1) => {
     await touch('touchStart', x0, y0);

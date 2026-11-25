@@ -13,3 +13,4 @@ import './clubIdentityUI';
 import './paywall';
 export {};
 import './hallOfFame';
+import './welcome';

@@ -17,6 +17,7 @@ import { userClub } from '../core/state';
 import { music } from './audio';
 import { DecisionPopup } from './features/decisionUI';
 import { AchievementToast } from './features/achievementsUI';
+import { openWelcome, welcomeDue } from './features/welcome';
 
 const TABS = [
   ['hub', 'Hub'],
@@ -32,6 +33,10 @@ export function App() {
   useEffect(() => {
     store.load().finally(() => setBooting(false));
   }, []);
+
+  // the welcome window opens by itself at a new career and each new season, once nothing else is open
+  const due = !!st.state && !st.busy && nav.stack.length === 0 && welcomeDue(st.state);
+  useEffect(() => { if (due) openWelcome(); }, [due]);
 
   if (booting) return <div class="app"><div class="start"><div class="logo">FOOTBALL<br />GM</div><div class="spinner">Loading...</div></div></div>;
   music('hub'); // one continuous loop everywhere (title screen, popups, match report, season reel)
@@ -53,6 +58,7 @@ export function App() {
         </div>
         <div class="spacer" />
         <div class={`money ${club.cash < 0 ? 'neg' : ''}`}>{money(club.cash)}</div>
+        <button class="back help-btn" onClick={openWelcome} aria-label="Welcome and how to play">?</button>
         <button class="back" style={{ fontSize: 18, color: 'var(--dim)' }} onClick={() => nav.push({ kind: 'settings' })} aria-label="Settings">⚙</button>
       </div>
       <div class="content">

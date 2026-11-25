@@ -12,7 +12,7 @@ const shots = process.argv[3];
   const cash = async () => (await p.textContent('.topbar .money')).trim();
   await p.goto(url); await p.waitForSelector('.slot.empty');
   await p.tap('.slot.empty >> nth=0'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
-  await p.waitForSelector('button.continue', { timeout: 30000 });
+  await p.waitForSelector('button.continue', { timeout: 30000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); // welcome window (DESIGN 13.3b)
   await p.tap('.tabs button:has-text("Club")'); await p.waitForTimeout(300);
   await p.tap('.seg button:has-text("Facilities")'); await p.waitForTimeout(400);
   expect('4 branch boxes', await p.locator('.fac-box').count(), 4);
