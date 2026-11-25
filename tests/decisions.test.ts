@@ -99,3 +99,22 @@ describe('window news and life events', () => {
     expect(life).toBe(2);
   });
 });
+
+describe('result stamps and bid refusals', () => {
+  it('FAILED only for transfers and negotiations; refusing a bid leaves morale alone', async () => {
+    const { decisionTone } = await import('../src/core/systems/decisions');
+    const { makeIncomingOffer, rejectIncoming } = await import('../src/core/systems/transfers');
+    expect(decisionTone('dressing_room', 'It drags on and both sulk for a week.')).toBe('neutral');
+    expect(decisionTone('injury_gamble', 'Smith aggravates it: hamstring, out 3 weeks.')).toBe('neutral');
+    expect(decisionTone('rival_bid', 'They walk away at £3k. Smith stays.')).toBe('bad');
+    expect(decisionTone('pre_tour', 'Deal done.')).toBe('good');
+    const lg = startingLeagues()[0];
+    const s = newGame(11, clubsInLeague(lg.key)[0]);
+    const p = squadOf(s, s.userClubId).filter((x) => !x.academy)[0];
+    p.personality = 20; p.listed = false; p.morale = 60;
+    const buyer = s.clubs.find((c) => c.id !== s.userClubId)!.id;
+    const o = makeIncomingOffer(s, new Rng(1), p, buyer, false);
+    rejectIncoming(s, o.id);
+    expect(p.morale).toBe(60);
+  });
+});

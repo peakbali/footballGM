@@ -224,7 +224,7 @@ register({
         if (counterIncoming(s2, rng, o.id, ask) === 'accepted') { const err = acceptIncoming(s2, o.id); return err ? `Deal failed: ${err}` : `Sold. They agreed to ${fmt(ask)} and ${p.last} has gone.`; }
         return `They walk away at ${fmt(ask)}. ${p.last} stays.`;
       } },
-      { label: 'Refuse', chips: [meh(`${p.last} stays`), bad(`Morale −${p.personality < 40 ? 12 : 4}`)], apply: (s2) => { rejectIncoming(s2, o.id); return `${p.last} stays, a little restless.`; } },
+      { label: 'Refuse', chips: [meh(`${p.last} stays`), meh('No effect on his morale')], apply: (s2) => { rejectIncoming(s2, o.id); return `You turn the bid down. ${p.last} stays.`; } },
     ];
   },
 });
@@ -297,7 +297,7 @@ register({
     if (!p || !o || o.status !== 'pending') return gone();
     return [
       { label: 'Let him go on loan', chips: [good(`Saves ${c.amount}% of his wage`), good('Gets match minutes'), meh('Back at the end of the loan')], apply: (s2) => { const err = acceptIncoming(s2, o.id); if (!err) mood(p, 8); return err ? `Deal failed: ${err}` : `Deal done. ${p.last} heads out on loan.`; } },
-      { label: 'Keep him', chips: [meh('Stays in the squad'), bad('Morale −3')], apply: (s2) => { rejectIncoming(s2, o.id); mood(p, -3); return `${p.last} stays, hoping for more minutes.`; } },
+      { label: 'Keep him', chips: [meh('Stays in the squad')], apply: (s2) => { rejectIncoming(s2, o.id); return `${p.last} stays in the squad.`; } },
     ];
   },
 });
@@ -558,6 +558,15 @@ export function decisionChoices(s: GameState, m: InboxMessage): Choice[] {
 const BAD = /\b(rejects?|refuses?|refused|turns? (it )?down|not convinced|walks? away|broke down|storms?|won't|will not|declin\w*|fails?|failed|falls? through|pulls? out|no deal|sulk\w*|not happy|unhappy|leaves? on a free|grumble|injur\w*|knock|aggravates)\b/i;
 const GOOD = /\b(signs?|signed|accepts?|agreed|agrees|joins?|arrives|completed?|deal done|sold|lands in the account|happy|delighted|decides to stay|grateful|excited|releases|bonds|closer)\b/i;
 /** Was this outcome good or bad for the user? Read from the outcome text (bad words win). */
+/** Decisions that are a transfer or a negotiation: only these can end in a red FAILED stamp. */
+const DEAL_TYPES = new Set(['rival_bid', 'loan_request', 'star_talks', 'loyal_extend', 'contract_expiring', 'youth_trial']);
+
+/** Stamp tone for a decision: FAILED only when a transfer or negotiation falls through, otherwise Done (DESIGN 13.2n). */
+export function decisionTone(type: string | undefined, text: string | undefined | null, stored?: 'good' | 'bad' | 'neutral'): 'good' | 'bad' | 'neutral' {
+  const t = stored ?? outcomeTone(text);
+  return t === 'bad' && !DEAL_TYPES.has(type ?? '') ? 'neutral' : t;
+}
+
 export function outcomeTone(text: string | undefined | null): 'good' | 'bad' | 'neutral' {
   if (!text) return 'neutral';
   if (BAD.test(text)) return 'bad';
@@ -576,7 +585,7 @@ export function resolveDecision(s: GameState, msgId: number, index: number): str
   m.read = true;
   m.pick = ch.label;
   m.outcome = outcome;
-  m.tone = outcomeTone(outcome);
+  m.tone = decisionTone((m.action.data as DecisionCtx | undefined)?.type, outcome);
   return outcome;
 }
 
