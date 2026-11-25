@@ -16,7 +16,13 @@ export const SQUAD_TEMPLATE: Position[] = [
 ];
 
 export interface GenOpts {
+  /**
+   * The level this player is at in his prime (division band). Young players are generated below it by the growth
+   * still ahead of them, so a 17-year-old at a club is a prospect, not already a finished player (DESIGN 10.4).
+   * With `current: true` it is his OVR today instead (academy intake, youth trials).
+   */
   ovr: number;
+  current?: boolean;
   pos: Position;
   age: number;
   season: number;
@@ -57,10 +63,19 @@ export function rollDevType(rng: Rng): { dev: DevType; shift: number } {
 }
 
 /** Potential given current OVR and age. */
+/** OVR a typical player still gains from this age to his peak (about 24 to 26). */
+export function youthDeficit(age: number): number {
+  return Math.max(0, 24.5 - age) * 2.1;
+}
+
+/**
+ * POT: today's OVR plus the growth still ahead (youthDeficit), with spread. Tuned with scripts/pot-audit.ts so that
+ * over 20+ seasons the division averages and the whole rating spread stay where the world started (DESIGN 10.4).
+ */
 export function rollPotential(rng: Rng, ovr: number, age: number, boost = 0): number {
   if (age >= 29) return ovr;
-  const years = Math.max(0, 27 - age);
-  const gap = Math.max(0, rng.normal(years * 2.2, 2 + years * 0.9) + boost);
+  const d = youthDeficit(age);
+  const gap = Math.max(0, d + rng.normal(0, 1.5 + d * 0.25) + boost + (age <= 27 ? 1 : 0));
   return clamp(Math.round(ovr + gap), ovr, 99);
 }
 
@@ -105,7 +120,7 @@ function posOvrRaw(attrs: number[], pos: Position): number {
 export function generatePlayer(rng: Rng, id: number, o: GenOpts): Player {
   const nat = o.nat ?? pickNationality(rng, o.div ?? 9);
   const { first, last } = randomName(rng, nat);
-  const ovr = clamp(Math.round(o.ovr), 15, 97);
+  const ovr = clamp(Math.round(o.current ? o.ovr : o.ovr - youthDeficit(o.age) * 0.85), 15, 97);
   const attrs = genAttrs(rng, ovr, o.pos, o.age);
   const fam: Player['fam'] = { [o.pos]: 'N' };
   if (o.pos !== 'GK') {

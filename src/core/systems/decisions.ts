@@ -162,7 +162,7 @@ register({
         apply: (s2, rng) => {
           const user = s2.clubs[s2.userClubId];
           const ovr = DIV_AVG_OVR[user.div] - 13 + rng.normal(0, 3);
-          const p = generatePlayer(rng, s2.nextPlayerId++, { ovr, pos: c.pos!, age: 16, season: s2.season, div: user.div, potBoost: 12 });
+          const p = generatePlayer(rng, s2.nextPlayerId++, { ovr, current: true, pos: c.pos!, age: 16, season: s2.season, div: user.div, potBoost: 6 });
           p.clubId = user.id;
           p.academy = true;
           p.contract = { type: 'permanent', wage: Math.max(1, Math.round(marketWage(p.ovr, user.div, DIV_AVG_OVR[user.div]) * 0.15)), endSeason: s2.season + 2, role: 'youth', clauses: {}, signedSeason: s2.season };
