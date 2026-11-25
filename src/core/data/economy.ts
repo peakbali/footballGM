@@ -40,10 +40,23 @@ export function playerValue(ovr: number, pot: number, age: number, yearsLeft: nu
 }
 
 /** Weekly wage a player expects at a club of the given division. */
-export function marketWage(ovr: number, div: number, divAvgOvr: number): number {
-  const base = ECONOMY[div].wage;
-  return roundMoney(Math.max(3, base * Math.exp((ovr - divAvgOvr) * 0.11)));
+/** Each division up, the same player asks this much more (DESIGN 13.2v; was uneven, 1.1x to 2.1x a step). */
+export const WAGE_STEP = 1.4;
+const WAGE_ANCHOR_DIV = 9;
+const WAGE_ANCHOR_OVR = 40; // division 9's average starter
+
+/**
+ * Weekly market wage: anchored on a typical division 9 starter, ×1.11 per OVR point and ×WAGE_STEP per division
+ * up, so moving up a division costs the same step everywhere (division 1 ≈ 15× division 9 for the same player).
+ * `divAvgOvr` is kept for callers but no longer changes the result.
+ */
+export function marketWage(ovr: number, div: number, divAvgOvr?: number): number {
+  void divAvgOvr;
+  const base = ECONOMY[WAGE_ANCHOR_DIV].wage * WAGE_STEP ** (WAGE_ANCHOR_DIV - div);
+  return roundMoney(Math.max(3, base * Math.exp((ovr - WAGE_ANCHOR_OVR) * 0.11)));
 }
+
+/** Typical weekly wage of an average starter in a division. */
 
 export function roundMoney(v: number): number {
   if (v < 100) return Math.round(v);

@@ -52,7 +52,12 @@ export function willingToJoin(s: GameState, p: Player, type: OfferType): Refusal
   if (fromDiv < user.div - 2) return `${p.last} won't drop ${user.div - fromDiv} divisions.`;
   if (s.offers.some((o) => o.pid === p.id && o.status === 'accepted' && o.buyer !== s.userClubId)) return 'Another club has already agreed a fee.';
   const nat = naturalDiv(p.ovr);
-  if (user.div > nat + 2 && s.season - p.birthYear < 33) return `${p.last} believes he belongs around division ${nat} and won't sign for a division ${user.div} club.`;
+  const age = s.season - p.birthYear;
+  // veterans (33+) will drop a little further for one last contract, but not to the bottom of the pyramid
+  if (user.div > nat + (age >= 33 ? 4 : 2)) return `${p.last} believes he belongs around division ${nat} and won't sign for a division ${user.div} club.`;
+  // free agents good enough to start for you are snapped up elsewhere: the ones left are squad players for your level
+  // (DESIGN 13.2v): up to your division's average + 4, or + 6 for players aged 31 and over
+  if (p.clubId == null && p.ovr > DIV_AVG_OVR[user.div] + (age >= 31 ? 6 : 4)) return `${p.last} is waiting for an offer from a bigger club.`;
   return null;
 }
 
