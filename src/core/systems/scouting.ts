@@ -89,6 +89,9 @@ export function interestIn(s: GameState, p: Player): number {
   return Math.round(clamp(v, 0, 100));
 }
 
+/** Scout recommendations kept at once: a new report pushes the oldest one out. */
+export const SCOUTED_MAX = 30;
+
 /** Would this player consider a move to the user's club right now? */
 export function isInterested(s: GameState, p: Player): boolean {
   return willingToJoin(s, p, p.clubId == null ? 'free' : 'permanent') == null && interestIn(s, p) >= 50;
@@ -162,7 +165,7 @@ registerSystem({
       const list = scoutShortlist(s, new Rng(hashSeed(s.seed, now, st.id)), st);
       for (const p of list) {
         makeReport(s, p, effLevel(s, st));
-        s.scouting.shortlist = [p.id, ...s.scouting.shortlist.filter((x) => x !== p.id)].slice(0, 40);
+        s.scouting.shortlist = [p.id, ...s.scouting.shortlist.filter((x) => x !== p.id)].slice(0, SCOUTED_MAX); // newest first, oldest drop off
         got.push(p);
       }
     }

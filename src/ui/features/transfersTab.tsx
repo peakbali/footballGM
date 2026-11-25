@@ -2,7 +2,7 @@ import { SwipePages } from '../swipe';
 import { useState } from 'preact/hooks';
 import { POSITIONS, type Position } from '../../core/data/positions';
 import { isWindowOpen, CAL, type GameState } from '../../core/state';
-import { coverage, formationPositions, isInterested, scoutAccuracy } from '../../core/systems/scouting';
+import { coverage, formationPositions, isInterested, scoutAccuracy, SCOUTED_MAX } from '../../core/systems/scouting';
 import { staffCap } from '../../core/systems/staff';
 import { askingWage } from '../../core/systems/contracts';
 import type { Player } from '../../core/types';
@@ -120,15 +120,16 @@ const posKeys = (seg: Seg, fp: Position[]): string[] => (seg === 'scouted' ? ['A
 const pageKey = (seg: Seg, pos: string) => (LIST_SEGS.includes(seg) ? `${seg}:${pos}` : seg);
 
 function listFor(s: GameState, seg: Seg, fp: Position[]): Player[] {
-  if (seg === 'scouted') return s.scouting.shortlist.map((id) => s.players.get(id)).filter((p): p is Player => !!p && p.clubId !== s.userClubId && isInterested(s, p) && fp.includes(p.pos));
+  if (seg === 'scouted') return s.scouting.shortlist.slice(0, SCOUTED_MAX).map((id) => s.players.get(id)).filter((p): p is Player => !!p && p.clubId !== s.userClubId && isInterested(s, p) && fp.includes(p.pos));
   if (seg === 'shortlist') return s.scouting.starred.map((id) => s.players.get(id)).filter((p): p is Player => !!p);
-  return [...s.players.values()].filter((p) => p.clubId == null && !p.retired && askingWage(s, p, s.userClubId) < 1e9);
+  // only free agents who would consider joining you (same check as scout recommendations)
+  return [...s.players.values()].filter((p) => p.clubId == null && !p.retired && askingWage(s, p, s.userClubId) < 1e9 && isInterested(s, p));
 }
-const LIST_TITLE: Record<string, string> = { scouted: 'Scout recommendations', shortlist: 'Your shortlist', free: 'Free agents · sign any time' };
+const LIST_TITLE: Record<string, string> = { scouted: 'Scout recommendations', shortlist: 'Your shortlist', free: 'Free agents open to joining you' };
 const LIST_EMPTY: Record<string, string> = {
   scouted: 'Your scouts deliver a shortlist every two weeks. Set their targets under Scouts.',
   shortlist: 'Star players to keep an eye on them.',
-  free: 'No free agents here.',
+  free: 'No free agents here want to join right now. Better facilities and a higher division attract more.',
 };
 
 function TransfersTab() {
@@ -175,7 +176,8 @@ function TransfersTab() {
           <Card title={LIST_TITLE[seg]}>
             {all.length === 0 ? <div class="empty">{LIST_EMPTY[seg]}</div> : <PlayerTable s={s} players={list} sort={sort} onSort={pick} onRemove={seg === 'shortlist' ? remove : undefined} />}
             {seg === 'shortlist' && undo && <div class="between small" style={{ marginTop: 8 }}><span class="dim">Removed {undo.first[0]}. {undo.last} from your shortlist</span><button class="btn small" onClick={restore}>Undo</button></div>}
-            {seg === 'free' && all.length > 0 && <div class="tiny dim">Best 40 shown. Division {s.clubs[s.userClubId].div} wages apply.</div>}
+            {seg === 'scouted' && all.length > 0 && <div class="tiny dim">The {SCOUTED_MAX} newest reports are kept: new ones replace the oldest.</div>}
+            {seg === 'free' && all.length > 0 && <div class="tiny dim">Only players open to joining you. Best 40 shown. Division {s.clubs[s.userClubId].div} wages apply.</div>}
           </Card>
         )}
         {seg === 'offers' && <Offers s={s} />}
