@@ -11,7 +11,7 @@ const path = require('path');
   const p = await b.newPage();
   await p.goto(url);
   await p.waitForTimeout(1500);
-  const jobs = [['music', 40], ['cheer', 2.5], ['hmm', 2], ['boo', 2.5], ['win', 1.5], ['loss', 1.5]];
+  const jobs = [['music', 40], ['cheer', 2.5], ['hmm', 2], ['boo', 3], ['win', 1.5], ['loss', 1.5]];
   for (const [what, secs] of jobs) {
     const b64 = await p.evaluate(async ([w, s]) => {
       const m = await import('/src/ui/audio.ts');
