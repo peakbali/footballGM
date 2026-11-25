@@ -1,4 +1,4 @@
-/* Football GM service worker: makes the game load and play offline. Relative paths keep it working under any base (e.g. /footballGM/). */
+/* FootballGM service worker: makes the game load and play offline. Relative paths keep it working under any base (e.g. /footballGM/). */
 const VERSION = '__BUILD__';
 const CACHE = 'fgm-' + VERSION;
 const ASSETS = [/*__ASSETS__*/]; // filled in at build time

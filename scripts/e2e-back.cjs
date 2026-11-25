@@ -14,7 +14,7 @@ const standalone = process.argv.includes('--standalone');
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(url); await p.waitForTimeout(1200);
   if (standalone) { await p.evaluate(() => navigator.serviceWorker?.ready); await p.reload(); await p.waitForTimeout(800); }
-  await p.tap('text=New career'); await p.tap('text=Wessex League Premier'); await p.tap('text=Brockenhurst');
+  await p.tap('text=New career'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
   await p.waitForSelector('button.continue', { timeout: 30000 });
   let failed = 0;
   const alive = async () => (await p.url()).startsWith(url.slice(0, 20)) && (await p.$('.app .tabs')) != null;

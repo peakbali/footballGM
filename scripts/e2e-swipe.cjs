@@ -8,7 +8,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   const cdp = await ctx.newCDPSession(p);
   await p.goto(url); await p.waitForTimeout(1000);
-  await p.tap('text=New career'); await p.tap('text=Wessex League Premier'); await p.tap('text=Brockenhurst');
+  await p.tap('text=New career'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
   await p.waitForSelector('button.continue', { timeout: 30000 });
   const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
   const swipe = async (x0, y0, x1, y1) => {

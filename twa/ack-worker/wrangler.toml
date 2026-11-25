@@ -1,0 +1,7 @@
+name = "footballgm-ack"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+PACKAGE_NAME = "com.peakbali.footballgm"
+ALLOWED_ORIGIN = "https://peakbali.github.io"

@@ -186,7 +186,7 @@ function endSeason(s: GameState) {
   const rec = s.history.find((h) => h.season === s.season && h.clubId === s.userClubId)!;
   const lg = s.leagues[rec.div - 1];
   const txt: Record<string, string> = {
-    champion: rec.div === 1 ? 'Champions of England!' : `Champions! Promoted from the ${lg.name}.`,
+    champion: rec.div === 1 ? `Champions of the ${lg.name}!` : `Champions! Promoted from the ${lg.name}.`,
     promoted: `Promoted! Finished 2nd in the ${lg.name}.`,
     playoff_winner: 'Promoted through the playoffs!',
     relegated: `Relegated from the ${lg.name}.`,

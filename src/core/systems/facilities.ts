@@ -349,6 +349,6 @@ registerSystem({
 /** Ground grading note for the UI (DESIGN 9.2, informational only in this sandbox). */
 export function gradingNote(s: GameState): string | null {
   const c = s.clubs[s.userClubId];
-  if (c.div <= 5 && trackLevel(s, 'stands') < 2) return 'National League grounds need a covered stand. Build Seats & stands to level 2 to meet ground grading.';
+  if (c.div <= 5 && trackLevel(s, 'stands') < 2) return 'Grounds in the top five divisions need a covered stand. Build Seats & stands to level 2 to meet ground grading.';
   return null;
 }

@@ -10,4 +10,5 @@ import './history';
 import './cupView';
 import './achievementsUI';
 import './clubIdentityUI';
+import './paywall';
 export {};

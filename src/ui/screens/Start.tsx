@@ -30,7 +30,7 @@ export function StartScreen() {
     return (
       <div class="start">
         <div class="logo">FOOTBALL<br />GM</div>
-        <div class="dim">Take a club from the ninth tier of English football to the top. You are the general manager: money, players, staff and facilities.</div>
+        <div class="dim">Take a club from the ninth tier of the football pyramid to the top. You are the general manager: money, players, staff and facilities.</div>
         <div class="slots">
           {(slots ?? Array(SLOT_COUNT).fill(undefined)).map((info: SlotInfo | null | undefined, i: number) => {
             const n = i + 1;
@@ -69,7 +69,7 @@ export function StartScreen() {
     return (
       <div class="start">
         <div class="between"><button class="back" onClick={() => setStep('menu')}>‹</button><div class="px gold">Pick a region</div><span /></div>
-        <div class="dim small">You start in division 9 (FA Step 5). Your region decides the leagues above and below you.</div>
+        <div class="dim small">You start in division 9 of a ten-division pyramid. Your region decides the leagues above and below you.</div>
         <div class="card list">
           {startingLeagues().map((l) => (
             <div class="item" key={l.key} onClick={() => { setLeague(l.key); setStep('club'); }}>

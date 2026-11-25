@@ -14,6 +14,8 @@ import { cupLine } from '../features/cupView';
 import { CashChart } from '../features/clubTab';
 import { Avatar, KINDS, senderKind } from '../senderArt';
 import { pendingDecisions } from '../../core/systems/decisions';
+import { gateBlocks } from '../../core/gate';
+import { billing } from '../billing';
 
 /**
  * Hub (DESIGN 13.2): everything on one phone screen, no scrolling.
@@ -145,12 +147,14 @@ export function HubScreen() {
             })}
           </tbody>
         </table>
-        {cup && <div class="tiny dim cupline" onClick={() => nav.push({ kind: 'custom', key: 'cup' })}>🏆 FA Cup: <span class="gold">{cup}</span> ›</div>}
+        {cup && <div class="tiny dim cupline" onClick={() => nav.push({ kind: 'custom', key: 'cup' })}>🏆 National Cup: <span class="gold">{cup}</span> ›</div>}
       </Card>
 
       <button class="btn gold continue" disabled={st.busy} onClick={async () => {
         // an undecided popup decision pauses Continue: show it again instead of playing on
         if (pendingDecisions(s).length) { st.hiddenUpTo = 0; store.bump(); return; }
+        // free first season over: the Full game unlock (core/gate.ts)
+        if (gateBlocks(s, billing.unlocked)) { nav.push({ kind: 'custom', key: 'paywall' }); return; }
         const r = await store.continueGame();
         const f = r?.userFixture;
         if (f) {
@@ -161,7 +165,7 @@ export function HubScreen() {
         if (f) nav.push({ kind: 'match', fixtureId: f.id, after: true });
         else if (r?.messages.some((m) => m.action && !m.resolved && m.action.kind !== 'decision')) nav.push({ kind: 'inbox' });
       }}>
-        {st.busy ? <span class="spinner">Playing...</span> : 'Continue ›'}
+        {st.busy ? <span class="spinner">Playing...</span> : gateBlocks(s, billing.unlocked) ? '🔒 Unlock season 2 ›' : 'Continue ›'}
       </button>
     </div>
   );

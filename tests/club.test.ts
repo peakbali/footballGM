@@ -125,7 +125,7 @@ describe('board and history', () => {
 
 import { cupState, CUP_WEEKS } from '../src/core/systems/cup';
 
-describe('FA Cup', () => {
+describe('National Cup', () => {
   it('runs a full knockout alongside the league and crowns one winner', () => {
     const s = newGame(41, club);
     while (s.week <= CUP_WEEKS[CUP_WEEKS.length - 1]) advanceWeek(s);
@@ -137,26 +137,5 @@ describe('FA Cup', () => {
     expect(cupFx.every((f) => f.hg != null)).toBe(true);
     // league tables are unaffected: 20 clubs, nobody has more than 38 games
     expect(c.userWon || c.userExit != null).toBe(true);
-  });
-});
-
-import { applyRealPlayers, matchClubs, type RealData } from '../src/core/realData';
-import { ATTRS } from '../src/core/data/positions';
-
-describe('real data import (local only)', () => {
-  it('matches EA club spellings and replaces generated squads', () => {
-    const s = newGame(51, club);
-    const m = matchClubs(s, ["Nott'm Forest", 'Spurs', 'FC Bayern München', 'Nowhere Rovers']);
-    expect(s.clubs[m.get("Nott'm Forest")!].name).toBe('Nottingham Forest');
-    expect(s.clubs[m.get('Spurs')!].name).toBe('Tottenham Hotspur');
-    expect(s.clubs[m.get('FC Bayern München')!].name).toBe('Bayern Munich');
-    expect(m.has('Nowhere Rovers')).toBe(false);
-    const pos = ['GK', 'CB', 'CB', 'LB', 'RB', 'DM', 'CM', 'CM', 'AM', 'LW', 'RW', 'ST', 'ST', 'CB', 'CM', 'GK', 'LM', 'RM'] as const;
-    const data: RealData = { version: 1, source: 'test', season: 2025, players: pos.map((p, i) => ({ first: 'Real', last: `P${i}`, birthYear: 2000, nat: 'ENG', club: 'Spurs', pos: p, alt: [], foot: 'R', ovr: 80, pot: 84, attrs: ATTRS.map(() => 75) })) };
-    const r = applyRealPlayers(s, data, new Rng(1));
-    expect(r).toEqual({ clubs: 1, players: 18 });
-    const spurs = squadOf(s, m.get('Spurs')!);
-    expect(spurs).toHaveLength(18);
-    expect(spurs.every((p) => p.real && p.contract)).toBe(true);
   });
 });

@@ -1,26 +1,15 @@
 import { installBackNav } from './backNav';
 import { useEffect, useState } from 'preact/hooks';
 import type { GameState } from '../core/state';
+import { gateBlocks, markLoadedCareer, markNewCareer } from '../core/gate';
+import { billing } from './billing';
 import { advanceWeek, type WeekResult } from '../core/season';
 import { newGame as createWorld } from '../core/world';
 import { SqliteSave } from '../storage/sqliteStore';
 import { markAllDirty } from '../storage/serialize';
-import type { RealData } from '../core/realData';
 import { lastSlot, listSlots, infoOf, type SlotInfo } from '../storage/slots';
 import { loadUnlocked, saveUnlocked, type Unlocked } from '../storage/achievementStore';
 import { newlyEarned } from '../core/achievements';
-
-// Real player data exists only in local builds (npm run import:eafc); otherwise this is empty.
-const REAL_FILES = import.meta.glob('../../data/private/real-players.json', { import: 'default' });
-async function loadRealData(): Promise<RealData | undefined> {
-  const f = Object.values(REAL_FILES)[0];
-  if (!f) return undefined;
-  try {
-    return (await f()) as RealData;
-  } catch {
-    return undefined;
-  }
-}
 
 type Listener = () => void;
 
@@ -55,6 +44,7 @@ class Store {
     const r = await SqliteSave.load(n);
     if (!r) return false;
     this.state = r.state;
+    markLoadedCareer(r.state);
     this.save = r.store;
     this.bump();
     return true;
@@ -72,8 +62,8 @@ class Store {
     this.busy = true;
     this.bump();
     await new Promise((r) => setTimeout(r, 30));
-    const real = await loadRealData();
-    const s = createWorld(seed, clubName, { real });
+    const s = createWorld(seed, clubName);
+    markNewCareer(s);
     await SqliteSave.wipe(slot);
     markAllDirty();
     this.save = await SqliteSave.create(slot);
@@ -113,6 +103,7 @@ class Store {
   /** Advance week by week until something needs the user. */
   async continueGame(maxWeeks = 12): Promise<WeekResult | null> {
     if (!this.state || this.busy) return null;
+    if (gateBlocks(this.state, billing.unlocked)) return null; // free season over: the paywall takes it from here
     this.busy = true;
     this.bump();
     let res: WeekResult | null = null;
@@ -120,7 +111,7 @@ class Store {
       for (let i = 0; i < maxWeeks; i++) {
         await new Promise((r) => setTimeout(r, 0));
         res = advanceWeek(this.state);
-        if (res.stop) break;
+        if (res.stop || gateBlocks(this.state, billing.unlocked)) break;
       }
     } finally {
       this.busy = false;

@@ -11,7 +11,6 @@
     "test": "vitest run",
     "typecheck": "tsc",
     "sim": "tsx scripts/simulate.ts",
-    "import:eafc": "tsx scripts/import-eafc.ts",
     "cap:sync": "npm run build && npx cap sync"
   },
   "repository": {
