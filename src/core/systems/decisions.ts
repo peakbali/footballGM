@@ -558,6 +558,16 @@ export function decisionChoices(s: GameState, m: InboxMessage): Choice[] {
   return d && c ? d.choices(s, c) : gone();
 }
 
+const BAD = /\b(rejects?|refuses?|refused|turns? (it )?down|not convinced|walks? away|broke down|storms?|won't|will not|declin\w*|fails?|failed|falls? through|pulls? out|no deal|sulk\w*|not happy|unhappy|leaves? on a free|grumble|injur\w*|knock|aggravates)\b/i;
+const GOOD = /\b(signs?|signed|accepts?|agreed|agrees|joins?|arrives|completed?|deal done|sold|lands in the account|happy|delighted|decides to stay|grateful|excited|releases|bonds|closer)\b/i;
+/** Was this outcome good or bad for the user? Read from the outcome text (bad words win). */
+export function outcomeTone(text: string | undefined | null): 'good' | 'bad' | 'neutral' {
+  if (!text) return 'neutral';
+  if (BAD.test(text)) return 'bad';
+  if (GOOD.test(text)) return 'good';
+  return 'neutral';
+}
+
 export function resolveDecision(s: GameState, msgId: number, index: number): string | null {
   const m = s.inbox.find((x) => x.id === msgId);
   if (!m || m.resolved || m.action?.kind !== 'decision') return null;
@@ -569,6 +579,7 @@ export function resolveDecision(s: GameState, msgId: number, index: number): str
   m.read = true;
   m.pick = ch.label;
   m.outcome = outcome;
+  m.tone = outcomeTone(outcome);
   return outcome;
 }
 
@@ -658,6 +669,7 @@ export function signRenewal(s: GameState, msgId: number, pid: number, offer: Con
   m.read = true;
   m.pick = `New ${offer.years}-year deal`;
   m.outcome = out;
+  m.tone = 'good';
   return out;
 }
 
@@ -671,6 +683,7 @@ export function failRenewal(s: GameState, msgId: number, pid: number, msg: strin
   m.read = true;
   m.pick = 'Talks broke down';
   m.outcome = msg;
+  m.tone = 'bad';
   return msg;
 }
 

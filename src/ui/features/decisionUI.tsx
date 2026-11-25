@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { GameState } from '../../core/state';
 import type { InboxMessage } from '../../core/types';
-import { decisionChoices, failRenewal, pendingDecisions, resolveDecision, signRenewal, type Choice } from '../../core/systems/decisions';
+import { decisionChoices, failRenewal, outcomeTone, pendingDecisions, resolveDecision, signRenewal, type Choice } from '../../core/systems/decisions';
 import { ContractTerms } from './contractTerms';
+import { ResultStamp } from '../resultStamp';
 import { CardArt } from '../cardArt';
 import { Avatar, KINDS, messagePlayer, senderKind } from '../senderArt';
 import { nav, store, useStore } from '../store';
@@ -71,12 +72,7 @@ export function DecisionCard({ s, m }: { s: GameState; m: InboxMessage }) {
 
 export function Outcome({ m }: { m: InboxMessage }) {
   if (!m.pick) return null;
-  return (
-    <div class="outcome">
-      <span class="dchip good">✓ {m.pick}</span>
-      {m.outcome && <div class="small">{m.outcome}</div>}
-    </div>
-  );
+  return <ResultStamp quiet tone={m.tone ?? outcomeTone(m.outcome)} title={m.pick} text={m.outcome} />;
 }
 
 /** A different sound for each kind of popup: offers chime like coins, contract reminders rustle paper, the board is lower. */
@@ -94,21 +90,20 @@ export function DecisionPopup() {
   const st = useStore();
   const s = st.state!;
   const top = nav.stack[nav.stack.length - 1];
-  const [result, setResult] = useState<{ title: string; pick: string; outcome: string; id: number } | null>(null);
+  const [result, setResult] = useState<{ title: string; pick: string; outcome: string; id: number; tone: 'good' | 'bad' | 'neutral' } | null>(null);
   const pend = pendingDecisions(s).filter((m) => m.id > st.hiddenUpTo);
   const m = pend[0];
   const shown = !!m && !top && !st.busy;
   useEffect(() => { if (shown) sfx(popupSound(m)); }, [shown ? m.id : 0]);
   if (top || st.busy) return null; // any overlay (a player page opened from the offer, a match) hides it; it returns when that closes
   if (result && (!m || m.id !== result.id)) {
-    const k = KINDS.player;
+    const color = result.tone === 'good' ? '#3ddc84' : result.tone === 'bad' ? '#ff5a64' : KINDS.player.color;
     return (
       <div class="dpop-back">
-        <div class="dpop" style={{ '--k': k.color } as never}>
+        <div class={`dpop dpop-result rs-${result.tone}`} style={{ '--k': color } as never}>
           <div class="dpop-body">
-            <div class="mail-from">Done</div>
-            <h2>{result.title}</h2>
-            <div class="outcome"><span class="dchip good">✓ {result.pick}</span><div class="small">{result.outcome}</div></div>
+            <div class="mail-from">{result.title}</div>
+            <ResultStamp tone={result.tone} title={result.pick} text={result.outcome} />
             <button class="btn gold block" onClick={() => setResult(null)}>OK</button>
           </div>
         </div>
@@ -129,7 +124,7 @@ export function DecisionPopup() {
           <h2>{m.title}</h2>
           <div class="dpop-text">{m.body}</div>
           {messagePlayer(s, m) && <div class="tiny dim dpop-hint">Tap {messagePlayer(s, m)!.last}'s picture to open his page</div>}
-          <ChoiceList s={s} m={m} onDone={(out) => { if (out) setResult({ title: m.title, pick: m.pick ?? '', outcome: out, id: m.id }); }} />
+          <ChoiceList s={s} m={m} onDone={(out) => { if (out) setResult({ title: m.title, pick: m.pick ?? '', outcome: out, id: m.id, tone: m.tone ?? outcomeTone(out) }); }} />
           <button class="linkbtn later" onClick={() => { st.hiddenUpTo = m.id; store.bump(); }}>Decide later</button>
         </div>
       </div>

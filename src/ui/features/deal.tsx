@@ -1,3 +1,4 @@
+import { ResultStamp } from '../resultStamp';
 import { useState } from 'preact/hooks';
 import { hashSeed, Rng } from '../../core/rng';
 import { askingPrice, canTransferNow, completeDeal, submitBid, willingToJoin } from '../../core/systems/transfers';
@@ -89,13 +90,14 @@ function DealScreen({ pid }: { pid: number }) {
               <button class="btn small gold" style={{ marginLeft: 8 }} disabled={offer.counterFee! > user.cash} onClick={() => { type === 'permanent' ? setFee(offer.counterFee!) : setOptFee(offer.counterFee!); bid(offer.counterFee!); }}>Pay {money(offer.counterFee!)}</button>
             </div>
           )}
-          {offer?.status === 'rejected' && <div class="red small" style={{ margin: '8px 0' }}>{club!.short} reject the offer{type.startsWith('loan') ? '. They want a bigger wage share or see him as a key player.' : ' and end talks.'}</div>}
+          {offer?.status === 'rejected' && <ResultStamp tone="bad" stamp="Rejected" text={`${club!.short} reject the offer${type.startsWith('loan') ? '. They want a bigger wage share or see him as a key player.' : ' and end talks.'}`} />}
           <button class="btn primary block" disabled={!!refusal || !!timing || full || offer?.status === 'rejected' || (type === 'permanent' && fee > user.cash)} onClick={() => bid()}>
             {type === 'permanent' ? `Bid ${money(fee)}` : 'Offer loan'}
           </button>
           {type === 'permanent' && <div class="tiny dim" style={{ marginTop: 6 }}>Hint: they would probably take about {money(askingPrice(s, p) * (1 - sellOn / 200))}.</div>}
         </Card>
       )}
+      {stage === 'terms' && offer?.status === 'accepted' && !note && <ResultStamp tone="good" stamp="Bid accepted" text="Now agree personal terms with him." />}
       {stage === 'terms' && !refusal && !full && (
         <ContractTerms
           s={s}
@@ -114,11 +116,11 @@ function DealScreen({ pid }: { pid: number }) {
       )}
       {stage === 'done' && (
         <Card>
-          <div class="gold px" style={{ marginBottom: 10 }}>{note}</div>
+          <ResultStamp tone={/joins|signs/.test(note) ? 'good' : 'bad'} stamp={/joins|signs/.test(note) ? 'Signed' : 'No deal'} text={note} />
           <button class="btn block" onClick={() => nav.pop()}>Done</button>
         </Card>
       )}
-      {stage !== 'done' && note && <div class="red small">{note}</div>}
+      {stage !== 'done' && stage !== 'terms' && note && <div class="red small">{note}</div>}
     </Overlay>
   );
 }

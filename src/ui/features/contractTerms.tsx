@@ -5,6 +5,7 @@ import type { Player, SquadRole } from '../../core/types';
 import { Card } from '../components';
 import { money } from '../store';
 import { Choice, Stepper, niceStep } from './widgets';
+import { ResultStamp } from '../resultStamp';
 
 const REACT = {
   accept: { t: 'He signs', cls: 'green' },
@@ -71,7 +72,7 @@ export function ContractTerms({ s, p, clubId, onAgreed, onFailed, title = 'Perso
       <div class="small dim">Squad role</div>
       <Choice options={[['star', 'Star'], ['starter', 'Starter'], ['rotation', 'Rotation'], ['backup', 'Backup']]} value={role} onChange={setRole} />
       <label class="between small" style={{ margin: '6px 0 10px' }}><span>Release clause ({money(relVal)})</span><input type="checkbox" checked={release} onChange={(e) => setRelease((e.target as HTMLInputElement).checked)} /></label>
-      {msg && <div class={`small ${done ? (msg.includes('accept') ? 'green' : 'red') : 'amber'}`} style={{ marginBottom: 8 }}>{msg}</div>}
+      {msg && (done ? <ResultStamp tone={msg.includes('accept') ? 'good' : 'bad'} stamp={msg.includes('accept') ? 'Agreed' : 'No deal'} text={msg} /> : <div class="small amber" style={{ marginBottom: 8 }}>{msg}</div>)}
       {!done && <button class="btn primary block" data-nosfx onClick={submit}>Offer {years} year{years === 1 ? '' : 's'} at {money(wage)}/wk</button>}
     </div>
   );

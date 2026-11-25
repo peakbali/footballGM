@@ -1309,3 +1309,11 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 - **Length and wage:** 3 in 4 players (fixed per player) take less for a longer deal: +12% for 1 year, +6% for 2, the 3-year price, −6% for 4 and −12% for 5. The other quarter prefer short deals: −10% for 1 year up to +10% for 5. This replaces the old age-based length tweaks. Renewals still add the mood factor (unhappy +15%, happy −5%) and the floor of 90% of the current wage.
 - **Pay-rise requests** (star talks): at most once every 2 years per player, and only 2+ seasons after he signed.
 
+### 13.2n Clear deal results and crowd reactions **[Agreed]**
+
+- **Result stamp:** when a popup decision or deal ends, the result shows as a big banner. A stamp slams in: green **✓ Success**, red **✗ Failed**, or a neutral **Done**. The choice and outcome follow in large text, the popup border and glow take the result colour, and a sound plays (a stamp thud, then a happy or sad phrase). The tone is set exactly for contract renewals and otherwise read from the outcome text (`outcomeTone`, failure words win). The same banner is used in:
+  - the transfer screen: bid accepted, rejected, signed, no deal
+  - contract talks: agreed or no deal
+  - the inbox: a smaller, quiet version on resolved decisions
+- **Match result sounds:** when Continue plays your match, the crowd reacts. A win gets cheers (open "ah" voices rising, applause and whistles), a loss gets boos (low "oo" voices sliding down), and a draw gets a doubtful "hmm" murmur (closed-mouth voices that dip and lift). All are synthesised (many sawtooth voices through vowel formant filters, plus a filtered crowd bed), peak around -11 dB, and the music keeps playing underneath.
+
