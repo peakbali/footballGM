@@ -1,3 +1,4 @@
+import { REAL_WORLD } from '../core/edition';
 import { installBackNav } from './backNav';
 import { useEffect, useState } from 'preact/hooks';
 import type { GameState } from '../core/state';
@@ -46,7 +47,8 @@ class Store {
     const r = await SqliteSave.load(n);
     if (!r) return false;
     this.state = r.state;
-    markLoadedCareer(r.state);
+    if (REAL_WORLD) markLoadedCareer(r.state);
+    else if (!r.state.ext.gate) markNewCareer(r.state);
     this.save = r.store;
     this.greet = true;
     this.bump();

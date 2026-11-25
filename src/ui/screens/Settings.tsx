@@ -1,3 +1,4 @@
+import { REAL_WORLD } from '../../core/edition';
 import { Card, Overlay } from '../components';
 import { useState } from 'preact/hooks';
 import { nav, store, useStore } from '../store';
@@ -33,11 +34,11 @@ export function SettingsScreen() {
       <Card title="Install">
         <InstallApp />
       </Card>
-      <Card title="Full game">
+      {!REAL_WORLD && <Card title="Full game">
         <div class="small dim" style={{ marginBottom: 10 }}>{billing.unlocked ? 'Unlocked. Every season is open in every save slot. Thank you!' : 'The first season of every career is free. A one-time purchase unlocks every season after it. No ads.'}</div>
         {!billing.unlocked && <button class="btn gold block" onClick={() => nav.push({ kind: 'custom', key: 'paywall' })}>Unlock full game ›</button>}
         {!billing.unlocked && billing.store && <><div style={{ height: 8 }} /><button class="btn block" onClick={() => void billing.restore()}>Restore purchase</button>{billing.error && <div class="tiny amber" style={{ marginTop: 6 }}>{billing.error}</div>}</>}
-      </Card>
+      </Card>}
       <Card title="Achievements" art="trophy">
         <button class="btn block" onClick={() => nav.push({ kind: 'custom', key: 'achievements' })}>Achievements · {got}/{ACHIEVEMENTS.length} ›</button>
       </Card>

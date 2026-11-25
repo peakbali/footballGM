@@ -1,4 +1,4 @@
-import { STORE_NAME } from '../core/edition';
+import { REAL_WORLD, STORE_NAME } from '../core/edition';
 /**
  * "Full game" one-time purchase (docs/PLAY_STORE.md).
  * - In the Google Play app (a Trusted Web Activity), Play Billing via the Digital Goods API + Payment Request.
@@ -25,7 +25,8 @@ type DgWindow = Window & { getDigitalGoodsService?: (url: string) => Promise<DgS
 type Listener = () => void;
 
 class Billing {
-  unlocked = read() !== null;
+  /** The web version (real world) is Khen's own full game; only the Play build is gated. */
+  unlocked = REAL_WORLD || read() !== null;
   source: string | null = read();
   /** Play Billing is available (running inside the Play app) */
   store = false;
@@ -119,7 +120,7 @@ class Billing {
   }
 
   private revoke() {
-    this.unlocked = false;
+    this.unlocked = REAL_WORLD;
     this.source = null;
     try { localStorage.removeItem(KEY); } catch { /* ignore */ }
   }
