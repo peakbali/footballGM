@@ -8,7 +8,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   let failed = 0;
   const expect = (name, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : `(got ${JSON.stringify(got)}, want ${JSON.stringify(want)})`); if (!ok) failed++; };
-  const start = async (club) => { await p.tap('.slot.empty >> nth=0'); await p.tap('text=Solent League Premier'); await p.tap(`text=${club}`); await p.waitForSelector('button.continue', { timeout: 30000 }); };
+  const start = async (club) => { await p.tap('.slot.empty >> nth=0'); await p.tap('text=Solent League Premier'); await p.tap(`text=${club}`); await p.waitForSelector('button.continue', { timeout: 30000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); };
   const toTitle = async () => { if (await p.locator('.dpop .later').count()) await p.tap('.dpop .later'); await p.waitForTimeout(200); await p.tap('[aria-label="Settings"]'); await p.tap('text=Switch slot'); await p.waitForSelector('.slots .slot'); await p.waitForTimeout(300); };
   await p.goto(url); await p.waitForSelector('.slots .slot.empty');
   expect('fresh install shows 5 empty slots', await p.locator('.slot.empty').count(), 5);
@@ -22,10 +22,10 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   await start('Lower Shipmore United'); await toTitle();
   expect('second career lands in slot 2', [await p.locator('.slot.used').count(), (await p.locator('.slot.used >> nth=1').textContent()).includes('Lower Shipmore United')], [2, true]);
   // keep playing slot 1 and check it is untouched by slot 2
-  await p.tap('.slot.used >> nth=0 >> .slot-main'); await p.waitForSelector('button.continue');
+  await p.tap('.slot.used >> nth=0 >> .slot-main'); await p.waitForSelector('button.continue'); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold');
   expect('slot 1 loads its own club', (await p.textContent('.topbar .title')).includes('Fenhurst'), true);
   await p.tap('button.continue'); await p.waitForTimeout(1200);
-  await p.reload(); await p.waitForSelector('button.continue', { timeout: 20000 });
+  await p.reload(); await p.waitForSelector('button.continue', { timeout: 20000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold');
   expect('reload resumes the slot played last', (await p.textContent('.topbar .title')).includes('Fenhurst'), true);
   // legacy save: no slot info record, listing rebuilds it
   await toTitle();
@@ -34,7 +34,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   await p.waitForTimeout(1500);
   const used = await p.locator('.slot.used').count();
   expect('slots without info records are recovered on load', used >= 2, true);
-  if (await p.locator('button.continue').count() === 0) { await p.tap('.slot.used >> nth=0 >> .slot-main'); await p.waitForSelector('button.continue'); }
+  if (await p.locator('button.continue').count() === 0) { await p.tap('.slot.used >> nth=0 >> .slot-main'); await p.waitForSelector('button.continue'); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); }
   // play on until an achievement toast shows
   let toast = 0;
   for (let k = 0; k < 80 && !toast; k++) {

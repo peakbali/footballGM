@@ -50,7 +50,7 @@ export function StartScreen() {
                   <span class="slot-n">{n}</span>
                   <span class="grow">
                     <span class="name">{info.club}</span>
-                    <span class="tiny dim slot-line">Div {info.div} · {info.season}/{String(info.season + 1).slice(2)} · Wk {info.week}</span>
+                    <span class="tiny dim slot-line">{info.manager ? `${info.manager} · ` : ''}Div {info.div} · {info.season}/{String(info.season + 1).slice(2)} · Wk {info.week}</span>
                     <span class="tiny dim slot-line">Played {ago(info.updated)}</span>
                   </span>
                   <span class="slot-go">Continue ›</span>

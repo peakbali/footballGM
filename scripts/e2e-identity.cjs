@@ -11,7 +11,7 @@ const shots = process.argv[3];
   const expect = (name, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : `(got ${JSON.stringify(got)}, want ${JSON.stringify(want)})`); if (!ok) failed++; };
   await p.goto(url); await p.waitForSelector('.slot.empty');
   await p.tap('.slot.empty >> nth=0'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
-  await p.waitForSelector('button.continue', { timeout: 30000 });
+  await p.waitForSelector('button.continue', { timeout: 30000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); // welcome window (DESIGN 13.3b)
   await p.tap('.tabs button:has-text("Club")'); await p.waitForTimeout(300);
   expect('club tab shows the club header', (await p.textContent('.cid-head-name')).trim(), 'Fenhurst United');
   await p.tap('.cid-head .btn'); await p.waitForTimeout(300);
@@ -44,7 +44,7 @@ const shots = process.argv[3];
   await p.waitForTimeout(800);
   await p.reload(); await p.waitForSelector('button.continue, .slot', { timeout: 30000 }); await p.waitForTimeout(500);
   if (await p.locator('.slot').count()) await p.tap('.slot >> nth=0');
-  await p.waitForSelector('button.continue', { timeout: 30000 });
+  await p.waitForSelector('button.continue', { timeout: 30000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); // welcome window (DESIGN 13.3b)
   expect('after reload the save keeps the new name', (await p.textContent('.topbar')).includes('Pixel Rovers'), true);
   console.log('console errors:', JSON.stringify(errs));
   await b.close();

@@ -8,7 +8,7 @@ const url = process.argv[2] || 'http://127.0.0.1:8099/';
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(url); await p.waitForTimeout(800);
   await p.tap('text=New career'); await p.tap('text=Solent League Premier'); await p.tap('text=Fenhurst United');
-  await p.waitForSelector('button.continue', { timeout: 30000 });
+  await p.waitForSelector('button.continue', { timeout: 30000 }); await p.waitForTimeout(300); if (await p.$('.welcome')) await p.click('.welcome .btn.gold'); // welcome window (DESIGN 13.3b)
   let failed = 0;
   const expect = (name, got, want) => { const ok = JSON.stringify(got) === JSON.stringify(want); console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : `(got ${JSON.stringify(got)}, want ${JSON.stringify(want)})`); if (!ok) failed++; };
   const week = async () => (await p.textContent('.topbar .sub')).match(/Wk (\d+)/)[1];

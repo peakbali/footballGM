@@ -14,6 +14,8 @@ export interface SlotInfo {
   season: number;
   week: number;
   updated: number;
+  /** the manager's name from the welcome window (DESIGN 13.3b) */
+  manager?: string;
 }
 
 type Meta = Record<number, SlotInfo>;
@@ -31,6 +33,7 @@ export function infoOf(s: GameState): SlotInfo {
     season: s.season,
     week: s.week,
     updated: Date.now(),
+    manager: ((s.ext.manager as string | undefined) ?? '').trim() || undefined,
   };
 }
 
