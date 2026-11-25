@@ -1343,3 +1343,10 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
   (0.1 + 0.9 × x^1.6, where x runs from 1 for first to 0 for last). In division 9 that is about £18k for the title
   against £40k starting cash. The season reel shows it as a gold prize cheque on the first page, and the Money page
   lists it.
+
+### 13.2q Sortable squad list **[Agreed]**
+
+- Every column on each Squad list sub-page (Contract, Progress, Form, Attributes) and OVR sorts when its header is
+  tapped, like the Transfers lists. The first tap sorts high to low (Exp: soonest first), and a second tap flips it.
+  "Pos" at the left puts the list back in position order, which is the default. "-" values always go last. The sort
+  is remembered per sub-page while the game is open.
