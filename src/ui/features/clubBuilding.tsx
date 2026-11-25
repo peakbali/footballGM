@@ -12,6 +12,7 @@ import { registerOverlay } from '../overlays';
 import { money, nav, store, useStore } from '../store';
 import { registerClubSection } from './clubSections';
 import { CardArt, type ArtKey } from '../cardArt';
+import { FacilityArt } from '../facilityArt';
 import { registerInboxAction } from '../inboxActions';
 import { registerPlayerAction } from '../playerExtras';
 import { registerSquadCard } from '../squadExtras';
@@ -40,9 +41,15 @@ function TrackRow({ s, t, onDone }: { s: GameState; t: Track; onDone: () => void
   const err = next ? canStart(s, next) : null;
   return (
     <div class="fac-track">
-      <div class="between">
-        <span class="name small">{t.label}</span>
-        <Pips n={lvl} building={!!proj} />
+      <div class="fac-track-head">
+        <FacilityArt track={t.key} level={lvl} />
+        <div class="grow">
+          <div class="between">
+            <span class="name small">{t.label}</span>
+            <Pips n={lvl} building={!!proj} />
+          </div>
+          <div class="tiny dim">{lvl > 0 ? t.names[lvl - 1] : 'Not built yet'}</div>
+        </div>
       </div>
       <div class="tiny dim">{t.desc}</div>
       {lvl > 0 && <div class="tiny green">Now: {effectText(t.per, lvl)}</div>}

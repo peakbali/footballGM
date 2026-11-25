@@ -1427,3 +1427,6 @@ The Formation page shows the **Team OVR** (the average rating of the starting XI
 - The Google Play app uses the fictional world from 13.2x (National Cup, generated kits): `npm run build:play` -> dist-play/, deployed to /play/ by the Pages workflow; the TWA's start URL and scope point there. Vite's `__REAL_WORLD__` define drops the other edition's data, so the Play bundle contains no real names.
 - Switch lives in src/core/edition.ts (REAL_WORLD, CUP_NAME); data in data/pyramid.real.ts and data/foreign.real.ts. Scripts and tests default to real; set VITE_WORLD=fictional for the other. The e2e scripts use fictional clubs, so run them against the play build.
 - A save keeps the names it was created with, whichever edition opens it.
+
+### 13.2z Pixel art for every facility upgrade **[Agreed]**
+- Each upgrade row on the Stadium, Training ground, Academy and Commercial pages has its own small pixel picture (src/ui/facilityArt.tsx, 32x20 grid) next to the name, with the current level's name under it. The picture grows with the level, for example floodlight masts that light up, then LED lights, concourse and roof lights and finally a light show; stands gain tiers, a roof and a bowl; shirts fill the shop rail; coin stacks grow in the sponsorship office. Not-built upgrades are shown dimmed.

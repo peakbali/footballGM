@@ -622,3 +622,7 @@ table.tbl.compact { font-size: 12px; }
 .pw-bar { height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; }
 .pw-bar i { display: block; height: 100%; background: var(--green, #3fbf6f); }
 tr.me .pw-bar i { background: var(--gold, #ffcc4d); }
+.fac-track-head { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
+.fac-track-head .grow { min-width: 0; }
+.fac-art { width: 64px; height: 40px; flex: none; image-rendering: pixelated; background: rgba(0,0,0,.3); border: 1px solid var(--line); border-radius: 3px; }
+.fac-art.unbuilt { opacity: .45; filter: grayscale(.7); }
