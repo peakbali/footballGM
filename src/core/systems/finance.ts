@@ -1,4 +1,5 @@
-import { ECONOMY, roundMoney } from '../data/economy';
+import { ECONOMY, marketWage, roundMoney } from '../data/economy';
+import { DIV_AVG_OVR } from '../data/pyramid';
 import { computeTable } from '../league';
 import { clamp, type Rng } from '../rng';
 import { CAL, type GameState } from '../state';
@@ -75,7 +76,7 @@ export function ticketRange(c: Club, s?: GameState): [number, number] {
  * wages for that division, falling steeply down the table to a tenth of that for the bottom club.
  */
 export function prizeMoney(div: number, pos: number, teams = 20): number {
-  const top = ECONOMY[div].wage * 22 * 52;
+  const top = marketWage(DIV_AVG_OVR[div], div) * 22 * 52;
   const x = Math.max(0, Math.min(1, (teams - pos) / Math.max(1, teams - 1)));
   return roundMoney(top * (0.1 + 0.9 * x ** 1.6));
 }
