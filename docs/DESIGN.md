@@ -1298,3 +1298,7 @@ The player can rebrand their club at any time, per save slot. The editor opens f
 
 Code: `src/core/clubIdentity.ts`, `src/ui/features/clubIdentityUI.tsx`, `Badge` in `src/ui/components.tsx`. Tests: `tests/clubIdentity.test.ts`, `scripts/e2e-identity.cjs`.
 
+### 13.2l Pick best XI **[Agreed]**
+
+The Formation page shows the **Team OVR** (the average rating of the starting XI in their slots, the same number as "Starting XI" on the hub) and a **Pick best XI** button. The user's line-up is solved as a whole with the assignment (Hungarian) algorithm, which gives the highest total rating across the XI. This is better than filling one slot at a time, which can use a player in one spot who was needed more elsewhere. The score is effective OVR in the slot, adjusted slightly for morale. Locked players stay in the XI. The button clears any locks and re-picks, then says the new Team OVR (and the old one if it changed). If another formation would give a higher Team OVR with the same squad, a hint offers to switch to it. AI clubs keep the quick greedy pick, so league balance is unchanged. Tests: `tests/bestXI.test.ts` (matches brute force, never worse than greedy, keeps locks).
+

@@ -31,7 +31,7 @@ export interface Side {
 }
 
 export function makeSide(club: Club, squad: Player[]): Side {
-  const lineup = autoPick(squad, club.formation);
+  const lineup = autoPick(squad, club.formation, 7, !!club.user);
   const units = unitRatings(lineup);
   const xi = lineup.xi.filter(Boolean) as Player[];
   const morale = xi.length ? xi.reduce((s, p) => s + p.morale, 0) / xi.length : 60;

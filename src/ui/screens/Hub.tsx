@@ -32,7 +32,7 @@ export function HubScreen() {
   // starting XI OVR: average effective rating of the auto-picked XI, and where it ranks in the league
   const xiAvg = (clubId: number) => {
     const c = s.clubs[clubId];
-    const lu = autoPick(squadOf(s, clubId), c.formation);
+    const lu = autoPick(squadOf(s, clubId), c.formation, 7, !!c.user);
     const v = lu.xi.map((p, i) => (p ? effectiveOvr(p, lu.slots[i].pos) : 0));
     return { avg: v.reduce((a, b) => a + b, 0) / (v.length || 1), lu };
   };
