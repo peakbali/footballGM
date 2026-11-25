@@ -42,6 +42,41 @@ export function askingWage(s: GameState, p: Player, clubId: number): number {
   return roundMoney(Math.max(mkt, current * 0.9) * personalityWageFactor(p) * repF);
 }
 
+/**
+ * Contract length and wage (DESIGN 13.2m): most players (3 in 4) take a lower wage for a longer deal, for the
+ * security. The other quarter prefer short deals and want more to commit for longer. Fixed per player.
+ */
+export function prefersLong(p: Pick<Player, 'id'>): boolean {
+  return ((p.id * 2654435761) >>> 0) % 4 !== 0;
+}
+
+/** Wage multiplier for a contract of `years` (1..5) years; 3 years is the reference. */
+export function lengthFactor(p: Pick<Player, 'id'>, years: number): number {
+  const y = clamp(Math.round(years), 1, 5);
+  return prefersLong(p) ? 1 + 0.06 * (3 - y) : 1 + 0.05 * (y - 3);
+}
+
+/**
+ * The weekly wage the player asks for a deal of `years` years. For his current club (a renewal) unhappy players ask
+ * more, happy ones a little less, and nobody takes a big cut from what he earns now.
+ */
+export function contractAsk(s: GameState, p: Player, clubId: number, years: number): number {
+  let ask = askingWage(s, p, clubId);
+  if (p.clubId === clubId && p.contract) {
+    const moodF = p.morale < 35 ? 1.15 : p.morale > 75 ? 0.95 : 1;
+    ask = Math.max(ask * moodF, p.contract.wage * 0.9);
+  }
+  return roundMoney(ask * lengthFactor(p, years));
+}
+
+export type Reaction = 'accept' | 'counter' | 'reject';
+/** How he reacts to `wage` against his ask: within 3% he signs, under 60% he walks away, in between he counters. */
+export function reactionTo(wage: number, ask: number, lastRound: boolean): Reaction {
+  if (wage >= ask * 0.97) return 'accept';
+  if (lastRound || wage < ask * 0.6) return 'reject';
+  return 'counter';
+}
+
 export interface ContractOffer {
   wage: number;
   years: number; // 1..5
@@ -55,23 +90,24 @@ export interface NegotiationResult {
   message: string;
 }
 
+/** His ask for a whole offer (length, release clause and squad role), before the round discount. */
+export function askFor(s: GameState, p: Player, clubId: number, offer: Pick<ContractOffer, 'years' | 'clauses' | 'role'>): number {
+  let ask = contractAsk(s, p, clubId, offer.years);
+  if (offer.clauses.release) ask *= 0.95;
+  const roleRank = { star: 4, starter: 3, rotation: 2, backup: 1, youth: 0 };
+  if (roleRank[offer.role] < roleRank[expectedRole(s, p, clubId)]) ask *= 1.15;
+  return roundMoney(ask);
+}
+
 /** One negotiation round (max 3). Used for new signings and renewals. */
 export function negotiate(s: GameState, p: Player, clubId: number, offer: ContractOffer, round: number): NegotiationResult {
-  let ask = askingWage(s, p, clubId);
-  // release clause and short deals make players happier; long deals for old players less so
-  const age = s.season - p.birthYear;
-  if (offer.clauses.release) ask *= 0.95;
-  if (age >= 30 && offer.years >= 3) ask *= 0.93;
-  if (age <= 23 && offer.years >= 4) ask *= 1.04;
-  const exp = expectedRole(s, p, clubId);
-  const roleRank = { star: 4, starter: 3, rotation: 2, backup: 1, youth: 0 };
-  if (roleRank[offer.role] < roleRank[exp]) ask *= 1.15;
-  ask = roundMoney(ask * (1 - (round - 1) * 0.03));
+  const ask = roundMoney(askFor(s, p, clubId, offer) * (1 - (round - 1) * 0.03));
   if (p.clubId === clubId && p.personality < 25 && p.morale < 35) {
     return { result: 'reject', ask, message: `${p.last} is unhappy and refuses to talk about a new deal.` };
   }
-  if (offer.wage >= ask * 0.97) return { result: 'accept', ask, message: `${p.last} accepts the terms.` };
-  if (round >= 3 || offer.wage < ask * 0.6) return { result: 'reject', ask, message: `${p.last} rejects the offer and ends talks.` };
+  const r = reactionTo(offer.wage, ask, round >= 3);
+  if (r === 'accept') return { result: 'accept', ask, message: `${p.last} accepts the terms.` };
+  if (r === 'reject') return { result: 'reject', ask, message: `${p.last} rejects the offer and ends talks.` };
   return { result: 'counter', ask, message: `${p.last} wants ${'£' + ask.toLocaleString()} a week.` };
 }
 

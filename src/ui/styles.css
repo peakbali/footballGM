@@ -540,3 +540,10 @@ table.tbl.compact { font-size: 12px; }
 .cid-opt.on { border-color: var(--gold); color: var(--text); }
 .cid-head .grow, .cid-row .grow, .row > .btn.grow { flex: 1; min-width: 0; }
 .xi-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; }
+/* contract terms (13.2m) */
+.cyears { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 4px 0; }
+.cyear { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; background: var(--bg2); border: 2px solid var(--line); border-radius: 3px; color: var(--dim); font-size: 11px; }
+.cyear b { font-family: var(--px); font-size: 10px; color: var(--text); font-weight: 400; }
+.cyear.on { border-color: var(--gold); color: var(--gold); }
+.cwage { width: 100%; margin: 4px 0; }
+.renewal { background: var(--bg2); border: 2px solid var(--line); border-radius: 4px; padding: 10px; margin-bottom: 8px; }

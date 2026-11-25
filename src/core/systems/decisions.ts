@@ -9,7 +9,7 @@ import { buildSquadIndex, CAL, invalidateSquads, isWindowOpen, squadOf, type Gam
 import { registerSystem } from '../systems';
 import type { InboxMessage, Player } from '../types';
 import { boardState } from './board';
-import { applyContract, askingWage, expectedRole, type ContractOffer } from './contracts';
+import { applyContract, askingWage, contractAsk, type ContractOffer } from './contracts';
 import { dirtyPlayers } from './dirty';
 import { txn } from './finance';
 import { academyCap } from './people';
@@ -126,8 +126,12 @@ register({
   type: 'star_talks', cat: 'Squad', phases: ['pre', 'season'], weight: 2,
   from: (s, c) => ({ kind: 'player', pid: c.pid }),
   make: (s) => {
+    // at most once every 2 years: 2+ seasons after he signed, and 2+ seasons since he last asked (DESIGN 13.2m)
+    const asked = ((s.ext.raiseAsked as Record<number, number> | undefined) ??= {});
     const p = firstTeam(s).filter((x) => x.contract && x.contract.type === 'permanent' && !x.academy).sort(byOvr)[0];
-    return p ? { type: 'star_talks', pid: p.id, amount: Math.max(1, Math.round(p.contract!.wage * 0.25)) } : null;
+    if (!p || s.season - p.contract!.signedSeason < 2 || s.season - (asked[p.id] ?? -99) < 2) return null;
+    asked[p.id] = s.season;
+    return { type: 'star_talks', pid: p.id, amount: Math.max(1, Math.round(p.contract!.wage * 0.25)) };
   },
   title: (s, c) => `${player(s, c.pid)?.last ?? 'Your star'} wants to talk`,
   body: (s, c) => {
@@ -464,10 +468,11 @@ register({
   ],
 });
 
-// ---------------- contract expiry notices (1 year, 6 months, 3 months, 1 month before the end)
+// ---------------- contract expiry notices (6 months and 1 month before the end, DESIGN 13.2m)
 
-export const NOTICE_WEEKS = [52, 26, 13, 4];
-const NOTICE_LABEL = ['1 year', '6 months', '3 months', '1 month'];
+export const NOTICE_WEEKS = [26, 4];
+/** "6 months", "1 month": from the weeks actually left, so old reminders read right too. */
+const leftLabel = (w: number) => { const m = Math.max(1, Math.round(w / 4.33)); return `${m} month${m === 1 ? '' : 's'}`; };
 
 /** Weeks until a permanent contract runs out (it ends with the last week of its end season). */
 export function contractWeeksLeft(s: GameState, p: Player): number {
@@ -475,11 +480,9 @@ export function contractWeeksLeft(s: GameState, p: Player): number {
 }
 const stagesPassed = (w: number) => NOTICE_WEEKS.filter((x) => w <= x).length;
 
-/** The wage he asks to stay: personality sets the base, morale moves it. */
+/** The wage he asks to stay on a 3-year deal (see contractAsk for other lengths). */
 export function renewalAsk(s: GameState, p: Player): number {
-  const ask = askingWage(s, p, s.userClubId);
-  const moodF = p.morale < 35 ? 1.15 : p.morale > 75 ? 0.95 : 1;
-  return roundMoney(Math.max(ask * moodF, (p.contract?.wage ?? 0) * 0.9));
+  return contractAsk(s, p, s.userClubId, 3);
 }
 
 register({
@@ -487,49 +490,26 @@ register({
   from: (s, c) => ({ kind: 'player', pid: c.pid }),
   make: (s) => {
     const p = firstTeam(s).filter((x) => x.contract?.type === 'permanent').sort((a, b) => contractWeeksLeft(s, a) - contractWeeksLeft(s, b))[0];
-    return p ? { type: 'contract_expiring', pid: p.id, amount: clamp(stagesPassed(contractWeeksLeft(s, p)) - 1, 0, 3) } : null;
+    return p ? { type: 'contract_expiring', pid: p.id, amount: clamp(stagesPassed(contractWeeksLeft(s, p)) - 1, 0, NOTICE_WEEKS.length - 1) } : null;
   },
-  title: (s, c) => `${player(s, c.pid)?.last ?? 'A player'}: ${NOTICE_LABEL[c.amount ?? 0]} left on his contract`,
+  title: (s, c) => { const p = player(s, c.pid); return `${p?.last ?? 'A player'}: ${p ? leftLabel(contractWeeksLeft(s, p)) : 'not long'} left on his contract`; },
   body: (s, c) => {
     const p = player(s, c.pid);
     if (!p?.contract) return 'This contract has already been sorted out.';
-    const last = (c.amount ?? 0) === NOTICE_WEEKS.length - 1;
-    return `${name(p)} (${p.pos}, ${p.ovr} OVR, age ${s.season - p.birthYear}) earns ${fmt(p.contract.wage)} a week and his deal ends this summer${(c.amount ?? 0) === 0 ? ' a year from now' : ''}. ${last ? 'This is the last chance: he leaves on a free in a few weeks.' : 'Offer a new deal now, or wait.'}`;
+    const last = contractWeeksLeft(s, p) <= NOTICE_WEEKS[NOTICE_WEEKS.length - 1] + 1;
+    return `${name(p)} (${p.pos}, ${p.ovr} OVR, age ${s.season - p.birthYear}) earns ${fmt(p.contract.wage)} a week and his deal ends this summer. ${last ? 'This is the last chance: he leaves on a free in a few weeks.' : 'Set the wage and length and make an offer, or wait.'}`;
   },
   choices: (s, c) => {
     const p = player(s, c.pid);
     if (!p?.contract || p.clubId !== s.userClubId || contractWeeksLeft(s, p) > 60) return gone();
-    const ask = renewalAsk(s, p);
-    const low = roundMoney(ask * 0.85);
-    const role = expectedRole(s, p, s.userClubId);
-    const diff = ask - p.contract.wage;
-    const stubborn = p.personality < 30 && p.morale < 35;
-    const odds = clamp(0.3 + p.personality / 200 + (p.morale - 50) / 150, 0.1, 0.9);
-    const stage = c.amount ?? 0;
-    const sign = (s2: GameState, wage: number, years: number) => { applyContract(s2, p, s2.userClubId, { wage, years, clauses: {}, role }); dirtyPlayers.add(p.id); };
-    const out: Choice[] = [
-      {
-        label: `New 3-year deal at ${fmt(ask)}/wk`,
-        chips: [diff > 0 ? bad(`+${fmt(diff)}/wk wages`) : good(`${fmt(diff)}/wk wages`), good('Morale +8'), stubborn ? bad('He is unhappy and may refuse') : good('He accepts')],
-        apply: (s2) => {
-          if (stubborn) { mood(p, -2); return `${p.last} is unhappy and won't sign anything right now.`; }
-          sign(s2, ask, 3);
-          return `${p.last} signs until ${s2.season + 3 - (s2.week >= 47 ? 0 : 1)} on ${fmt(ask)} a week.`;
-        },
-      },
-      {
-        label: `Offer 2 years at ${fmt(low)}/wk`,
-        chips: [meh(`${Math.round(odds * 100)}% he accepts`), good(`Saves ${fmt(ask - low)}/wk`), bad('Morale −4 if he says no')],
-        apply: (s2, rng) => {
-          if (!stubborn && rng.chance(odds)) { sign(s2, low, 2); return `${p.last} takes the cheaper deal: 2 years at ${fmt(low)} a week.`; }
-          mood(p, -4);
-          return `${p.last} turns it down. He wants ${fmt(ask)} a week.`;
-        },
-      },
-    ];
-    if (stage < NOTICE_WEEKS.length - 1) out.push({ label: 'Wait for now', chips: [meh(`Reminder at ${NOTICE_LABEL[stage + 1]}`)], apply: () => `You'll talk again with ${NOTICE_LABEL[stage + 1]} left.` });
+    // the offer itself is made in the negotiation form above these choices (decisionUI: RenewalForm, signRenewal)
+    const stage = Math.min(c.amount ?? 0, NOTICE_WEEKS.length - 1);
+    const out: Choice[] = [];
+    const notLast = contractWeeksLeft(s, p) > NOTICE_WEEKS[NOTICE_WEEKS.length - 1] + 1;
+    if (notLast) out.push({ label: 'Wait for now', chips: [meh('Reminder at 1 month')], apply: () => `You'll talk again with 1 month left.` });
+    void stage;
     out.push(
-      stage < 2
+      notLast
         ? { label: 'Put him on the transfer list', chips: [good('Sell before he can leave for free'), bad('Morale −5')], apply: () => { p.listed = true; mood(p, -5); return `${p.last} is on the transfer list.`; } }
         : { label: 'Let him go in the summer', chips: [meh('He leaves on a free'), good('Wages off the books')], apply: () => { mood(p, -3); return `${p.last} will leave when his deal ends.`; } },
     );
@@ -539,6 +519,7 @@ register({
 
 /** Weekly: post the notices that are due (most valuable players first, at most two new a week; the rest wait a week). */
 export function contractNotices(s: GameState) {
+  if (s.ext.noticesV !== 2) { s.ext.notices = {}; s.ext.noticesV = 2; } // the stages changed (were 1y/6m/3m/1m): count afresh
   const st = ((s.ext.notices as Record<number, { end: number; n: number }> | undefined) ??= {});
   const squad = firstTeam(s).filter((p) => p.contract?.type === 'permanent').sort(byOvr);
   const key = squad.slice(0, 18);
@@ -664,3 +645,32 @@ export function fireDecision(s: GameState, rng: Rng, type: string): InboxMessage
 }
 
 export const DECISION_TYPES = DEFS.map((d) => d.type);
+
+/** Sign the renewal agreed in the popup's negotiation form and close the reminder. */
+export function signRenewal(s: GameState, msgId: number, pid: number, offer: ContractOffer): string | null {
+  const m = s.inbox.find((x) => x.id === msgId);
+  const p = s.players.get(pid);
+  if (!m || m.resolved || !p || p.clubId !== s.userClubId) return null;
+  applyContract(s, p, s.userClubId, offer);
+  dirtyPlayers.add(p.id);
+  const out = `${p.last} signs for ${offer.years} year${offer.years === 1 ? '' : 's'} on ${fmt(offer.wage)} a week.`;
+  m.resolved = true;
+  m.read = true;
+  m.pick = `New ${offer.years}-year deal`;
+  m.outcome = out;
+  return out;
+}
+
+/** Talks in the popup broke down: he is a bit put out, and the reminder closes (the next one still comes). */
+export function failRenewal(s: GameState, msgId: number, pid: number, msg: string): string | null {
+  const m = s.inbox.find((x) => x.id === msgId);
+  const p = s.players.get(pid);
+  if (!m || m.resolved || !p) return null;
+  mood(p, -4);
+  m.resolved = true;
+  m.read = true;
+  m.pick = 'Talks broke down';
+  m.outcome = msg;
+  return msg;
+}
+
