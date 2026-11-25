@@ -386,9 +386,8 @@ registerSystem({
         if (b != null) { aiOfferFor(s, rng, p, b, true); made++; }
       }
     }
-    if (s.week === CAL.summerWindowStart) addMessage(s, { cat: 'Transfers', title: 'Summer transfer window open', body: 'Permanent transfers are allowed until the end of August.' });
-    if (s.week === CAL.summerWindowEnd) addMessage(s, { cat: 'Transfers', title: 'Deadline week', body: 'The summer window closes at the end of this week.' });
-    if (s.week === CAL.winterWindow[0]) addMessage(s, { cat: 'Transfers', title: 'January window open', body: 'Permanent transfers are allowed for four weeks.' });
+    // window open / closed popups come from decisions.ts (windowNews)
+    if (s.week === CAL.summerWindowEnd - 1) addMessage(s, { cat: 'Transfers', title: 'Deadline week', body: 'The summer window closes at the end of this week.' });
     void buildSquadIndex;
   },
 });

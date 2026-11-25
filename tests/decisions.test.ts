@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { newGame, startingLeagues, clubsInLeague } from '../src/core/world';
 import { advanceWeek } from '../src/core/season';
 import { Rng } from '../src/core/rng';
-import { squadOf } from '../src/core/state';
+import { CAL, squadOf } from '../src/core/state';
 import '../src/core/systems/all';
 import { decisionChoices, fireDecision, pendingDecisions, resolveDecision, DECISION_TYPES } from '../src/core/systems/decisions';
 
@@ -32,6 +32,7 @@ describe('decision events', () => {
         const type = (m.action!.data as { type: string }).type;
         seen.add(type);
         if (type === 'contract_expiring') { notices.set(season, (notices.get(season) ?? 0) + 1); continue; }
+        if (type === 'window_news' || type === 'life_event') continue; // on a fixed schedule, tested below
         perSeason.set(season, (perSeason.get(season) ?? 0) + 1);
         if (week <= 5) pre.set(season, (pre.get(season) ?? 0) + 1);
       }
@@ -51,7 +52,7 @@ describe('every decision type', () => {
   it('can be created and every choice applies cleanly', { timeout: 180_000 }, () => {
     const lg = startingLeagues()[0];
     const club = clubsInLeague(lg.key)[0];
-    for (const type of DECISION_TYPES) {
+    for (const type of DECISION_TYPES.filter((x) => x !== 'window_news')) { // news popup: one 'Got it' button, tested below
       let n = 1;
       for (let i = 0; i < n; i++) {
         const s = newGame(99, club);
@@ -74,5 +75,27 @@ describe('every decision type', () => {
         expect(m!.pick).toBe(choices[i].label);
       }
     }
+  });
+});
+
+describe('window news and life events', () => {
+  it('posts a popup when each window opens and shuts, and two life events a season', { timeout: 180_000 }, () => {
+    const lg = startingLeagues()[0];
+    const s = newGame(7, clubsInLeague(lg.key)[0]);
+    const news: string[] = [];
+    let life = 0;
+    for (let i = 0; i < 52; i++) {
+      advanceWeek(s);
+      for (const m of pendingDecisions(s)) {
+        const c = m.action!.data as { type: string; key?: string };
+        if (c.type === 'window_news') news.push(`${c.key}@${s.week}`);
+        if (c.type === 'life_event') life++;
+        resolveDecision(s, m.id, 0);
+      }
+    }
+    expect(news.map((x) => x.split('@')[0])).toEqual(['summer_close', 'winter_open', 'winter_close', 'summer_open']);
+    // each popup shows on the first week the window is open or shut
+    expect(news).toEqual([`summer_close@${CAL.summerWindowEnd + 1}`, `winter_open@${CAL.winterWindow[0]}`, `winter_close@${CAL.winterWindow[1] + 1}`, `summer_open@${CAL.summerWindowStart}`]);
+    expect(life).toBe(2);
   });
 });

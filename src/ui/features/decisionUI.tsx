@@ -112,6 +112,8 @@ export function DecisionPopup() {
   }
   if (!m) return null;
   const k = KINDS[senderKind(m)];
+  // news popups (transfer window open / shut) just close, without a result stamp
+  const info = (m.action?.data as { type?: string } | undefined)?.type === 'window_news';
   return (
     <div class="dpop-back">
       <div class="dpop" style={{ '--k': k.color } as never}>
@@ -124,8 +126,8 @@ export function DecisionPopup() {
           <h2>{m.title}</h2>
           <div class="dpop-text">{m.body}</div>
           {messagePlayer(s, m) && <div class="tiny dim dpop-hint">Tap {messagePlayer(s, m)!.last}'s picture to open his page</div>}
-          <ChoiceList s={s} m={m} onDone={(out) => { if (out) setResult({ title: m.title, pick: m.pick ?? '', outcome: out, id: m.id, tone: m.tone ?? outcomeTone(out) }); }} />
-          <button class="linkbtn later" onClick={() => { st.hiddenUpTo = m.id; store.bump(); }}>Decide later</button>
+          <ChoiceList s={s} m={m} onDone={(out) => { if (out && !info) setResult({ title: m.title, pick: m.pick ?? '', outcome: out, id: m.id, tone: m.tone ?? outcomeTone(out) }); }} />
+          {!info && <button class="linkbtn later" onClick={() => { st.hiddenUpTo = m.id; store.bump(); }}>Decide later</button>}
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { ECONOMY } from '../data/economy';
+import { ECONOMY, roundMoney } from '../data/economy';
 import { computeTable } from '../league';
 import { clamp, type Rng } from '../rng';
 import { CAL, type GameState } from '../state';
@@ -70,8 +70,14 @@ export function ticketRange(c: Club, s?: GameState): [number, number] {
   return [Math.max(2, Math.round(t * 0.5)), Math.round(t * (2.2 + extra * 2))];
 }
 
-export function prizeMoney(div: number, pos: number): number {
-  return Math.round(ECONOMY[div].tv * 0.3 * (1.5 - (pos - 1) / 19));
+/**
+ * League prize money at the end of the season (DESIGN 13.2p): the champions get about a season of a typical squad's
+ * wages for that division, falling steeply down the table to a tenth of that for the bottom club.
+ */
+export function prizeMoney(div: number, pos: number, teams = 20): number {
+  const top = ECONOMY[div].wage * 22 * 52;
+  const x = Math.max(0, Math.min(1, (teams - pos) / Math.max(1, teams - 1)));
+  return roundMoney(top * (0.1 + 0.9 * x ** 1.6));
 }
 
 /** Projection of cash at the end of the season (30 June). */
@@ -87,7 +93,7 @@ export function projection(s: GameState): { weeklyIncome: number; weeklyCost: nu
   const merch = (merchPerSeason(s, c) / 52) * weeksLeft;
   const lg = s.leagues.find((l) => l.clubIds.includes(c.id))!;
   const pos = computeTable(s, lg).findIndex((r) => r.clubId === c.id) + 1;
-  const prize = s.week <= CAL.seasonEndWeek ? prizeMoney(c.div, pos) : 0;
+  const prize = s.week <= CAL.seasonEndWeek ? prizeMoney(c.div, pos, lg.clubIds.length) : 0;
   const weeklyCost = userWageBill(s) + staffWageBill(s) + upkeep(s);
   const income = gate + tv + spons + merch + prize;
   return { weeklyIncome: Math.round((income - prize) / Math.max(1, weeksLeft)), weeklyCost, prize, end: Math.round(c.cash + income - weeklyCost * weeksLeft) };
@@ -138,7 +144,7 @@ registerSystem({
     for (const lg of s.leagues) {
       const t = computeTable(s, lg);
       t.forEach((r, i) => {
-        const prize = prizeMoney(lg.div, i + 1);
+        const prize = prizeMoney(lg.div, i + 1, t.length);
         if (r.clubId === s.userClubId) txn(s, 'prize', prize);
         else s.clubs[r.clubId].cash += prize;
       });
