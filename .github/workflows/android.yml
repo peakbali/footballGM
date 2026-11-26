@@ -92,7 +92,7 @@ jobs:
             adb shell 'echo "_ --disable-fre --no-default-browser-check --no-first-run" > /data/local/tmp/chrome-command-line' || true
             adb shell am set-debug-app --persistent com.android.chrome || true
             adb shell am force-stop com.android.chrome || true
-            adb logcat -c
+            adb logcat -c || true
             adb shell monkey -p com.peakbali.footballgm -c android.intent.category.LAUNCHER 1
             sleep 40
             adb logcat -d > logcat.txt || true
