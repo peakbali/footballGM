@@ -66,6 +66,8 @@ jobs:
   smoke:
     needs: bundle
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -101,6 +103,17 @@ jobs:
             grep -n -A40 "FATAL EXCEPTION" logcat.txt | head -120 || true
             cat top.txt
             ! grep -q "FATAL EXCEPTION" logcat.txt
+      - name: Publish screenshot to branch smoke-api${{ matrix.api }}
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -s screen.png ] || exit 0
+          mkdir pub && cp screen.png pub/ && cp top.txt pub/ 2>/dev/null || true
+          cd pub && git init -q && git checkout -q -b smoke-api${{ matrix.api }}
+          git -c user.name=smoke -c user.email=smoke@users.noreply.github.com add -A
+          git -c user.name=smoke -c user.email=smoke@users.noreply.github.com commit -qm "Smoke test screenshot, API ${{ matrix.api }}, run ${{ github.run_id }}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:smoke-api${{ matrix.api }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
