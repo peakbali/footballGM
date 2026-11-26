@@ -14,7 +14,7 @@ const PLAY_BILLING = 'https://play.google.com/billing';
  * Play refunds a purchase that is not acknowledged within 3 days, and only a server can acknowledge.
  * This is the URL of the small acknowledgement worker (twa/ack-worker/). Empty = not set up yet.
  */
-export const ACK_URL = '';
+export const ACK_URL = 'https://peakfootball-ack.khen-subscription.workers.dev';
 const KEY = 'fgm.fullGame';
 
 interface DgItem { itemId: string; title?: string; price: { currency: string; value: string } }
