@@ -27,7 +27,7 @@
   "fallbackType": "customtabs",
   "features": { "playBilling": { "enabled": true } },
   "alphaDependencies": { "enabled": false },
-  "enableSiteSettingsShortcut": false,
+  "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
   "minSdkVersion": 24,
