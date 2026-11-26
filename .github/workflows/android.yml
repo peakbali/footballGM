@@ -47,6 +47,10 @@ jobs:
           echo "$KEYSTORE_B64" | base64 -d > build-twa/upload.keystore
           cd build-twa
           yes | npx --yes @bubblewrap/cli@1.27.0 update --skipVersionUpgrade --manifest=./twa-manifest.json
+          # R8 renames androidbrowserhelper classes that LauncherActivity enables by name at startup
+          # ("Component class G0.u does not exist" -> crash on launch), so ship the wrapper unminified.
+          sed -i 's/minifyEnabled true/minifyEnabled false/' app/build.gradle
+          grep -q 'minifyEnabled false' app/build.gradle
       - name: Build signed bundle
         working-directory: build-twa
         env:
@@ -91,6 +95,7 @@ jobs:
             adb shell dumpsys activity activities | grep -i -E "mResumedActivity|topResumedActivity" > top.txt || true
             grep -n -A40 "FATAL EXCEPTION" logcat.txt | head -120 || true
             cat top.txt
+            ! grep -q "FATAL EXCEPTION" logcat.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
