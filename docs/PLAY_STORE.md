@@ -44,8 +44,8 @@ An upload key is already generated for you in the project files: `play-signing/f
 
 ### 5. Digital Asset Links (removes the browser bar and enables billing)
 The app proves it owns peakbali.github.io with a file at the *root* of the domain, which only a repo named `peakbali.github.io` can serve.
-1. Play Console > **Test and release > App integrity > App signing**: copy the **SHA-256 certificate fingerprint** of the *App signing key*.
-2. Create a new public GitHub repo named exactly `peakbali.github.io`, and add the three files from `twa/user-site/` (`.nojekyll`, `index.html`, `.well-known/assetlinks.json`). In `assetlinks.json`, replace `PASTE_THE_APP_SIGNING_KEY_SHA256_FROM_PLAY_CONSOLE_HERE` with the fingerprint from step 1 (keep the upload key line).
+1. Play Console > **Protected with Play > App signing**: the *Classical key* SHA-256 of the app signing key (already filled in: `7C:3C:...:0E:11`).
+2. Create a new public GitHub repo named exactly `peakbali.github.io`, and add the three files from `twa/user-site/` (`.nojekyll`, `index.html`, `.well-known/assetlinks.json`). `assetlinks.json` already holds the app signing key and the upload key fingerprints.
 3. Repo **Settings > Pages**: deploy from branch `main`, folder `/`. After a minute, https://peakbali.github.io/.well-known/assetlinks.json should show the file. (The game itself keeps living at /footballGM/.)
 
 ### 6. Purchase acknowledgement worker
